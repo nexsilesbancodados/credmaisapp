@@ -219,15 +219,36 @@ async function markAsRead(apiUrl: string, apiKey: string, instance: string, key:
 async function sendText(apiUrl: string, apiKey: string, instance: string, jid: string, text: string) {
   const chunks = text.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
   const list = chunks.length > 0 ? chunks : [text];
-  const number = whatsappNumber(jid);
+  const candidates = Array.from(new Set([String(jid || ""), whatsappNumber(jid)].filter(Boolean)));
+  let allSent = true;
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await new Promise(r => setTimeout(r, 800));
-    await evolutionFetch(apiUrl, apiKey, `/message/sendText/${instance}`, {
-      number,
-      text: list[i],
-      delay: Math.min(1500, 400 + list[i].length * 25),
-    });
+    let sent = false;
+    const errors: string[] = [];
+    for (const number of candidates) {
+      try {
+        const resp = await fetch(`${apiUrl.replace(/\/$/, "")}/message/sendText/${instance}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: apiKey },
+          body: JSON.stringify({ number, text: list[i], delay: Math.min(1500, 400 + list[i].length * 25) }),
+        });
+        const body = await resp.text().catch(() => "");
+        if (resp.ok) {
+          sent = true;
+          console.log("[evolution] sendText ok", { instance, to: number.includes("@") ? "jid" : "number", status: resp.status });
+          break;
+        }
+        errors.push(`${resp.status}:${body.slice(0, 180)}`);
+      } catch (e) {
+        errors.push(e instanceof Error ? e.message : String(e));
+      }
+    }
+    if (!sent) {
+      allSent = false;
+      console.error("[evolution] sendText failed", { instance, jid, errors });
+    }
   }
+  return allSent;
 }
 
 async function upsertConversation(supabase: any, params: {
@@ -438,7 +459,26 @@ serve(async (req) => {
         return;
       }
       lastBotReply.set(senderJid, { text, ts: Date.now() });
-      await sendText(apiUrl, apiKey, instanceName, senderJid, text);
+      const sent = await sendText(apiUrl, apiKey, instanceName, senderJid, text);
+      if (!sent) {
+        await logBotAction(supabase, {
+          userId,
+          clientId: client?.id ?? null,
+          conversationId: convoId,
+          toolName: "send_whatsapp_text",
+          toolInput: { instance: instanceName, phone: senderPhone, preview: text.slice(0, 120) },
+          success: false,
+          errorMessage: "Evolution não confirmou o envio da mensagem",
+        });
+        if (convoId) {
+          await supabase.from("whatsapp_conversations").update({
+            needs_human: true,
+            human_takeover_reason: "Falha no envio automático pela Evolution",
+            updated_at: new Date().toISOString(),
+          }).eq("id", convoId);
+        }
+        return;
+      }
       if (convoId) {
         await logMessage(supabase, { conversationId: convoId, userId, direction: "out", sender: "bot", messageType: "text", content: text });
         await supabase.from("whatsapp_conversations").update({
@@ -1194,7 +1234,13 @@ Ex3 — Cliente pede parcelar atraso de 3 parcelas:
     }
 
     if (result.needs_human) {
-      await escalateToHuman(supabase, convoId!, result.summary || "IA detectou necessidade de humano");
+      await supabase.from("whatsapp_conversations").update({
+        needs_human: true,
+        bot_status: "active",
+        bot_paused: false,
+        human_takeover_reason: result.summary || "Bot recomendou revisão humana, mas continuará respondendo",
+        updated_at: new Date().toISOString(),
+      }).eq("id", convoId);
       await supabase.from("notifications").insert({ user_id: userId, title: "🚨 Intervenção Humana", message: `Cliente ${client.name} solicita atendimento humano ou negociação.`, type: "warning" });
       await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "escalate_to_human", toolInput: { reason: result.summary || "ai_detected" } });
     }
