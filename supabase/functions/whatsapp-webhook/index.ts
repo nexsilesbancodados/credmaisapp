@@ -251,6 +251,82 @@ async function sendText(apiUrl: string, apiKey: string, instance: string, jid: s
   return allSent;
 }
 
+// ─── PIX EMV (BR Code Copia e Cola) ────────────────────────────────
+function pixCrc16(payload: string): string {
+  let crc = 0xffff;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+function pixTLV(id: string, value: string): string {
+  const len = value.length.toString().padStart(2, "0");
+  return `${id}${len}${value}`;
+}
+function pixNormalize(s: string): string {
+  return (s || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9 ]/g, "").slice(0, 25).trim() || "PAGADOR";
+}
+export function buildPixEmv(params: {
+  key: string;
+  amount: number;
+  merchantName: string;
+  merchantCity?: string;
+  txid?: string;
+}): string {
+  const key = (params.key || "").trim();
+  if (!key) return "";
+  const name = pixNormalize(params.merchantName || "RECEBEDOR");
+  const city = pixNormalize(params.merchantCity || "SAO PAULO").slice(0, 15);
+  const txid = pixNormalize(params.txid || "PAG").slice(0, 25) || "PAG";
+  const amount = Math.max(0, Number(params.amount || 0)).toFixed(2);
+  const mai = pixTLV("00", "br.gov.bcb.pix") + pixTLV("01", key);
+  const payload =
+    pixTLV("00", "01") +
+    pixTLV("26", mai) +
+    pixTLV("52", "0000") +
+    pixTLV("53", "986") +
+    (amount !== "0.00" ? pixTLV("54", amount) : "") +
+    pixTLV("58", "BR") +
+    pixTLV("59", name) +
+    pixTLV("60", city) +
+    pixTLV("62", pixTLV("05", txid));
+  const toCrc = payload + "6304";
+  return toCrc + pixCrc16(toCrc);
+}
+
+// ─── Envia mensagem com botões (Evolution) — fallback pra texto ─────
+async function sendButtons(apiUrl: string, apiKey: string, instance: string, jid: string, params: {
+  title?: string; body: string; footer?: string; buttons: Array<{ id: string; label: string }>;
+}): Promise<boolean> {
+  try {
+    const resp = await fetch(`${apiUrl.replace(/\/$/, "")}/message/sendButtons/${instance}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: JSON.stringify({
+        number: whatsappNumber(jid),
+        title: params.title || "",
+        description: params.body,
+        footer: params.footer || "",
+        buttons: params.buttons.slice(0, 3).map((b, i) => ({
+          buttonText: { displayText: b.label.slice(0, 20) },
+          buttonId: b.id,
+          type: 1,
+          index: i,
+        })),
+      }),
+    });
+    if (resp.ok) return true;
+  } catch (_) { /* fallback */ }
+  return false;
+}
+
+
 async function upsertConversation(supabase: any, params: {
   userId: string; phone: string; jid: string; instance: string;
   clientId?: string | null; contactName?: string | null;
