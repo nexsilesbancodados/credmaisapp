@@ -52,7 +52,7 @@ export default function HistoricoFinanceiro() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [period, setPeriod] = useState<PeriodKey>("30d");
+  const [period, setPeriod] = useState<PeriodKey>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
