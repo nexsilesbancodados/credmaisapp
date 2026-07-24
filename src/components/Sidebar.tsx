@@ -166,7 +166,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         <div className={`relative shrink-0 transition-all duration-200 ${active ? "text-primary scale-[1.12]" : "group-hover:scale-110 group-hover:text-foreground"}`}>
           <Icon size={19} strokeWidth={active ? 2.4 : 1.9} />
           {item.highlight && !active && !collapsed && (
-            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_hsl(45_95%_55%/0.8)] animate-pulse" />
+            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_hsl(45_95%_55%/0.8)]" />
           )}
           {badge > 0 && collapsed && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card">
