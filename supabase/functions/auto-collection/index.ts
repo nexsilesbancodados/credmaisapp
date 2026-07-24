@@ -249,24 +249,48 @@ serve(async (req) => {
           : selectedDays >= 15 ? "acordo_desconto"
           : selectedDays >= 7 ? "cobranca_padrao"
           : "cobranca_padrao";
-        const alt: Record<string, string> = {
-          lembrete_amigavel: "pergunta_confirmacao",
-          cobranca_firme: "proposta_acordo",
-          acordo_desconto: "condicao_especial",
-          cobranca_padrao: "opcao_parcelar",
+        // Escolhe uma nova abordagem — DIFERENTE das últimas usadas
+        const approachPool: Record<string, string[]> = {
+          lembrete_amigavel: ["lembrete_amigavel", "pergunta_confirmacao", "aviso_curto", "cta_portal"],
+          cobranca_firme: ["cobranca_firme", "proposta_acordo", "ultimatum_educado", "escalonamento_juridico"],
+          acordo_desconto: ["acordo_desconto", "condicao_especial", "parcelamento_flex", "desconto_a_vista"],
+          cobranca_padrao: ["cobranca_padrao", "opcao_parcelar", "pergunta_previsao", "cta_portal"],
         };
-        const nextApproach = priorApproach === stageApproach ? (alt[stageApproach] || stageApproach) : stageApproach;
+        const stageApproach = isPreDue ? "lembrete_amigavel"
+          : selectedDays >= 30 ? "cobranca_firme"
+          : selectedDays >= 15 ? "acordo_desconto"
+          : selectedDays >= 7 ? "cobranca_padrao"
+          : "cobranca_padrao";
+        const recentApproaches = (intentsList || [])
+          .map((i: any) => i && typeof i.abordagem === "string" ? i.abordagem : null)
+          .filter(Boolean).slice(0, 3) as string[];
+        const pool = approachPool[stageApproach] || [stageApproach];
+        const candidates = pool.filter(a => !recentApproaches.includes(a));
+        const nextApproach = (candidates.length ? candidates : pool)[
+          Math.floor(Math.random() * (candidates.length ? candidates.length : pool.length))
+        ];
+
+        // ── Anti-repetição: helpers Jaccard ────────────────────────────
+        const cleanTxt = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9áéíóúàãõâêîôûç ]+/gi, " ").replace(/\s+/g, " ").trim();
+        const jaccard = (a: string, b: string) => {
+          const A = new Set(cleanTxt(a).split(" ").filter(Boolean));
+          const B = new Set(cleanTxt(b).split(" ").filter(Boolean));
+          if (!A.size || !B.size) return 0;
+          const inter = [...A].filter(x => B.has(x)).length;
+          const uni = new Set([...A, ...B]).size;
+          return uni ? inter / uni : 0;
+        };
+        const maxSimVs = (candidate: string) =>
+          recentSentTexts.length ? Math.max(...recentSentTexts.map(t => jaccard(candidate, t))) : 0;
 
         if (settings.bot_use_ai && anthropicKey) {
-          try {
-            const tone = settings.bot_tone || "profissional";
-            const severity = isPreDue ? "AMIGÁVEL — só um lembrete gentil"
-              : selectedDays >= 30 ? "FIRME e direta"
-              : selectedDays >= 15 ? "assertiva mas respeitosa"
-              : selectedDays >= 7 ? "preocupada e clara"
-              : "amigável e gentil";
-            const systemPrompt = `Você é especialista em recuperação de crédito da empresa ${companyName}. Tom: ${tone}. Severidade atual: ${severity}. NUNCA diga que é uma IA. Use português brasileiro. Máximo 4 linhas curtas. Emojis discretos (1-2). Gere APENAS o texto da mensagem, sem aspas, sem comentários. IMPORTANTE: VARIE — não repita a mesma abordagem da última mensagem.`;
-            const userPrompt = `Gere mensagem WhatsApp personalizada:
+          const tone = settings.bot_tone || "profissional";
+          const severity = isPreDue ? "AMIGÁVEL — só um lembrete gentil"
+            : selectedDays >= 30 ? "FIRME e direta"
+            : selectedDays >= 15 ? "assertiva mas respeitosa"
+            : selectedDays >= 7 ? "preocupada e clara"
+            : "amigável e gentil";
+          const buildPrompt = (extraDiversity: string) => `Gere mensagem WhatsApp personalizada:
 CLIENTE: ${client.name}
 ${isPreDue ? `PARCELA VENCE EM ${daysUntilDue} DIA(S)` : `PARCELA EM ATRASO: ${daysOverdue} DIA(S)`}
 VALOR: R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
@@ -274,18 +298,33 @@ SCORE: ${client.credit_score ?? 100}/100
 HISTÓRICO: ${paidCount}/${totalHist} pagas (${reliability}% confiabilidade)
 INTENÇÕES RECENTES:
 ${intentSummary || '(nenhuma)'}
-${priorApproach ? `ÚLTIMA ABORDAGEM USADA: "${priorApproach}" — USE OUTRA ("${nextApproach}").` : `ABORDAGEM SUGERIDA: "${nextApproach}".`}
+ABORDAGEM DESTA MENSAGEM: "${nextApproach}" (últimas usadas: ${recentApproaches.join(", ") || "nenhuma"} — NÃO repita).
+${recentSentTexts.length ? `MENSAGENS JÁ ENVIADAS RECENTEMENTE (PROIBIDO REPETIR frases, aberturas, estruturas ou palavras marcantes destas):\n${recentSentTexts.map((t, i) => `#${i + 1}: ${t.slice(0, 260)}`).join("\n")}\nEscreva algo VISIVELMENTE diferente: outra abertura, outra ordem, outro tom, outro CTA.` : ""}
 ${personalizations.length ? "AJUSTES OBRIGATÓRIOS:\n- " + personalizations.join("\n- ") : ""}
 ${isPreDue ? "Apenas LEMBRE, sem cobrar. Sugira o pagamento antecipado via PIX." : ""}
-${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de acordo abaixo." : ""}`;
+${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de acordo abaixo." : ""}
+${extraDiversity}`;
+          const systemPrompt = `Você é especialista em recuperação de crédito da empresa ${companyName}. Tom: ${tone}. Severidade atual: ${severity}. NUNCA diga que é uma IA. Use português brasileiro. Máximo 4 linhas curtas. Emojis discretos (1-2). Gere APENAS o texto da mensagem, sem aspas, sem comentários. REGRA CRÍTICA: cada mensagem precisa ser NOVA — nunca repita aberturas ("Olá X,", "Identificamos…"), nem estrutura, nem frases das mensagens anteriores desse cliente.`;
+          try {
             message = await callAnthropic({
               system: systemPrompt,
-              messages: [{ role: "user", content: userPrompt }],
-              temperature: 0.75, maxTokens: 400,
+              messages: [{ role: "user", content: buildPrompt("") }],
+              temperature: 0.85, maxTokens: 400,
             });
             message = (message || "").trim();
+            // Se ficou muito parecido com envios anteriores → regenerar com mais diversidade
+            if (message && maxSimVs(message) >= 0.5) {
+              const retry = await callAnthropic({
+                system: systemPrompt,
+                messages: [{ role: "user", content: buildPrompt("A mensagem gerada anteriormente ficou parecida com envios passados. REESCREVA do zero com abertura diferente, verbos diferentes, ordem diferente e outro CTA.") }],
+                temperature: 1.0, maxTokens: 400,
+              });
+              const retryTxt = (retry || "").trim();
+              if (retryTxt && maxSimVs(retryTxt) < maxSimVs(message)) message = retryTxt;
+            }
           } catch (aiErr) { console.error("Anthropic fail:", aiErr); }
         }
+
 
         if (!message) {
           const template = templates?.find(t => t.name.toLowerCase().includes(matchingRule.template.toLowerCase()));
