@@ -92,8 +92,8 @@ export default function BentoKPI({
 
   const valueCls = {
     sm: "text-xl md:text-2xl",
-    md: "text-2xl md:text-3xl",
-    lg: "text-3xl md:text-5xl",
+    md: "text-2xl md:text-[28px]",
+    lg: "text-3xl md:text-[42px]",
   }[size];
 
   return (
