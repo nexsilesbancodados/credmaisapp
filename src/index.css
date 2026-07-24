@@ -41,16 +41,16 @@
     --secondary-foreground: 222 40% 18%;
 
     --muted: 220 20% 95%;
-    --muted-foreground: 220 12% 38%;
+    --muted-foreground: 220 14% 32%;
 
-    --accent: 217 78% 52%;
+    --accent: 217 78% 44%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 74% 48%;
+    --destructive: 0 74% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 18% 88%;
-    --input: 220 18% 92%;
+    --border: 220 16% 80%;
+    --input: 220 16% 84%;
     --ring: 222 65% 32%;
 
     --radius: 0.75rem;
@@ -73,11 +73,11 @@
     --shadow-glow: 0 0 24px hsl(217 78% 52% / 0.18), 0 0 60px hsl(217 78% 52% / 0.06);
     --shadow-premium: 0 20px 50px -12px hsl(222 65% 32% / 0.22);
 
-    --success: 152 62% 36%;
+    --success: 152 68% 28%;
     --success-foreground: 0 0% 100%;
-    --warning: 32 94% 46%;
+    --warning: 28 92% 34%;
     --warning-foreground: 0 0% 100%;
-    --info: 217 78% 52%;
+    --info: 217 82% 40%;
     --info-foreground: 0 0% 100%;
 
     /* Vivid action tokens */
