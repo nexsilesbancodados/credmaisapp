@@ -1231,6 +1231,14 @@ const ClienteDetalhe = () => {
           setLoanLateFee={setLoanLateFee}
           loanNotes={loanNotes}
           setLoanNotes={setLoanNotes}
+          loanGraceDays={loanGraceDays}
+          setLoanGraceDays={setLoanGraceDays}
+          loanPaymentMethod={loanPaymentMethod}
+          setLoanPaymentMethod={setLoanPaymentMethod}
+          loanEarlyDiscount={loanEarlyDiscount}
+          setLoanEarlyDiscount={setLoanEarlyDiscount}
+          loanMaxInterestCap={loanMaxInterestCap}
+          setLoanMaxInterestCap={setLoanMaxInterestCap}
           loanCalc={loanCalc}
           loanLoading={loanLoading}
           onClose={() => setNewLoanMode(false)}
