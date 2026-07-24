@@ -737,7 +737,7 @@ serve(async (req) => {
           greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Vi aqui que você tinha combinado de acertar até *${openPromise.data}*${openPromise.valor ? ` (${money(Number(openPromise.valor))})` : ""}. Consegue fechar hoje?`;
         } else if (overdueQ.length > 0) {
           const oldest = overdueQ[0];
-          greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Passando pra alinhar a parcela #${oldest.installment_number} (${money(totOver)} em aberto). Consegue resolver hoje ou prefere combinar um prazo?`;
+          greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Sua parcela #${oldest.installment_number} está em atraso — total a regularizar: *${money(totOver)}*. Vou te enviar o PIX agora pra você quitar. 🙏`;
         } else if (dueTodayQ.length > 0) {
           greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Sua parcela de *${money(totToday)}* vence *hoje*. Quer que eu te envie o PIX?`;
         } else {
