@@ -278,10 +278,11 @@ serve(async (req) => {
 
     // CLIENT LOOKUP
     let client: any = null;
-    const CLIENT_FIELDS = "id, name, phone, whatsapp, cpf_cnpj, status, credit_score, bot_memory, birth_date, email, address, notes, occupation, monthly_income";
+    const CLIENT_FIELDS = "id, name, phone, whatsapp, cpf_cnpj, status, credit_score, bot_memory, birth_date, email, address";
     const { data: convoExisting } = await supabase.from("whatsapp_conversations").select("id, client_id, bot_paused, blocked").eq("user_id", userId).eq("phone", senderPhone).maybeSingle();
     if (convoExisting?.client_id) {
-      const { data: c } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
+      const { data: c, error: clientByConversationError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
+      if (clientByConversationError) console.warn("[client_lookup] conversa vinculada falhou:", clientByConversationError.message);
       if (c) client = c;
     }
     if (!client) {
@@ -291,7 +292,8 @@ serve(async (req) => {
       const tail9 = normalizedIn.slice(-9);
       const tail10 = normalizedIn.slice(-10);
       const tail11 = normalizedIn.slice(-11);
-      const { data: clients } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
+      const { data: clients, error: clientsByPhoneError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
+      if (clientsByPhoneError) console.warn("[client_lookup] busca por telefone falhou:", clientsByPhoneError.message);
       client = clients?.find(c => {
         const cRaw = ((c.whatsapp || "") + " " + (c.phone || "")).replace(/\D/g, "");
         if (!cRaw) return false;
@@ -623,10 +625,10 @@ Nome: ${client.name}
 CPF: ${client.cpf_cnpj || 'n/d'} | Nascimento: ${client.birth_date || 'n/d'}
 Telefone: ${client.phone || senderPhone} | WhatsApp: ${client.whatsapp || senderPhone}
 E-mail: ${client.email || 'n/d'} | Endereço: ${addressLine || 'n/d'}
-Profissão: ${client.occupation || 'n/d'} | Renda mensal: ${client.monthly_income ? `R$ ${Number(client.monthly_income).toFixed(2)}` : 'n/d'}
+Profissão: n/d | Renda mensal: n/d
 Status: ${client.status || 'Ativo'} | Score: ${scoreNum}/100 → PERFIL ${perfilPagador}
 Parcelas já pagas no histórico: ${paidCount}
-Notas de cadastro: ${client.notes || '(nenhuma)'}
+Notas de cadastro: (nenhuma)
 
 ═══ 📂 CONTRATOS ATIVOS (${activeContracts?.length || 0}) ═══
 ⚠️ CADA CONTRATO É INDEPENDENTE. NUNCA some parcelas entre contratos. Sempre cite o ID curto (#abc123) e o número da parcela ao mencionar valores.
