@@ -78,6 +78,104 @@ function matchesAny(text: string, words: string[]): boolean {
   return words.some(w => t.includes(w));
 }
 
+function money(v: number) {
+  return `R$ ${Number(v || 0).toFixed(2).replace(".", ",")}`;
+}
+
+function buildLocalBotResult(params: {
+  client: any;
+  incomingText: string;
+  overdue: any[];
+  dueToday: any[];
+  totalOverdue: number;
+  totalDueToday: number;
+  profile: any;
+  tone: any;
+}) {
+  const { client, incomingText, overdue, dueToday, totalOverdue, totalDueToday, profile, tone } = params;
+  const txt = (incomingText || "").toLowerCase();
+  const firstName = (client?.name || "").split(" ").filter(Boolean)[0] || "tudo bem";
+  const hasDebt = overdue.length > 0 || dueToday.length > 0;
+  const total = totalOverdue + totalDueToday;
+  const oldest = overdue[0] || dueToday[0];
+  const pix = profile?.pix_key ? `\nPIX: *${profile.pix_key}*` : "";
+
+  if (/comprovante|paguei|pix feito|transferi|enviei/i.test(incomingText || "")) {
+    return {
+      reply: `Perfeito, ${firstName}. Me manda o comprovante em imagem ou PDF por aqui, por favor. Assim eu confiro e registro a baixa certinho 👍`,
+      is_receipt: false,
+      is_rollover: false,
+      is_promise: false,
+      promise_date: null,
+      receipt_value: 0,
+      needs_human: false,
+      intent: "comprovante",
+      sentiment: "neutro",
+      urgencia: "media",
+      dificuldade_financeira: false,
+      desconto_pct: 0,
+      summary: "Cliente informou pagamento; aguardando comprovante",
+    };
+  }
+
+  const wantsDeal = /negoci|acordo|desconto|parcela|parcelar|prazo|consigo pagar|deixar por|fazer por|dividir/i.test(txt);
+  if (wantsDeal) {
+    const base = hasDebt
+      ? `Oi ${firstName}, consigo te ajudar sim. Consta ${oldest ? `a parcela #${oldest.installment_number}` : "pendência"} e o total em aberto está em *${money(total)}*.`
+      : `Oi ${firstName}, consigo te ajudar sim. Não localizei parcela vencida agora, mas vou registrar seu pedido.`;
+    return {
+      reply: `${base}\nMe diga quanto você consegue pagar hoje e qual data para o restante, que eu encaminho para validar a melhor condição. 🤝${pix}`,
+      is_receipt: false,
+      is_rollover: false,
+      is_promise: /dia|amanh|hoje|semana|pago|pagar/i.test(txt),
+      promise_date: null,
+      receipt_value: 0,
+      needs_human: false,
+      intent: "negociacao",
+      sentiment: tone?.frustrated ? "frustrado" : "neutro",
+      urgencia: "alta",
+      dificuldade_financeira: tone?.hardship === true,
+      desconto_pct: /desconto|deixar por|fazer por/i.test(txt) ? 10 : 0,
+      summary: "Cliente pediu negociação; automação coletou proposta e segue acompanhando",
+    };
+  }
+
+  if (hasDebt) {
+    const label = overdue.length > 0 ? "em atraso" : "vencendo hoje";
+    return {
+      reply: `Oi ${firstName}! Vi aqui ${oldest ? `a parcela #${oldest.installment_number}` : "uma pendência"} ${label}.\nTotal para regularizar agora: *${money(total)}*.\nConsegue acertar hoje ou prefere combinar um prazo?${pix}`,
+      is_receipt: false,
+      is_rollover: false,
+      is_promise: false,
+      promise_date: null,
+      receipt_value: 0,
+      needs_human: false,
+      intent: "pagamento",
+      sentiment: "neutro",
+      urgencia: overdue.length > 0 ? "alta" : "media",
+      dificuldade_financeira: tone?.hardship === true,
+      desconto_pct: 0,
+      summary: "Cobrança objetiva com valores do sistema",
+    };
+  }
+
+  return {
+    reply: `Oi ${firstName}! Tudo bem? Me conta o que você precisa que eu te ajudo por aqui. 🙂`,
+    is_receipt: false,
+    is_rollover: false,
+    is_promise: false,
+    promise_date: null,
+    receipt_value: 0,
+    needs_human: false,
+    intent: "duvida",
+    sentiment: "neutro",
+    urgencia: "baixa",
+    dificuldade_financeira: false,
+    desconto_pct: 0,
+    summary: "Atendimento geral sem pendência vencida",
+  };
+}
+
 function isWithinBusinessHours(settings: any): boolean {
   if (!settings?.bot_business_hours_only) return true;
   const start = settings.bot_business_start || "08:00";
@@ -90,19 +188,28 @@ function isWithinBusinessHours(settings: any): boolean {
 
 async function evolutionFetch(apiUrl: string, apiKey: string, path: string, body: any) {
   try {
-    return await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
+    const resp = await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: apiKey },
       body: JSON.stringify(body),
     });
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => "");
+      console.warn("[evolution] request failed", path, resp.status, errBody.slice(0, 300));
+    }
+    return resp;
   } catch (e) {
     console.error("evolution fetch failed", path, e);
     return null;
   }
 }
 
+function whatsappNumber(value: string) {
+  return String(value || "").split("@")[0].replace(/\D/g, "");
+}
+
 async function sendPresence(apiUrl: string, apiKey: string, instance: string, jid: string, presence: "composing" | "paused" | "available") {
-  await evolutionFetch(apiUrl, apiKey, `/chat/sendPresence/${instance}`, { number: jid, presence, delay: 1200 });
+  await evolutionFetch(apiUrl, apiKey, `/chat/sendPresence/${instance}`, { number: whatsappNumber(jid), presence, delay: 1200 });
 }
 
 async function markAsRead(apiUrl: string, apiKey: string, instance: string, key: any) {
@@ -112,10 +219,11 @@ async function markAsRead(apiUrl: string, apiKey: string, instance: string, key:
 async function sendText(apiUrl: string, apiKey: string, instance: string, jid: string, text: string) {
   const chunks = text.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
   const list = chunks.length > 0 ? chunks : [text];
+  const number = whatsappNumber(jid);
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await new Promise(r => setTimeout(r, 800));
     await evolutionFetch(apiUrl, apiKey, `/message/sendText/${instance}`, {
-      number: jid,
+      number,
       text: list[i],
       delay: Math.min(1500, 400 + list[i].length * 25),
     });
@@ -278,10 +386,11 @@ serve(async (req) => {
 
     // CLIENT LOOKUP
     let client: any = null;
-    const CLIENT_FIELDS = "id, name, phone, whatsapp, cpf_cnpj, status, credit_score, bot_memory, birth_date, email, address, notes, occupation, monthly_income";
+    const CLIENT_FIELDS = "id, name, phone, whatsapp, cpf_cnpj, status, credit_score, bot_memory, birth_date, email, address";
     const { data: convoExisting } = await supabase.from("whatsapp_conversations").select("id, client_id, bot_paused, blocked").eq("user_id", userId).eq("phone", senderPhone).maybeSingle();
     if (convoExisting?.client_id) {
-      const { data: c } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
+      const { data: c, error: clientByConversationError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
+      if (clientByConversationError) console.warn("[client_lookup] conversa vinculada falhou:", clientByConversationError.message);
       if (c) client = c;
     }
     if (!client) {
@@ -291,7 +400,8 @@ serve(async (req) => {
       const tail9 = normalizedIn.slice(-9);
       const tail10 = normalizedIn.slice(-10);
       const tail11 = normalizedIn.slice(-11);
-      const { data: clients } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
+      const { data: clients, error: clientsByPhoneError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
+      if (clientsByPhoneError) console.warn("[client_lookup] busca por telefone falhou:", clientsByPhoneError.message);
       client = clients?.find(c => {
         const cRaw = ((c.whatsapp || "") + " " + (c.phone || "")).replace(/\D/g, "");
         if (!cRaw) return false;
@@ -623,10 +733,10 @@ Nome: ${client.name}
 CPF: ${client.cpf_cnpj || 'n/d'} | Nascimento: ${client.birth_date || 'n/d'}
 Telefone: ${client.phone || senderPhone} | WhatsApp: ${client.whatsapp || senderPhone}
 E-mail: ${client.email || 'n/d'} | Endereço: ${addressLine || 'n/d'}
-Profissão: ${client.occupation || 'n/d'} | Renda mensal: ${client.monthly_income ? `R$ ${Number(client.monthly_income).toFixed(2)}` : 'n/d'}
+Profissão: n/d | Renda mensal: n/d
 Status: ${client.status || 'Ativo'} | Score: ${scoreNum}/100 → PERFIL ${perfilPagador}
 Parcelas já pagas no histórico: ${paidCount}
-Notas de cadastro: ${client.notes || '(nenhuma)'}
+Notas de cadastro: (nenhuma)
 
 ═══ 📂 CONTRATOS ATIVOS (${activeContracts?.length || 0}) ═══
 ⚠️ CADA CONTRATO É INDEPENDENTE. NUNCA some parcelas entre contratos. Sempre cite o ID curto (#abc123) e o número da parcela ao mencionar valores.
@@ -779,37 +889,54 @@ Ex3 — Cliente pede parcelar atraso de 3 parcelas:
     // Retry com backoff exponencial em 429/5xx/529 (Anthropic overloaded)
     let aiResp: Response | null = null;
     let aiErrBody = "";
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-api-key": anthropicApiKey!, "anthropic-version": "2023-06-01", "anthropic-beta": "prompt-caching-2024-07-31" },
-          body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 2200, temperature: adaptiveTemp, top_p: 0.85, system: systemBlocks, messages: anthMessages }),
-        });
-        if (aiResp.ok) break;
-        aiErrBody = await aiResp.text();
-        const retriable = aiResp.status === 429 || aiResp.status === 529 || aiResp.status >= 500;
-        if (!retriable) throw new Error(`anthropic_${aiResp.status}: ${aiErrBody.slice(0,200)}`);
-        console.warn(`[ai] tentativa ${attempt + 1} falhou (${aiResp.status}), retry em breve`);
-        await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
-      } catch (e) {
-        if (attempt === 2) throw e;
-        await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+    let parsed: any = null;
+    if (anthropicApiKey) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-api-key": anthropicApiKey, "anthropic-version": "2023-06-01", "anthropic-beta": "prompt-caching-2024-07-31" },
+            body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 2200, temperature: adaptiveTemp, top_p: 0.85, system: systemBlocks, messages: anthMessages }),
+          });
+          if (aiResp.ok) break;
+          aiErrBody = await aiResp.text();
+          const retriable = aiResp.status === 429 || aiResp.status === 529 || aiResp.status >= 500;
+          if (!retriable) {
+            console.warn(`[ai] indisponível (${aiResp.status}), usando fallback local:`, aiErrBody.slice(0, 200));
+            break;
+          }
+          console.warn(`[ai] tentativa ${attempt + 1} falhou (${aiResp.status}), retry em breve`);
+          await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+        } catch (e) {
+          aiErrBody = e instanceof Error ? e.message : String(e);
+          console.warn(`[ai] tentativa ${attempt + 1} com erro:`, aiErrBody.slice(0, 200));
+          if (attempt === 2) break;
+          await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+        }
       }
+    } else {
+      aiErrBody = "ANTHROPIC_API_KEY ausente";
     }
-    if (!aiResp || !aiResp.ok) {
-      console.error("[ai] falhou após retries:", aiErrBody);
-      await botSay("Desculpe, estou com uma instabilidade momentânea. Pode me mandar sua mensagem em alguns instantes? 🙏");
-      return new Response(JSON.stringify({ status: "ai_unavailable" }), { headers: corsHeaders });
-    }
-    const aiData = await aiResp.json();
-    const rawText = aiData?.content?.[0]?.text ?? "";
-    let parsed = extractJsonObject(rawText);
-    if (!parsed) {
-      console.warn("[ai] resposta sem JSON válido, devolvendo fallback:", rawText.slice(0, 200));
-      // Extrai texto legível como reply em vez de dump bruto
-      const cleaned = rawText.replace(/```[a-z]*|```/gi, "").replace(/[{}\[\]"]/g, " ").trim();
-      parsed = { reply: cleaned.slice(0, 400) || "Desculpe, tive um problema técnico. Pode repetir, por favor?" };
+
+    if (aiResp?.ok) {
+      const aiData = await aiResp.json();
+      const rawText = aiData?.content?.[0]?.text ?? "";
+      parsed = extractJsonObject(rawText);
+      if (!parsed) {
+        console.warn("[ai] resposta sem JSON válido, devolvendo fallback:", rawText.slice(0, 200));
+        const cleaned = rawText.replace(/```[a-z]*|```/gi, "").replace(/[{}\[\]"]/g, " ").trim();
+        parsed = { reply: cleaned.slice(0, 400) || "Desculpe, tive um problema técnico. Pode repetir, por favor?" };
+      }
+    } else {
+      parsed = buildLocalBotResult({ client, incomingText, overdue, dueToday, totalOverdue, totalDueToday, profile, tone });
+      await logBotAction(supabase, {
+        userId,
+        clientId: client.id,
+        conversationId: convoId,
+        toolName: "local_ai_fallback",
+        toolInput: { reason: aiErrBody.slice(0, 200), message: incomingText.slice(0, 200) },
+        toolOutput: { reply: parsed.reply, intent: parsed.intent, needs_human: parsed.needs_human },
+      });
     }
     const result: any = sanitizeAiResult(parsed);
 
