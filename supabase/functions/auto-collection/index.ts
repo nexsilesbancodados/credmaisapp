@@ -197,10 +197,16 @@ serve(async (req) => {
         const cutoff = new Date(now.getTime() - cooldownHours * 3600000).toISOString();
 
         const { data: alreadySent } = await supabase
-          .from("audit_logs").select("id, created_at")
+          .from("audit_logs").select("id, created_at, details")
           .eq("user_id", userId).eq("entity_type", "auto_collection")
-          .eq("entity_id", clientId).gte("created_at", cutoff).limit(1);
-        if (alreadySent?.length) { skipped++; continue; }
+          .eq("entity_id", clientId).order("created_at", { ascending: false }).limit(5);
+        const withinCooldown = alreadySent?.find(r => new Date(r.created_at as string).getTime() >= new Date(cutoff).getTime());
+        if (withinCooldown) { skipped++; continue; }
+        // Últimas mensagens enviadas — para banir repetição no prompt
+        const recentSentTexts: string[] = (alreadySent || [])
+          .map(r => (r.details as any)?.message_preview)
+          .filter((s: any) => typeof s === "string" && s.length > 0)
+          .slice(0, 3);
 
         const { data: history } = await supabase
           .from("contract_installments").select("status, paid_at, due_date")
@@ -243,24 +249,48 @@ serve(async (req) => {
           : selectedDays >= 15 ? "acordo_desconto"
           : selectedDays >= 7 ? "cobranca_padrao"
           : "cobranca_padrao";
-        const alt: Record<string, string> = {
-          lembrete_amigavel: "pergunta_confirmacao",
-          cobranca_firme: "proposta_acordo",
-          acordo_desconto: "condicao_especial",
-          cobranca_padrao: "opcao_parcelar",
+        // Escolhe uma nova abordagem — DIFERENTE das últimas usadas
+        const approachPool: Record<string, string[]> = {
+          lembrete_amigavel: ["lembrete_amigavel", "pergunta_confirmacao", "aviso_curto", "cta_portal"],
+          cobranca_firme: ["cobranca_firme", "proposta_acordo", "ultimatum_educado", "escalonamento_juridico"],
+          acordo_desconto: ["acordo_desconto", "condicao_especial", "parcelamento_flex", "desconto_a_vista"],
+          cobranca_padrao: ["cobranca_padrao", "opcao_parcelar", "pergunta_previsao", "cta_portal"],
         };
-        const nextApproach = priorApproach === stageApproach ? (alt[stageApproach] || stageApproach) : stageApproach;
+        const stageApproach = isPreDue ? "lembrete_amigavel"
+          : selectedDays >= 30 ? "cobranca_firme"
+          : selectedDays >= 15 ? "acordo_desconto"
+          : selectedDays >= 7 ? "cobranca_padrao"
+          : "cobranca_padrao";
+        const recentApproaches = (intentsList || [])
+          .map((i: any) => i && typeof i.abordagem === "string" ? i.abordagem : null)
+          .filter(Boolean).slice(0, 3) as string[];
+        const pool = approachPool[stageApproach] || [stageApproach];
+        const candidates = pool.filter(a => !recentApproaches.includes(a));
+        const nextApproach = (candidates.length ? candidates : pool)[
+          Math.floor(Math.random() * (candidates.length ? candidates.length : pool.length))
+        ];
+
+        // ── Anti-repetição: helpers Jaccard ────────────────────────────
+        const cleanTxt = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9áéíóúàãõâêîôûç ]+/gi, " ").replace(/\s+/g, " ").trim();
+        const jaccard = (a: string, b: string) => {
+          const A = new Set(cleanTxt(a).split(" ").filter(Boolean));
+          const B = new Set(cleanTxt(b).split(" ").filter(Boolean));
+          if (!A.size || !B.size) return 0;
+          const inter = [...A].filter(x => B.has(x)).length;
+          const uni = new Set([...A, ...B]).size;
+          return uni ? inter / uni : 0;
+        };
+        const maxSimVs = (candidate: string) =>
+          recentSentTexts.length ? Math.max(...recentSentTexts.map(t => jaccard(candidate, t))) : 0;
 
         if (settings.bot_use_ai && anthropicKey) {
-          try {
-            const tone = settings.bot_tone || "profissional";
-            const severity = isPreDue ? "AMIGÁVEL — só um lembrete gentil"
-              : selectedDays >= 30 ? "FIRME e direta"
-              : selectedDays >= 15 ? "assertiva mas respeitosa"
-              : selectedDays >= 7 ? "preocupada e clara"
-              : "amigável e gentil";
-            const systemPrompt = `Você é especialista em recuperação de crédito da empresa ${companyName}. Tom: ${tone}. Severidade atual: ${severity}. NUNCA diga que é uma IA. Use português brasileiro. Máximo 4 linhas curtas. Emojis discretos (1-2). Gere APENAS o texto da mensagem, sem aspas, sem comentários. IMPORTANTE: VARIE — não repita a mesma abordagem da última mensagem.`;
-            const userPrompt = `Gere mensagem WhatsApp personalizada:
+          const tone = settings.bot_tone || "profissional";
+          const severity = isPreDue ? "AMIGÁVEL — só um lembrete gentil"
+            : selectedDays >= 30 ? "FIRME e direta"
+            : selectedDays >= 15 ? "assertiva mas respeitosa"
+            : selectedDays >= 7 ? "preocupada e clara"
+            : "amigável e gentil";
+          const buildPrompt = (extraDiversity: string) => `Gere mensagem WhatsApp personalizada:
 CLIENTE: ${client.name}
 ${isPreDue ? `PARCELA VENCE EM ${daysUntilDue} DIA(S)` : `PARCELA EM ATRASO: ${daysOverdue} DIA(S)`}
 VALOR: R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
@@ -268,18 +298,33 @@ SCORE: ${client.credit_score ?? 100}/100
 HISTÓRICO: ${paidCount}/${totalHist} pagas (${reliability}% confiabilidade)
 INTENÇÕES RECENTES:
 ${intentSummary || '(nenhuma)'}
-${priorApproach ? `ÚLTIMA ABORDAGEM USADA: "${priorApproach}" — USE OUTRA ("${nextApproach}").` : `ABORDAGEM SUGERIDA: "${nextApproach}".`}
+ABORDAGEM DESTA MENSAGEM: "${nextApproach}" (últimas usadas: ${recentApproaches.join(", ") || "nenhuma"} — NÃO repita).
+${recentSentTexts.length ? `MENSAGENS JÁ ENVIADAS RECENTEMENTE (PROIBIDO REPETIR frases, aberturas, estruturas ou palavras marcantes destas):\n${recentSentTexts.map((t, i) => `#${i + 1}: ${t.slice(0, 260)}`).join("\n")}\nEscreva algo VISIVELMENTE diferente: outra abertura, outra ordem, outro tom, outro CTA.` : ""}
 ${personalizations.length ? "AJUSTES OBRIGATÓRIOS:\n- " + personalizations.join("\n- ") : ""}
 ${isPreDue ? "Apenas LEMBRE, sem cobrar. Sugira o pagamento antecipado via PIX." : ""}
-${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de acordo abaixo." : ""}`;
+${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de acordo abaixo." : ""}
+${extraDiversity}`;
+          const systemPrompt = `Você é especialista em recuperação de crédito da empresa ${companyName}. Tom: ${tone}. Severidade atual: ${severity}. NUNCA diga que é uma IA. Use português brasileiro. Máximo 4 linhas curtas. Emojis discretos (1-2). Gere APENAS o texto da mensagem, sem aspas, sem comentários. REGRA CRÍTICA: cada mensagem precisa ser NOVA — nunca repita aberturas ("Olá X,", "Identificamos…"), nem estrutura, nem frases das mensagens anteriores desse cliente.`;
+          try {
             message = await callAnthropic({
               system: systemPrompt,
-              messages: [{ role: "user", content: userPrompt }],
-              temperature: 0.75, maxTokens: 400,
+              messages: [{ role: "user", content: buildPrompt("") }],
+              temperature: 0.85, maxTokens: 400,
             });
             message = (message || "").trim();
+            // Se ficou muito parecido com envios anteriores → regenerar com mais diversidade
+            if (message && maxSimVs(message) >= 0.5) {
+              const retry = await callAnthropic({
+                system: systemPrompt,
+                messages: [{ role: "user", content: buildPrompt("A mensagem gerada anteriormente ficou parecida com envios passados. REESCREVA do zero com abertura diferente, verbos diferentes, ordem diferente e outro CTA.") }],
+                temperature: 1.0, maxTokens: 400,
+              });
+              const retryTxt = (retry || "").trim();
+              if (retryTxt && maxSimVs(retryTxt) < maxSimVs(message)) message = retryTxt;
+            }
           } catch (aiErr) { console.error("Anthropic fail:", aiErr); }
         }
+
 
         if (!message) {
           const template = templates?.find(t => t.name.toLowerCase().includes(matchingRule.template.toLowerCase()));
@@ -290,12 +335,30 @@ ${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de
               .replace(/\{parcelas\}/gi, String(insts.length))
               .replace(/\{dias\}/gi, String(isPreDue ? daysUntilDue : daysOverdue));
           } else {
-            const greeting = settings.bot_greeting_message
+            const baseGreet = settings.bot_greeting_message
               ?.replace(/\{nome\}/gi, client.name)?.replace(/\{empresa\}/gi, companyName) || `Olá ${client.name}`;
+            // Rotaciona aberturas para NÃO repetir a mesma mensagem toda vez
+            const greetVariants = isPreDue
+              ? [`${baseGreet}, tudo bem?`, `Oi ${client.name}!`, `${client.name}, passando rapidinho aqui.`, `E aí, ${client.name}?`]
+              : [`${baseGreet},`, `${client.name}, tudo certo?`, `Oi ${client.name},`, `${client.name}, precisamos alinhar um ponto.`];
+            const bodyPreVariants = [
+              `⏰ Só um lembrete: sua parcela de R$ ${totalAmount.toFixed(2)} vence em ${daysUntilDue} dia(s).`,
+              `📅 Passando pra avisar: vencimento em ${daysUntilDue} dia(s) — R$ ${totalAmount.toFixed(2)}.`,
+              `💡 Falta ${daysUntilDue} dia(s) pra sua parcela de R$ ${totalAmount.toFixed(2)}.`,
+              `🔔 Aviso rápido: R$ ${totalAmount.toFixed(2)} programado(s) daqui a ${daysUntilDue} dia(s).`,
+            ];
+            const bodyOverVariants = [
+              `Identificamos ${insts.length} parcela(s) pendente(s) — R$ ${totalAmount.toFixed(2)}. Atraso de ${daysOverdue} dia(s).`,
+              `Está com ${insts.length} parcela(s) em aberto totalizando R$ ${totalAmount.toFixed(2)} (${daysOverdue} dia(s) em atraso).`,
+              `Pendência: R$ ${totalAmount.toFixed(2)} em ${insts.length} parcela(s), ${daysOverdue} dia(s) sem pagamento.`,
+              `Verificamos aqui: R$ ${totalAmount.toFixed(2)} em atraso há ${daysOverdue} dia(s).`,
+            ];
+            const closing = settings.bot_closing_message || "Qualquer dúvida, chama aqui.";
+            const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
             if (isPreDue) {
-              message = `${greeting}\n\n⏰ Só um lembrete: sua parcela de R$ ${totalAmount.toFixed(2)} vence em ${daysUntilDue} dia(s).\nSe preferir, já deixe o pagamento agendado.`;
+              message = `${pick(greetVariants)}\n\n${pick(bodyPreVariants)}\nSe preferir, já deixe o pagamento agendado.`;
             } else {
-              message = `${greeting}\n\nIdentificamos ${insts.length} parcela(s) pendente(s) totalizando R$ ${totalAmount.toFixed(2)}.\nAtraso de ${daysOverdue} dia(s).\n\n${settings.bot_closing_message || "Qualquer dúvida, entre em contato."}`;
+              message = `${pick(greetVariants)}\n\n${pick(bodyOverVariants)}\n\n${closing}`;
             }
           }
           // Variação por intenção no template básico (evita eco literal)
@@ -342,6 +405,8 @@ ${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de
                   client_name: client.name, phone: recipient, channel: "whatsapp",
                   rule: matchingRule, days_overdue: daysOverdue, days_until_due: daysUntilDue,
                   pre_due: isPreDue, amount: totalAmount, reliability, ai_generated: !!settings.bot_use_ai,
+                  approach: nextApproach,
+                  message_preview: (message || "").slice(0, 400),
                 },
               });
               // Registra a abordagem usada NA MEMÓRIA do cliente (evita repetir no próximo cron)
@@ -388,6 +453,8 @@ ${settings.bot_negotiation_enabled && selectedDays >= 15 ? "MENCIONE proposta de
                   client_name: client.name, email, channel: "email",
                   rule: matchingRule, days_overdue: daysOverdue, days_until_due: daysUntilDue,
                   pre_due: isPreDue, amount: totalAmount, reliability, ai_generated: !!settings.bot_use_ai,
+                  approach: nextApproach,
+                  message_preview: (message || "").slice(0, 400),
                 },
               });
             } else { errors.push(`${client.name} (email): ${JSON.stringify(res.error).slice(0, 120)}`); }
