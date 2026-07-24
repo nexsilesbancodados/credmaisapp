@@ -1,7 +1,7 @@
-import { X, Shield } from "lucide-react";
+import { X, Shield, CalendarCog, Plus, Trash2 } from "lucide-react";
 import VoiceRecorder from "@/components/VoiceRecorder";
-import { INPUT, FREQ, LOAN_MODES, fmt } from "../constants";
-import type { LoanMode } from "@/lib/loanMath";
+import { INPUT, FREQ, LOAN_MODES, DAILY_MODES, fmt } from "../constants";
+import type { LoanMode, DailyMode } from "@/lib/loanMath";
 
 type Props = {
   clientName: string;
@@ -35,7 +35,17 @@ type Props = {
   setLoanEarlyDiscount: (v: string) => void;
   loanMaxInterestCap: string;
   setLoanMaxInterestCap: (v: string) => void;
-  loanCalc: { totalInterest: number; total: number; installmentAmount: number; schedule: number[] } | null;
+  loanValueMode: "rate" | "installment";
+  setLoanValueMode: (v: "rate" | "installment") => void;
+  loanInstallmentValue: string;
+  setLoanInstallmentValue: (v: string) => void;
+  loanDailyMode: DailyMode;
+  setLoanDailyMode: (v: DailyMode) => void;
+  loanFirstDueAuto: boolean;
+  setLoanFirstDueAuto: (v: boolean) => void;
+  loanCustomDates: string[];
+  setLoanCustomDates: (v: string[]) => void;
+  loanCalc: { totalInterest: number; total: number; installmentAmount: number; schedule: number[]; derivedRate?: number } | null;
   loanLoading: boolean;
   onClose: () => void;
   onSubmit: () => void;
@@ -85,28 +95,73 @@ export default function NovoEmprestimoModal(p: Props) {
             </label>
             <input type="number" value={p.loanInstallments} onChange={e => p.setLoanInstallments(e.target.value)} placeholder={p.loanMode === "bullet" ? "3" : "12"} className={INPUT} />
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Taxa (%)</label>
-            <input type="number" step="0.1" value={p.loanInterestRate} onChange={e => p.setLoanInterestRate(e.target.value)} className={INPUT} />
-          </div>
+          {p.loanMode === "installments" && (
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Definir por</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                <button type="button" onClick={() => p.setLoanValueMode("rate")}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${p.loanValueMode === "rate" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
+                  Taxa (%)
+                </button>
+                <button type="button" onClick={() => p.setLoanValueMode("installment")}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-colors ${p.loanValueMode === "installment" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
+                  Valor da Parcela
+                </button>
+              </div>
+            </div>
+          )}
+          {p.loanMode === "installments" && p.loanValueMode === "installment" ? (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Valor da Parcela (R$)</label>
+              <input type="number" step="0.01" value={p.loanInstallmentValue} onChange={e => p.setLoanInstallmentValue(e.target.value)} placeholder="100" className={INPUT} />
+              {p.loanCalc?.derivedRate !== undefined && (
+                <p className="text-[10px] text-primary mt-1">Taxa derivada: {p.loanCalc.derivedRate.toFixed(2)}%</p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Taxa (%)</label>
+              <input type="number" step="0.1" value={p.loanInterestRate} onChange={e => p.setLoanInterestRate(e.target.value)} className={INPUT} />
+            </div>
+          )}
           <div className="col-span-2">
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Frequência</label>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {Object.entries(FREQ).map(([v, l]) => (
                 <button key={v} onClick={() => p.setLoanFreq(v)}
-                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${p.loanFreq === v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
+                  className={`px-2 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${p.loanFreq === v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
                   {l}
                 </button>
               ))}
             </div>
           </div>
+          {p.loanFreq === "daily" && (
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Dias úteis</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {Object.entries(DAILY_MODES).map(([v, l]) => (
+                  <button key={v} onClick={() => p.setLoanDailyMode(v as DailyMode)}
+                    className={`px-2 py-2 rounded-xl text-xs font-semibold border transition-colors ${p.loanDailyMode === v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Data Início</label>
             <input type="date" value={p.loanStartDate} onChange={e => p.setLoanStartDate(e.target.value)} className={INPUT} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">1º Vencimento</label>
-            <input type="date" value={p.loanStart} onChange={e => p.setLoanStart(e.target.value)} className={INPUT} />
+            <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center justify-between gap-1">
+              <span>1º Vencimento</span>
+              <button type="button" onClick={() => p.setLoanFirstDueAuto(!p.loanFirstDueAuto)}
+                className={`text-[10px] px-2 py-0.5 rounded-md border ${p.loanFirstDueAuto ? "bg-primary/10 border-primary/30 text-primary" : "bg-card border-border text-muted-foreground"}`}>
+                {p.loanFirstDueAuto ? "Auto" : "Manual"}
+              </button>
+            </label>
+            <input type="date" value={p.loanStart} onChange={e => p.setLoanStart(e.target.value)}
+              disabled={p.loanFirstDueAuto} className={INPUT + (p.loanFirstDueAuto ? " opacity-50" : "")} />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Multa Diária (%)</label>
@@ -161,6 +216,30 @@ export default function NovoEmprestimoModal(p: Props) {
             </div>
           </div>
         </details>
+
+        {p.loanFreq === "custom" && p.loanCalc && (
+          <div className="rounded-xl border border-border bg-card/60 p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarCog size={13} className="text-primary" />
+              <span className="text-xs font-semibold text-foreground">Datas Customizadas</span>
+              <span className="text-[10px] text-muted-foreground ml-auto">{p.loanCalc.schedule.length} parcela(s)</span>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {p.loanCalc.schedule.map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-8">#{i + 1}</span>
+                  <input type="date" value={p.loanCustomDates[i] || ""}
+                    onChange={e => {
+                      const next = [...p.loanCustomDates];
+                      next[i] = e.target.value;
+                      p.setLoanCustomDates(next);
+                    }}
+                    className={INPUT + " flex-1 py-1.5 text-xs"} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {p.loanCalc && (
           <div className="space-y-2">

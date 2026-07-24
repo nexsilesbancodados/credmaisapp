@@ -30,7 +30,7 @@ import {
 import EmptyState from "@/components/EmptyState";
 import { formatBR } from "@/lib/dateUtils";
 import { useConfirm } from "@/components/ConfirmProvider";
-import { calculateLoan, generateInstallmentSchedule, LOAN_MODE_LABEL, type LoanMode, type Frequency } from "@/lib/loanMath";
+import { calculateLoan, generateInstallmentSchedule, LOAN_MODE_LABEL, type LoanMode, type Frequency, type DailyMode } from "@/lib/loanMath";
 import { getSignedUploadUrl } from "@/lib/storage";
 import ClientToolsPanel, { type ToolGroup } from "@/components/clients/ClientToolsPanel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -74,6 +74,11 @@ const ClienteDetalhe = () => {
   const [loanMaxInterestCap, setLoanMaxInterestCap] = useState("");
   const [loanNotes, setLoanNotes] = useState("");
   const [loanLoading, setLoanLoading] = useState(false);
+  const [loanValueMode, setLoanValueMode] = useState<"rate" | "installment">("rate");
+  const [loanInstallmentValue, setLoanInstallmentValue] = useState("");
+  const [loanDailyMode, setLoanDailyMode] = useState<DailyMode>("mon-fri");
+  const [loanFirstDueAuto, setLoanFirstDueAuto] = useState(true);
+  const [loanCustomDates, setLoanCustomDates] = useState<string[]>([]);
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [editContract, setEditContract] = useState<any>(null);
   const [editContractForm, setEditContractForm] = useState<any>({});
@@ -242,11 +247,14 @@ const ClienteDetalhe = () => {
     const rate = parseFloat(loanInterestRate) || 0;
     const n = parseInt(loanInstallments) || 0;
     const grace = parseInt(loanGracePeriods) || 0;
+    const instVal = parseFloat(loanInstallmentValue) || 0;
     if (!cap) return null;
     const r = calculateLoan({
       capital: cap, rate, periods: n,
       frequency: loanFreq as any, loanMode,
       gracePeriods: loanMode === "grace" ? grace : 0,
+      valueMode: loanMode === "installments" ? loanValueMode : "rate",
+      installmentValue: instVal,
     });
     if (!r) return null;
     return {
@@ -255,8 +263,9 @@ const ClienteDetalhe = () => {
       totalInterest: r.totalInterest,
       schedule: r.schedule,
       numInstallments: r.numInstallments,
+      derivedRate: r.derivedRate,
     };
-  }, [loanCapital, loanInterestRate, loanInstallments, loanFreq, loanMode, loanGracePeriods]);
+  }, [loanCapital, loanInterestRate, loanInstallments, loanFreq, loanMode, loanGracePeriods, loanValueMode, loanInstallmentValue]);
 
   // Actions
   const startEdit = () => {
@@ -310,9 +319,12 @@ const ClienteDetalhe = () => {
       const nInput = parseInt(loanInstallments) || 0;
       const nReal = loanCalc.numInstallments;
       const periodsAhead = loanMode === "bullet" ? nInput : undefined;
+      const effectiveRate = loanMode === "installments" && loanValueMode === "installment"
+        ? (loanCalc.derivedRate ?? parseFloat(loanInterestRate) ?? 0)
+        : parseFloat(loanInterestRate);
       const { data: contract, error: cErr } = await supabase.from("contracts").insert({
         user_id: user.id, client_id: id!, capital: parseFloat(loanCapital),
-        interest_rate: parseFloat(loanInterestRate), num_installments: nReal,
+        interest_rate: effectiveRate, num_installments: nReal,
         installment_amount: loanCalc.installmentAmount, frequency: loanFreq,
         start_date: new Date(loanStartDate + "T12:00:00").toISOString(),
         late_fee_percent: parseFloat(loanLateFee), daily_interest_percent: parseFloat(loanDailyFee),
@@ -327,7 +339,15 @@ const ClienteDetalhe = () => {
       }).select().single();
       if (cErr) throw cErr;
 
-      const dueDates = generateDueDates(loanStart, loanFreq, nReal, periodsAhead);
+      const dueDates = generateInstallmentSchedule({
+        startDate: loanStartDate,
+        firstDueDate: loanFirstDueAuto ? undefined : loanStart,
+        frequency: loanFreq as Frequency,
+        count: nReal,
+        periodsAhead,
+        dailyMode: loanDailyMode,
+        customDates: loanFreq === "custom" ? loanCustomDates : undefined,
+      });
       const { error: iErr } = await supabase.from("contract_installments").insert(
         dueDates.map((dd, i) => ({ user_id: user.id, contract_id: contract.id, client_id: id!, installment_number: i + 1, amount: loanCalc.schedule[i] ?? loanCalc.installmentAmount, due_date: dd, status: "pending" }))
       );
@@ -1243,6 +1263,16 @@ const ClienteDetalhe = () => {
           setLoanEarlyDiscount={setLoanEarlyDiscount}
           loanMaxInterestCap={loanMaxInterestCap}
           setLoanMaxInterestCap={setLoanMaxInterestCap}
+          loanValueMode={loanValueMode}
+          setLoanValueMode={setLoanValueMode}
+          loanInstallmentValue={loanInstallmentValue}
+          setLoanInstallmentValue={setLoanInstallmentValue}
+          loanDailyMode={loanDailyMode}
+          setLoanDailyMode={setLoanDailyMode}
+          loanFirstDueAuto={loanFirstDueAuto}
+          setLoanFirstDueAuto={setLoanFirstDueAuto}
+          loanCustomDates={loanCustomDates}
+          setLoanCustomDates={setLoanCustomDates}
           loanCalc={loanCalc}
           loanLoading={loanLoading}
           onClose={() => setNewLoanMode(false)}
