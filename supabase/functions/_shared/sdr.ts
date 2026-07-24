@@ -38,9 +38,31 @@ export type LeadStage =
   | "new"
   | "qualifying"
   | "simulated"
+  | "awaiting_docs"
   | "handoff"
   | "won"
   | "lost";
+
+/* ─────────────── Documentos exigidos pós-aceite ─────────────── */
+export const REQUIRED_DOCS: Array<{ key: string; label: string }> = [
+  { key: "rg_frente", label: "RG (frente)" },
+  { key: "rg_verso", label: "RG (verso)" },
+  { key: "selfie", label: "Selfie segurando o RG" },
+  { key: "comprovante_renda", label: "Comprovante de renda" },
+  { key: "comprovante_residencia", label: "Comprovante de residência" },
+];
+
+export function nextPendingDoc(lead: Lead): { key: string; label: string } | null {
+  const notes: any = lead.notes || {};
+  const received: string[] = Array.isArray(notes?.docs?.received) ? notes.docs.received : [];
+  return REQUIRED_DOCS.find(d => !received.includes(d.key)) || null;
+}
+
+export function portalUrl(): string {
+  const base = (Deno.env.get("SITE_URL") || "").replace(/\/$/, "");
+  return base ? `${base}/portal-cliente` : "";
+}
+
 
 /* ─────────────── Parsers determinísticos ─────────────── */
 
