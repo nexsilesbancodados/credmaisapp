@@ -16,3 +16,18 @@ verify_jwt = false
 
 [functions.admin-create-lifetime]
 verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.auto-collection]
+verify_jwt = false
+
+[functions.auto-late-fees]
+verify_jwt = false
+
+[functions.auto-receipt]
+verify_jwt = false
+
+[functions.whatsapp-schedule-runner]
+verify_jwt = false
