@@ -68,6 +68,10 @@ const ClienteDetalhe = () => {
   const [loanLateFee, setLoanLateFee] = useState("2");
   const [loanMode, setLoanMode] = useState<LoanMode>("installments");
   const [loanGracePeriods, setLoanGracePeriods] = useState("2");
+  const [loanGraceDays, setLoanGraceDays] = useState("0");
+  const [loanPaymentMethod, setLoanPaymentMethod] = useState("pix");
+  const [loanEarlyDiscount, setLoanEarlyDiscount] = useState("0");
+  const [loanMaxInterestCap, setLoanMaxInterestCap] = useState("");
   const [loanNotes, setLoanNotes] = useState("");
   const [loanLoading, setLoanLoading] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
