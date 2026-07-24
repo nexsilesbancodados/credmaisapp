@@ -136,7 +136,14 @@ const Clientes = () => {
   const { filtered, stats } = useMemo(() => {
     const q = dSearch.trim().toLowerCase();
     const cleanQ = q.replace(/\D/g, "");
-    let arr = clients.filter((c: any) => {
+    // Derive status: a client is only "Ativo" when they have at least one active contract.
+    // Clients with no contracts or only fully-paid contracts are treated as "Inativo".
+    const derived = clients.map((c: any) => {
+      const activeContracts = contractMap[c.id]?.active || 0;
+      const eff = activeContracts > 0 ? "Ativo" : "Inativo";
+      return c.status === eff ? c : { ...c, status: eff };
+    });
+    let arr = derived.filter((c: any) => {
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       const sc = Number(c.credit_score || 0);
       if (scoreBand === "high" && sc < 700) return false;
@@ -160,12 +167,13 @@ const Clientes = () => {
     return {
       filtered: arr,
       stats: {
-        total: clients.length,
-        active: clients.filter((c: any) => c.status === "Ativo").length,
-        inactive: clients.filter((c: any) => c.status === "Inativo").length,
+        total: derived.length,
+        active: derived.filter((c: any) => c.status === "Ativo").length,
+        inactive: derived.filter((c: any) => c.status === "Inativo").length,
       },
     };
   }, [clients, dSearch, statusFilter, scoreBand, sort, contractMap]);
+
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const hasMore = visible.length < filtered.length;
