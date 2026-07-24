@@ -143,6 +143,33 @@ const PortalCliente = () => {
       if (data.session) void supabase.auth.signOut();
     });
 
+    // Deep-link: ?t=<uuid> → login automático via token (WhatsApp bot)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("t");
+      if (token && /^[0-9a-f-]{36}$/i.test(token)) {
+        (async () => {
+          try {
+            const { data } = await (supabase as any).rpc("portal_login_by_token", { _token: token });
+            if (data) {
+              setPortalData(data as unknown as PortalData);
+              const cleanCpf = ((data as any)?.client?.cpf_cnpj || "").replace(/\D/g, "");
+              const bd = (data as any)?.client?.birth_date || "";
+              if (cleanCpf && bd) {
+                sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cpf: cleanCpf, birth_date: bd }));
+              }
+              // Limpa o token da URL pra evitar reuso/histórico
+              const url = new URL(window.location.href);
+              url.searchParams.delete("t");
+              window.history.replaceState({}, "", url.toString());
+              return;
+            }
+          } catch (e) { console.warn("[portal] token login falhou:", e); }
+        })();
+        return;
+      }
+    } catch {}
+
     const saved = sessionStorage.getItem(SESSION_KEY);
     if (!saved) return;
     try {
