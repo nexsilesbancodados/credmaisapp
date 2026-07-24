@@ -207,7 +207,7 @@ const Dashboard = () => {
   return (
     <div className="relative space-y-6 md:space-y-7 pb-8 max-w-[1400px] mx-auto animate-fade-in">
       {/* ─── HERO — saudação + ações principais ─── */}
-      <section className="relative overflow-hidden rounded-[28px] border border-border/40 bg-gradient-to-br from-card/80 via-card/40 to-card/20 backdrop-blur-xl p-6 md:p-8 shadow-2xl">
+      <section className="relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/80 via-card/40 to-card/20 backdrop-blur-xl p-6 md:p-8 shadow-2xl">
         {/* aurora glow */}
         <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/20 blur-3xl opacity-60" />
         <div className="pointer-events-none absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-success/10 blur-3xl opacity-50" />

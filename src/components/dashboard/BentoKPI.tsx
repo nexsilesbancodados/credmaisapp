@@ -102,7 +102,7 @@ export default function BentoKPI({
       disabled={!clickable}
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded-[28px] border bg-card/40 backdrop-blur-xl text-left w-full transition-all duration-300",
+        "group relative overflow-hidden rounded-2xl border bg-card/40 backdrop-blur-xl text-left w-full transition-all duration-300",
         t.border,
         sizeCls,
         clickable && "hover:bg-card/60 hover:border-primary/30 hover:shadow-xl cursor-pointer",
