@@ -605,10 +605,20 @@ serve(async (req) => {
           decision.reply = `${ans}\n\n${decision.reply}`;
         }
 
-        // Small talk curto: apenas reforça a pergunta pendente
-        if (understood?.kind === "small_talk" && (lead.notes as any)?.last_intent) {
-          decision.reply = decision.reply; // segue fluxo
+        // Small talk ("ok", "valeu", "obrigado", "beleza") — acusa recebimento
+        // e traz de volta a pergunta pendente sem soar robótico.
+        if (understood?.kind === "small_talk") {
+          const ack = /obrigad|valeu|vlw|agrade/i.test(incomingText) ? "Imagina! 🙌" :
+                      /^ok|beleza|blz|show|top|ta bom|tá bom/i.test(incomingText.trim()) ? "Perfeito! 👌" :
+                      "Show! 👍";
+          decision.reply = `${ack} ${decision.reply}`;
         }
+
+        // Se o modelo não entendeu (unclear) e existe pergunta pendente, reforça claramente
+        if (understood?.kind === "unclear" && (lead.notes as any)?.last_intent) {
+          decision.reply = `Desculpa, não peguei bem 🙈 ${decision.reply}`;
+        }
+
 
 
         // Persiste alterações do lead (mantém memória de contexto)
