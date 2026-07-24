@@ -130,13 +130,13 @@ function buildLocalBotResult(params: {
       is_promise: /dia|amanh|hoje|semana|pago|pagar/i.test(txt),
       promise_date: null,
       receipt_value: 0,
-      needs_human: true,
+      needs_human: false,
       intent: "negociacao",
       sentiment: tone?.frustrated ? "frustrado" : "neutro",
       urgencia: "alta",
       dificuldade_financeira: tone?.hardship === true,
       desconto_pct: /desconto|deixar por|fazer por/i.test(txt) ? 10 : 0,
-      summary: "Cliente pediu negociação; precisa validação humana",
+      summary: "Cliente pediu negociação; automação coletou proposta e segue acompanhando",
     };
   }
 
