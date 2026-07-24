@@ -162,20 +162,25 @@ export default function BentoKPI({
         </div>
 
         <div className="space-y-1">
-          <p className={cn("font-black tabular-nums leading-none", valueCls, t.text)}>{value}</p>
+          <p
+            className={cn("font-semibold tabular-nums leading-none", valueCls, t.text)}
+            style={{ letterSpacing: "-0.025em", fontFeatureSettings: '"tnum","lnum"' }}
+          >
+            {value}
+          </p>
           {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
         </div>
 
         {showDelta && (
           <div
             className={cn(
-              "inline-flex items-center gap-1 text-[11px] font-bold self-start px-2 py-0.5 rounded-full",
-              good ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+              "inline-flex items-center gap-1 text-[11px] font-semibold tabular-nums self-start",
+              good ? "text-success" : "text-destructive"
             )}
           >
-            {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {up ? <TrendingUp size={11} strokeWidth={2.25} /> : <TrendingDown size={11} strokeWidth={2.25} />}
             {Math.abs(delta as number).toFixed(1)}%
-            <span className="opacity-60 font-medium">vs anterior</span>
+            <span className="text-muted-foreground/70 font-normal">vs anterior</span>
           </div>
         )}
       </div>
