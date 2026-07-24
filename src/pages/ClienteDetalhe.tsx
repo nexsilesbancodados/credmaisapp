@@ -339,7 +339,15 @@ const ClienteDetalhe = () => {
       }).select().single();
       if (cErr) throw cErr;
 
-      const dueDates = generateDueDates(loanStart, loanFreq, nReal, periodsAhead);
+      const dueDates = generateInstallmentSchedule({
+        startDate: loanStartDate,
+        firstDueDate: loanFirstDueAuto ? undefined : loanStart,
+        frequency: loanFreq as Frequency,
+        count: nReal,
+        periodsAhead,
+        dailyMode: loanDailyMode,
+        customDates: loanFreq === "custom" ? loanCustomDates : undefined,
+      });
       const { error: iErr } = await supabase.from("contract_installments").insert(
         dueDates.map((dd, i) => ({ user_id: user.id, contract_id: contract.id, client_id: id!, installment_number: i + 1, amount: loanCalc.schedule[i] ?? loanCalc.installmentAmount, due_date: dd, status: "pending" }))
       );
