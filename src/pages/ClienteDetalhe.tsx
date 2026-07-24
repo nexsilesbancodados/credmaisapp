@@ -1101,13 +1101,13 @@ const ClienteDetalhe = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-24" style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
       {/* ===== Editorial Dossier Hero ===== */}
-      <header className="relative rounded-[28px] border border-border/60 bg-card/40 overflow-hidden backdrop-blur-xl shadow-2xl shadow-primary/5">
+      <header className="relative rounded-[24px] border border-border/50 bg-card/40 overflow-hidden backdrop-blur-xl shadow-xl shadow-primary/5">
         {/* Cover banner */}
-        <div className="relative h-40 md:h-48 overflow-hidden">
-          <div className="absolute inset-0" style={{ background: "radial-gradient(120% 140% at 15% 0%, hsl(var(--primary)/0.55) 0%, transparent 55%), radial-gradient(90% 120% at 85% 20%, rgba(245,158,11,0.35) 0%, transparent 50%), linear-gradient(135deg, hsl(var(--primary)/0.35), hsl(var(--background)) 70%)" }} />
-          <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }} />
-          <div className="absolute -top-16 -right-10 w-72 h-72 rounded-full bg-primary/25 blur-3xl" />
-          <div className="absolute -bottom-24 -left-16 w-80 h-80 rounded-full bg-amber-500/15 blur-3xl" />
+        <div className="relative h-32 md:h-36 overflow-hidden">
+          <div className="absolute inset-0" style={{ background: "radial-gradient(120% 140% at 15% 0%, hsl(var(--primary)/0.35) 0%, transparent 55%), linear-gradient(135deg, hsl(var(--primary)/0.20), hsl(var(--background)) 75%)" }} />
+          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }} />
+          <div className="absolute -top-16 -right-10 w-64 h-64 rounded-full bg-primary/15 blur-3xl" />
+          <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-primary/10 blur-3xl" />
 
           {/* Top bar over cover */}
           <div className="relative z-10 flex items-center justify-between p-4">

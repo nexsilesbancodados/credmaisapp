@@ -95,26 +95,26 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
         </div>
       </td>
       <td className="px-5 py-2.5">
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 ${c.status === "Ativo" ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/25" : "bg-muted/40 text-muted-foreground ring-border/40"}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${c.status === "Ativo" ? "bg-emerald-400 shadow-[0_0_6px_hsl(152_76%_50%/0.8)]" : "bg-muted-foreground/50"}`} />
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${c.status === "Ativo" ? "text-emerald-300/90" : "text-muted-foreground"}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${c.status === "Ativo" ? "bg-emerald-400" : "bg-muted-foreground/50"}`} />
           {c.status}
         </span>
       </td>
       <td className="px-5 py-2.5 text-right">
-        <div className="flex items-center justify-end gap-1.5">
+        <div className="flex items-center justify-end gap-1">
           <button
             onClick={(e) => { e.stopPropagation(); onOpen(c.id); }}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/20 text-[11px] font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-primary/90 hover:bg-primary/10 text-[11px] font-medium transition-colors"
             aria-label={`Abrir ${c.name || "cliente"}`}
           >
             <Eye size={13} /> Ver
           </button>
           <button
             onClick={(e) => onDelete(c.id, e)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 text-destructive ring-1 ring-destructive/20 hover:bg-destructive/20 text-[11px] font-semibold transition-colors"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors"
             aria-label={`Excluir ${c.name || "cliente"}`}
           >
-            <Trash2 size={13} /> Excluir
+            <Trash2 size={13} />
           </button>
         </div>
       </td>
