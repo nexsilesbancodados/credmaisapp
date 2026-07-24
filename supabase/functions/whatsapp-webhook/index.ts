@@ -566,10 +566,38 @@ serve(async (req) => {
           ctx.lead = lead;
         }
 
+        // Se está aguardando documentos, tenta baixar mídia e processar
+        let awaitingDocsOpts: { mediaReceived: boolean; docKey?: string } = { mediaReceived: false };
+        if (lead.stage === "awaiting_docs" && messageType !== "text" && apiUrl && apiKey) {
+          try {
+            const resp = await evolutionFetch(apiUrl, apiKey, `/chat/getBase64FromMediaMessage/${instanceName}`, { message: { key, message: msgContent }, convertToMp4: false });
+            if (resp?.ok) {
+              const b64 = (await resp.json()).base64 as string | undefined;
+              if (b64) {
+                mediaData = b64;
+                const nextDoc = sdrMod.nextPendingDoc(lead);
+                if (nextDoc) {
+                  const ext = mimeType === "application/pdf" ? "pdf" : (mimeType?.split("/")[1] || "jpg");
+                  const path = `leads/${lead.id}/${nextDoc.key}-${Date.now()}.${ext}`;
+                  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+                  const up = await supabase.storage.from("uploads").upload(path, bytes, {
+                    contentType: mimeType || "application/octet-stream",
+                    upsert: false,
+                  });
+                  if (!up.error) awaitingDocsOpts = { mediaReceived: true, docKey: nextDoc.key };
+                }
+              }
+            }
+          } catch (e) { console.warn("[docs] falha ao salvar mídia do lead:", e); }
+        }
+
         const decision =
-          lead.stage === "simulated"
+          lead.stage === "awaiting_docs"
+            ? sdrMod.handleAwaitingDocsReply(ctx, awaitingDocsOpts)
+            : lead.stage === "simulated"
             ? sdrMod.handleSimulatedReply(ctx)
             : sdrMod.decide(ctx);
+
 
         // Se o lead PERGUNTOU algo, responde a pergunta ANTES da próxima etapa
         if (understood?.kind === "question") {
