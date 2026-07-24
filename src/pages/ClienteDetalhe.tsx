@@ -319,6 +319,10 @@ const ClienteDetalhe = () => {
         total_amount: loanCalc.total, total_interest: loanCalc.totalInterest, status: "active",
         loan_mode: loanMode,
         grace_periods: loanMode === "grace" ? (parseInt(loanGracePeriods) || 0) : 0,
+        grace_days: parseInt(loanGraceDays) || 0,
+        payment_method: loanPaymentMethod,
+        early_payment_discount_percent: parseFloat(loanEarlyDiscount) || 0,
+        max_interest_cap_percent: loanMaxInterestCap ? parseFloat(loanMaxInterestCap) : null,
         notes: loanNotes || null,
       }).select().single();
       if (cErr) throw cErr;
