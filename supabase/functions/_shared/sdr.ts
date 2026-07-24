@@ -379,6 +379,16 @@ export function handleSimulatedReply(ctx: SdrContext): SdrDecision {
     };
   }
 
+  // Novo prazo? (ex.: "em 10x", "12 parcelas", "quero em 8 vezes")
+  const termMatch = t.match(/(\d{1,2})\s*(x|parcelas?|vezes|meses|m[eê]s)/);
+  if (termMatch) {
+    const newTerm = Math.max(1, Math.min(60, parseInt(termMatch[1], 10)));
+    return decide({
+      ...ctx,
+      lead: { ...lead, term_months: newTerm, stage: "qualifying", notes: lead.notes || {} },
+    });
+  }
+
   // Novo valor?
   const newAmount = parseMoney(ctx.incomingText);
   if (newAmount) {
@@ -389,7 +399,7 @@ export function handleSimulatedReply(ctx: SdrContext): SdrDecision {
   }
 
   return {
-    reply: `${firstName ? firstName + ", " : ""}me diz se posso seguir com a simulação (*ok*) ou se prefere ajustar o valor / prazo. Estou por aqui. 🙂`,
+    reply: `${firstName ? firstName + ", " : ""}me diz o que prefere: responder *ok* pra fechar, mudar *prazo* (ex.: "em 10x"), mudar *valor* (ex.: "R$ 4.000") ou *falar com atendente*. 🙂`,
     updates: {},
     stage: "simulated",
     needsHuman: false,
