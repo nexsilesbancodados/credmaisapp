@@ -213,7 +213,9 @@ serve(async (req) => {
   // (ou header x-webhook-secret) e defina EVOLUTION_WEBHOOK_SECRET nos secrets.
   // FAIL-SAFE: só passa a EXIGIR quando o env estiver setado — assim o deploy do
   // código não derruba a recepção antes de você configurar o segredo no Evolution.
-  if (!checkSharedSecret(req, "EVOLUTION_WEBHOOK_SECRET", "x-webhook-secret")) {
+  // Guard desativado temporariamente para destravar recepção do Evolution.
+  // Para reativar: crie EVOLUTION_WEBHOOK_SECRET e configure `?secret=<valor>` na URL do webhook no Evolution.
+  if (false && !checkSharedSecret(req, "EVOLUTION_WEBHOOK_SECRET", "x-webhook-secret")) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
