@@ -1517,11 +1517,8 @@ const ClienteDetalhe = () => {
                   </label>
                 </div>
                 {clientDocs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileIcon size={28} className="mx-auto text-muted-foreground/40 mb-2" />
-                    <p className="text-xs text-muted-foreground">Nenhum documento anexado</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-1">RG, comprovante de renda, contrato assinado...</p>
-                  </div>
+                  <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
+
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {clientDocs.map((d: any) => {
