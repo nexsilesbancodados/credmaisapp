@@ -328,7 +328,11 @@ export function decide(ctx: SdrContext): SdrDecision {
       `• Parcelas: *${sim.n}x de ${money(sim.parcela)}*\n` +
       `• Total: *${money(sim.total)}*\n` +
       `• Finalidade: ${merged.purpose}\n\n` +
-      `Se aprovar essa condição, respondo *ok* que já chamo um consultor pra fechar. Se quiser mudar valor ou prazo é só me dizer. 🤝`,
+      `O que prefere fazer agora?\n` +
+      `1️⃣ *OK* — aprovo e quero fechar\n` +
+      `2️⃣ *Mudar prazo* (ex.: "quero em 10x" ou "em 12 parcelas")\n` +
+      `3️⃣ *Mudar valor* (ex.: "quero R$ 4.000")\n` +
+      `4️⃣ *Falar com atendente*`,
     updates: {
       ...updates,
       stage: "simulated",
@@ -375,6 +379,16 @@ export function handleSimulatedReply(ctx: SdrContext): SdrDecision {
     };
   }
 
+  // Novo prazo? (ex.: "em 10x", "12 parcelas", "quero em 8 vezes")
+  const termMatch = t.match(/(\d{1,2})\s*(x|parcelas?|vezes|meses|m[eê]s)/);
+  if (termMatch) {
+    const newTerm = Math.max(1, Math.min(60, parseInt(termMatch[1], 10)));
+    return decide({
+      ...ctx,
+      lead: { ...lead, term_months: newTerm, stage: "qualifying", notes: lead.notes || {} },
+    });
+  }
+
   // Novo valor?
   const newAmount = parseMoney(ctx.incomingText);
   if (newAmount) {
@@ -385,7 +399,7 @@ export function handleSimulatedReply(ctx: SdrContext): SdrDecision {
   }
 
   return {
-    reply: `${firstName ? firstName + ", " : ""}me diz se posso seguir com a simulação (*ok*) ou se prefere ajustar o valor / prazo. Estou por aqui. 🙂`,
+    reply: `${firstName ? firstName + ", " : ""}me diz o que prefere: responder *ok* pra fechar, mudar *prazo* (ex.: "em 10x"), mudar *valor* (ex.: "R$ 4.000") ou *falar com atendente*. 🙂`,
     updates: {},
     stage: "simulated",
     needsHuman: false,
