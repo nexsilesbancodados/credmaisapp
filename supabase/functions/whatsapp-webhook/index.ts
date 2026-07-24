@@ -676,9 +676,35 @@ serve(async (req) => {
             : sdrMod.decide(ctx);
 
 
-        // Se o lead PERGUNTOU algo, responde a pergunta ANTES da próxima etapa
+        // FAQ knowledge — camada de conhecimento antes de fallbacks do SDR
+        const faqCtxLead = {
+          companyName: settings.company_name || profile?.name || "nossa equipe",
+          firstName: (lead.name || pushName || "").toString().split(" ")[0] || "",
+          portalLink: `${(Deno.env.get("SITE_URL") || "https://credmaisapp.com.br").replace(/\/$/, "")}/portal`,
+          pixKey: profile?.pix_key || undefined,
+          pixKeyType: profile?.pix_key_type || undefined,
+          ownerName: profile?.name || undefined,
+          rate: Number(settings.default_interest_rate ?? profile?.default_interest_rate ?? 15),
+          term: Number(settings.default_term_months ?? 6),
+          minAmount: Number(settings.min_loan_amount ?? 100),
+          maxAmount: Number(settings.max_loan_amount ?? 100000),
+          lateFeePct: Number(settings.late_fee_percent ?? 2),
+          dailyFeePct: Number(settings.daily_interest_percent ?? 0.033),
+          earlyDiscountPct: Number(settings.early_payment_discount_percent ?? 0),
+          supportPhone: settings.portal_contact_phone || undefined,
+          supportEmail: settings.portal_contact_email || undefined,
+          businessHours: settings.business_hours || undefined,
+          hasOpenInstallments: false,
+          isKnownClient: false,
+        };
+        const faqLeadHit = findFaqMatch(incomingText, faqCtxLead);
+
+        // Se o lead PERGUNTOU algo, responde a pergunta ANTES da próxima etapa.
+        // Prioridade: FAQ (mais rico, com dados dinâmicos) > faqAnswer legado.
         if (understood?.kind === "question") {
-          const ans = sdrMod.faqAnswer(understood.topic, ctx);
+          const ans = (faqLeadHit && faqLeadHit.score >= 10)
+            ? faqLeadHit.answer
+            : sdrMod.faqAnswer(understood.topic, ctx);
           decision.reply = `${ans}\n\n${decision.reply}`;
         }
 
@@ -691,10 +717,13 @@ serve(async (req) => {
           decision.reply = `${ack} ${decision.reply}`;
         }
 
-        // Se o modelo não entendeu (unclear) e existe pergunta pendente, reforça claramente
-        if (understood?.kind === "unclear" && (lead.notes as any)?.last_intent) {
+        // Se o modelo não entendeu (unclear) mas a FAQ pegou, injeta a resposta da FAQ
+        if (understood?.kind === "unclear" && faqLeadHit && faqLeadHit.score >= 10) {
+          decision.reply = `${faqLeadHit.answer}\n\n${decision.reply}`;
+        } else if (understood?.kind === "unclear" && (lead.notes as any)?.last_intent) {
           decision.reply = `Desculpa, não peguei bem 🙈 ${decision.reply}`;
         }
+
 
 
 
