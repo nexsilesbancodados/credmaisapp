@@ -889,37 +889,54 @@ Ex3 — Cliente pede parcelar atraso de 3 parcelas:
     // Retry com backoff exponencial em 429/5xx/529 (Anthropic overloaded)
     let aiResp: Response | null = null;
     let aiErrBody = "";
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        aiResp = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-api-key": anthropicApiKey!, "anthropic-version": "2023-06-01", "anthropic-beta": "prompt-caching-2024-07-31" },
-          body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 2200, temperature: adaptiveTemp, top_p: 0.85, system: systemBlocks, messages: anthMessages }),
-        });
-        if (aiResp.ok) break;
-        aiErrBody = await aiResp.text();
-        const retriable = aiResp.status === 429 || aiResp.status === 529 || aiResp.status >= 500;
-        if (!retriable) throw new Error(`anthropic_${aiResp.status}: ${aiErrBody.slice(0,200)}`);
-        console.warn(`[ai] tentativa ${attempt + 1} falhou (${aiResp.status}), retry em breve`);
-        await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
-      } catch (e) {
-        if (attempt === 2) throw e;
-        await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+    let parsed: any = null;
+    if (anthropicApiKey) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-api-key": anthropicApiKey, "anthropic-version": "2023-06-01", "anthropic-beta": "prompt-caching-2024-07-31" },
+            body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: 2200, temperature: adaptiveTemp, top_p: 0.85, system: systemBlocks, messages: anthMessages }),
+          });
+          if (aiResp.ok) break;
+          aiErrBody = await aiResp.text();
+          const retriable = aiResp.status === 429 || aiResp.status === 529 || aiResp.status >= 500;
+          if (!retriable) {
+            console.warn(`[ai] indisponível (${aiResp.status}), usando fallback local:`, aiErrBody.slice(0, 200));
+            break;
+          }
+          console.warn(`[ai] tentativa ${attempt + 1} falhou (${aiResp.status}), retry em breve`);
+          await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+        } catch (e) {
+          aiErrBody = e instanceof Error ? e.message : String(e);
+          console.warn(`[ai] tentativa ${attempt + 1} com erro:`, aiErrBody.slice(0, 200));
+          if (attempt === 2) break;
+          await new Promise(r => setTimeout(r, 800 * Math.pow(2, attempt)));
+        }
       }
+    } else {
+      aiErrBody = "ANTHROPIC_API_KEY ausente";
     }
-    if (!aiResp || !aiResp.ok) {
-      console.error("[ai] falhou após retries:", aiErrBody);
-      await botSay("Desculpe, estou com uma instabilidade momentânea. Pode me mandar sua mensagem em alguns instantes? 🙏");
-      return new Response(JSON.stringify({ status: "ai_unavailable" }), { headers: corsHeaders });
-    }
-    const aiData = await aiResp.json();
-    const rawText = aiData?.content?.[0]?.text ?? "";
-    let parsed = extractJsonObject(rawText);
-    if (!parsed) {
-      console.warn("[ai] resposta sem JSON válido, devolvendo fallback:", rawText.slice(0, 200));
-      // Extrai texto legível como reply em vez de dump bruto
-      const cleaned = rawText.replace(/```[a-z]*|```/gi, "").replace(/[{}\[\]"]/g, " ").trim();
-      parsed = { reply: cleaned.slice(0, 400) || "Desculpe, tive um problema técnico. Pode repetir, por favor?" };
+
+    if (aiResp?.ok) {
+      const aiData = await aiResp.json();
+      const rawText = aiData?.content?.[0]?.text ?? "";
+      parsed = extractJsonObject(rawText);
+      if (!parsed) {
+        console.warn("[ai] resposta sem JSON válido, devolvendo fallback:", rawText.slice(0, 200));
+        const cleaned = rawText.replace(/```[a-z]*|```/gi, "").replace(/[{}\[\]"]/g, " ").trim();
+        parsed = { reply: cleaned.slice(0, 400) || "Desculpe, tive um problema técnico. Pode repetir, por favor?" };
+      }
+    } else {
+      parsed = buildLocalBotResult({ client, incomingText, overdue, dueToday, totalOverdue, totalDueToday, profile, tone });
+      await logBotAction(supabase, {
+        userId,
+        clientId: client.id,
+        conversationId: convoId,
+        toolName: "local_ai_fallback",
+        toolInput: { reason: aiErrBody.slice(0, 200), message: incomingText.slice(0, 200) },
+        toolOutput: { reply: parsed.reply, intent: parsed.intent, needs_human: parsed.needs_human },
+      });
     }
     const result: any = sanitizeAiResult(parsed);
 
