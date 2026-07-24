@@ -888,7 +888,11 @@ serve(async (req) => {
           greeting = generic[Math.floor(Math.random() * generic.length)];
         }
 
-        await botSay(greeting);
+        const menuFooter =
+          `\n\n━━━━━━━━━━━━━━━\n📋 *Como posso te ajudar?* Responda com o número:\n` +
+          `*1* Consultar parcelas  ·  *2* Portal do cliente\n` +
+          `*3* Quitar parcela (PIX)  ·  *4* Falar com atendente`;
+        await botSay(greeting + menuFooter);
         await supabase.from("audit_logs").insert({
           user_id: userId, entity_type: "whatsapp_bot", action: "greeted_known_client",
           entity_id: client.id, details: { phone: senderPhone, overdue: overdueQ.length, due_today: dueTodayQ.length, has_promise: !!openPromise },
