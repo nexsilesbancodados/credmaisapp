@@ -23,34 +23,35 @@
 
 @layer base {
   :root {
-    --background: 215 20% 96%;
-    --foreground: 215 25% 12%;
+    /* Navy Trust — paper light mode, refinado para autoridade financeira */
+    --background: 220 30% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 12%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 12%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 217 91% 55%;
+    --primary: 222 65% 32%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 217 91% 70%;
+    --primary-glow: 217 78% 52%;
 
-    --secondary: 215 15% 92%;
-    --secondary-foreground: 215 25% 25%;
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 222 40% 18%;
 
-    --muted: 215 15% 91%;
-    --muted-foreground: 215 12% 42%;
+    --muted: 220 20% 95%;
+    --muted-foreground: 220 12% 38%;
 
-    --accent: 215 18% 88%;
-    --accent-foreground: 215 25% 12%;
+    --accent: 217 78% 52%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 55%;
+    --destructive: 0 74% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 15% 84%;
-    --input: 215 15% 92%;
-    --ring: 217 91% 55%;
+    --border: 220 18% 88%;
+    --input: 220 18% 92%;
+    --ring: 222 65% 32%;
 
     --radius: 0.75rem;
 
@@ -58,37 +59,39 @@
     --font-body: 'Inter', sans-serif;
     --font-heading: 'Space Grotesk', sans-serif;
 
-    --gradient-gold: linear-gradient(135deg, hsl(217 91% 55%), hsl(217 91% 70%), hsl(217 91% 55%));
-    --gradient-button: linear-gradient(135deg, hsl(217 91% 50%), hsl(217 91% 62%), hsl(217 91% 50%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(215 20% 97%));
-    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.6), hsl(0 0% 100% / 0.25));
-    --gradient-accent: linear-gradient(135deg, hsl(217 91% 55% / 0.12), hsl(217 91% 70% / 0.04));
-    --gradient-mesh: radial-gradient(at 20% 30%, hsl(217 91% 55% / 0.08) 0px, transparent 50%), radial-gradient(at 80% 70%, hsl(217 91% 70% / 0.06) 0px, transparent 50%);
-    --shadow-card: 0 1px 3px hsl(215 25% 12% / 0.04), 0 4px 16px hsl(215 25% 12% / 0.05);
-    --shadow-elevated: 0 8px 30px hsl(215 25% 12% / 0.08), 0 16px 50px hsl(215 25% 12% / 0.06);
-    --shadow-glass: 0 8px 32px hsl(215 25% 12% / 0.05);
-    --shadow-glow: 0 0 24px hsl(217 91% 55% / 0.2), 0 0 60px hsl(217 91% 55% / 0.08);
-    --shadow-premium: 0 20px 60px -10px hsl(217 91% 55% / 0.25);
+    --gradient-gold: linear-gradient(135deg, hsl(222 65% 32%), hsl(217 78% 52%), hsl(222 65% 32%));
+    --gradient-button: linear-gradient(135deg, hsl(222 65% 28%), hsl(217 78% 48%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 30% 98%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.85), hsl(220 30% 98% / 0.6));
+    --gradient-accent: linear-gradient(135deg, hsl(222 65% 32% / 0.08), hsl(217 78% 52% / 0.03));
+    --gradient-mesh:
+      radial-gradient(at 15% 20%, hsl(222 65% 32% / 0.05) 0px, transparent 50%),
+      radial-gradient(at 85% 80%, hsl(217 78% 52% / 0.04) 0px, transparent 50%);
+    --shadow-card: 0 1px 2px hsl(222 47% 11% / 0.04), 0 2px 8px hsl(222 47% 11% / 0.04);
+    --shadow-elevated: 0 4px 16px hsl(222 47% 11% / 0.06), 0 16px 40px hsl(222 47% 11% / 0.08);
+    --shadow-glass: 0 4px 24px hsl(222 47% 11% / 0.06);
+    --shadow-glow: 0 0 24px hsl(217 78% 52% / 0.18), 0 0 60px hsl(217 78% 52% / 0.06);
+    --shadow-premium: 0 20px 50px -12px hsl(222 65% 32% / 0.22);
 
-    --success: 152 65% 42%;
+    --success: 152 62% 36%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 32 94% 46%;
     --warning-foreground: 0 0% 100%;
-    --info: 199 89% 55%;
+    --info: 217 78% 52%;
     --info-foreground: 0 0% 100%;
 
-    /* Vivid action tokens (Fase 1 UX) */
-    --primary-vivid: 224 92% 58%;
-    --success-vivid: 152 76% 42%;
-    --warning-vivid: 32 96% 52%;
-    --destructive-vivid: 0 88% 58%;
-    --gradient-action: linear-gradient(135deg, hsl(224 92% 58%), hsl(217 91% 65%));
-    --gradient-success: linear-gradient(135deg, hsl(152 76% 40%), hsl(160 72% 48%));
-    --gradient-warning: linear-gradient(135deg, hsl(32 96% 52%), hsl(24 94% 58%));
-    --gradient-danger: linear-gradient(135deg, hsl(0 88% 58%), hsl(348 84% 60%));
-    --shadow-action: 0 10px 24px -8px hsl(224 92% 58% / 0.45), 0 2px 4px hsl(224 92% 58% / 0.2);
-    --shadow-action-success: 0 10px 24px -8px hsl(152 76% 42% / 0.45);
-    --shadow-action-danger: 0 10px 24px -8px hsl(0 88% 58% / 0.4);
+    /* Vivid action tokens */
+    --primary-vivid: 222 78% 42%;
+    --success-vivid: 152 72% 38%;
+    --warning-vivid: 32 96% 48%;
+    --destructive-vivid: 0 82% 52%;
+    --gradient-action: linear-gradient(135deg, hsl(222 78% 42%), hsl(217 78% 55%));
+    --gradient-success: linear-gradient(135deg, hsl(152 72% 34%), hsl(160 68% 42%));
+    --gradient-warning: linear-gradient(135deg, hsl(32 96% 48%), hsl(24 94% 54%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 82% 52%), hsl(348 78% 54%));
+    --shadow-action: 0 10px 24px -8px hsl(222 78% 42% / 0.35), 0 2px 4px hsl(222 78% 42% / 0.16);
+    --shadow-action-success: 0 10px 24px -8px hsl(152 72% 38% / 0.35);
+    --shadow-action-danger: 0 10px 24px -8px hsl(0 82% 52% / 0.32);
   }
 
 
