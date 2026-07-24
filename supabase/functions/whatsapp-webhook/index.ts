@@ -684,6 +684,145 @@ serve(async (req) => {
 
     }
 
+    // ─── MENU INTERATIVO (cliente conhecido) ───────────────────────────
+    // Fluxo determinístico: cliente digita 1/2/3/4 (ou "menu") e o bot
+    // executa a ação correspondente sem depender de IA.
+    try {
+      const txtRaw = (incomingText || "").trim();
+      const txtLow = txtRaw.toLowerCase();
+      const isMenuTrigger = /^(menu|opc[oõ]es|opcoes|ajuda|op[cç][aã]o)$/i.test(txtLow);
+      const menuChoice = /^([1-4])[\.\)\s]*$/.test(txtRaw) ? txtRaw.match(/^([1-4])/)![1] : null;
+
+      const siteUrl = (Deno.env.get("SITE_URL") || "https://credmaisapp.com.br").replace(/\/$/, "");
+      const portalLink = `${siteUrl}/portal`;
+      const empresa = settings.company_name || profile?.name || "nossa equipe";
+      const firstName = (client.name || "").split(" ")[0] || "";
+
+      const showMenu = async (prefix?: string) => {
+        const header = prefix ? `${prefix}\n\n` : "";
+        const menu =
+          `${header}📋 *Menu — ${empresa}*\n` +
+          `Escolha uma opção respondendo com o número:\n\n` +
+          `*1* — Consultar minhas parcelas\n` +
+          `*2* — Acessar o portal do cliente\n` +
+          `*3* — Quitar parcela (chave PIX)\n` +
+          `*4* — Falar com um atendente 👤\n\n` +
+          `_Digite *menu* a qualquer momento pra ver essas opções novamente._`;
+        await botSay(menu);
+      };
+
+      // Helper: parcelas em aberto do cliente
+      const loadOpenInstallments = async () => {
+        const { data } = await supabase
+          .from("contract_installments")
+          .select("id, amount, due_date, status, late_fee, installment_number, paid_amount")
+          .eq("client_id", client.id)
+          .in("status", ["pending", "overdue"])
+          .order("due_date", { ascending: true })
+          .limit(30);
+        return data || [];
+      };
+
+      if (menuChoice) {
+        if (menuChoice === "1") {
+          const inst = await loadOpenInstallments();
+          if (inst.length === 0) {
+            await botSay(`Boa notícia, ${firstName}! ✅ Você não tem parcelas em aberto no momento. Se precisar de outra coisa, digite *menu*.`);
+          } else {
+            const nowBr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().split("T")[0];
+            const lines = inst.slice(0, 10).map((i: any) => {
+              const due = typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date;
+              const [y, m, d] = due.split("-");
+              const dueFmt = `${d}/${m}/${y}`;
+              const atrasada = due < nowBr;
+              const total = Number(i.amount) + (Number(i.late_fee) || 0);
+              const flag = atrasada ? "🔴" : (due === nowBr ? "🟡" : "🟢");
+              return `${flag} Parcela *#${i.installment_number}* — venc. *${dueFmt}* — ${money(total)}${atrasada && i.late_fee ? ` _(inclui multa ${money(i.late_fee)})_` : ""}`;
+            }).join("\n");
+            const totalGeral = inst.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0) - Number(i.paid_amount || 0), 0);
+            await botSay(
+              `📄 *Suas parcelas em aberto* (${inst.length}):\n\n${lines}\n\n` +
+              `💰 *Total a regularizar:* ${money(totalGeral)}\n\n` +
+              `Digite *3* para quitar ou *menu* pra voltar às opções.`
+            );
+          }
+        } else if (menuChoice === "2") {
+          const cpfHint = client.cpf_cnpj ? `\n\n📌 *Seu CPF de acesso:* ${client.cpf_cnpj}\n📅 *Data de nascimento:* usada para login.` : "";
+          await botSay(
+            `🔐 *Portal do Cliente — ${empresa}*\n\n` +
+            `Acesse aqui: ${portalLink}\n\n` +
+            `No portal você pode:\n` +
+            `• Ver todas as parcelas e comprovantes\n` +
+            `• Baixar recibos em PDF\n` +
+            `• Acompanhar seu contrato em tempo real${cpfHint}\n\n` +
+            `Digite *menu* pra voltar às opções.`
+          );
+        } else if (menuChoice === "3") {
+          const inst = await loadOpenInstallments();
+          if (inst.length === 0) {
+            await botSay(`Tudo em dia por aqui, ${firstName}! ✅ Sem parcelas a quitar. Digite *menu* se precisar de algo.`);
+          } else {
+            const oldest = inst[0];
+            const total = Number(oldest.amount) + (Number(oldest.late_fee) || 0);
+            const pixLine = profile?.pix_key
+              ? `\n💠 *PIX (${(profile.pix_key_type || "chave").toUpperCase()}):* \`${profile.pix_key}\`\n👤 *Favorecido:* ${profile.name || empresa}`
+              : `\n⚠️ Chave PIX ainda não configurada. Vou chamar um atendente pra te ajudar.`;
+            await botSay(
+              `💸 *Quitação — parcela #${oldest.installment_number}*\n\n` +
+              `Valor a pagar: *${money(total)}*${oldest.late_fee ? `\n_(inclui multa/juros de ${money(oldest.late_fee)})_` : ""}${pixLine}\n\n` +
+              `Após o pagamento, *envie o comprovante* aqui mesmo (imagem ou PDF) que eu registro a baixa na hora. 📎`
+            );
+            if (!profile?.pix_key && convoId) {
+              await supabase.from("whatsapp_conversations").update({
+                needs_human: true,
+                human_takeover_reason: "Cliente pediu PIX mas chave não configurada",
+                updated_at: new Date().toISOString(),
+              }).eq("id", convoId);
+            }
+          }
+        } else if (menuChoice === "4") {
+          if (convoId) {
+            await supabase.from("whatsapp_conversations").update({
+              needs_human: true,
+              bot_paused: true,
+              human_takeover_reason: "Cliente solicitou atendimento humano via menu",
+              updated_at: new Date().toISOString(),
+            }).eq("id", convoId);
+          }
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "Cliente pediu atendimento humano",
+            message: `${client.name || senderPhone} solicitou falar com atendente via menu WhatsApp.`,
+            type: "warning",
+          });
+          await botSay(
+            `👤 Entendido, ${firstName}! Já avisei um atendente e *pausei o robô* aqui na sua conversa.\n\n` +
+            `Em breve alguém do time da *${empresa}* vai te responder por aqui mesmo. 🙏`
+          );
+        }
+        await supabase.from("audit_logs").insert({
+          user_id: userId, entity_type: "whatsapp_bot", action: "menu_choice",
+          entity_id: client.id, details: { phone: senderPhone, choice: menuChoice },
+        });
+        return new Response(JSON.stringify({ status: "menu_choice", choice: menuChoice }), { headers: corsHeaders });
+      }
+
+      if (isMenuTrigger) {
+        await showMenu(`Oi ${firstName}! 👋`);
+        await supabase.from("audit_logs").insert({
+          user_id: userId, entity_type: "whatsapp_bot", action: "menu_shown",
+          entity_id: client.id, details: { phone: senderPhone, trigger: "keyword" },
+        });
+        return new Response(JSON.stringify({ status: "menu_shown" }), { headers: corsHeaders });
+      }
+
+      // Deixa o menu disponível para o bloco de saudação abaixo
+      (globalThis as any).__renderMenu = async (prefix?: string) => showMenu(prefix);
+    } catch (e) {
+      console.warn("[menu] falhou (seguindo fluxo normal):", (e as Error).message);
+    }
+
+
     // ─── SAUDAÇÃO PERSONALIZADA (cliente conhecido, primeira mensagem) ──
     // Se nunca conversamos com esse número (sem convo prévia) OU não há
     // nenhuma resposta do bot nas últimas 12h, cumprimenta pelo nome e
