@@ -328,7 +328,11 @@ export function decide(ctx: SdrContext): SdrDecision {
       `• Parcelas: *${sim.n}x de ${money(sim.parcela)}*\n` +
       `• Total: *${money(sim.total)}*\n` +
       `• Finalidade: ${merged.purpose}\n\n` +
-      `Se aprovar essa condição, respondo *ok* que já chamo um consultor pra fechar. Se quiser mudar valor ou prazo é só me dizer. 🤝`,
+      `O que prefere fazer agora?\n` +
+      `1️⃣ *OK* — aprovo e quero fechar\n` +
+      `2️⃣ *Mudar prazo* (ex.: "quero em 10x" ou "em 12 parcelas")\n` +
+      `3️⃣ *Mudar valor* (ex.: "quero R$ 4.000")\n` +
+      `4️⃣ *Falar com atendente*`,
     updates: {
       ...updates,
       stage: "simulated",
