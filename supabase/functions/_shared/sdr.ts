@@ -400,15 +400,26 @@ export function handleSimulatedReply(ctx: SdrContext): SdrDecision {
   const firstName = (lead.name || "").split(/\s+/)[0] || "";
 
   if (/(ok|aprovo|fechado|topo|aceito|pode fechar|bora|quero sim|sim, quero|beleza)/i.test(t)) {
+    const firstDoc = REQUIRED_DOCS[0];
+    const link = portalUrl();
+    const linkLine = link ? `\n\n🔗 Acompanhe pelo portal: ${link}` : "";
     return {
-      reply: `Fechou, ${firstName}! 🎉 Já estou chamando um consultor da *${empresa}* pra finalizar seu contrato. Fica por aqui!`,
-      updates: { stage: "handoff", tags: mergeTags(lead.tags, ["aceite_simulacao"]), score: 95 },
-      stage: "handoff",
-      needsHuman: true,
-      handoffReason: "Lead aceitou a simulação",
+      reply:
+`Fechou, ${firstName}! 🎉 Pra liberar o crédito da *${empresa}* preciso de 5 documentos rapidinhos.
+
+📎 Comece me enviando o *${firstDoc.label}* aqui pelo WhatsApp (foto ou PDF).${linkLine}`,
+      updates: {
+        stage: "awaiting_docs",
+        tags: mergeTags(lead.tags, ["aceite_simulacao"]),
+        score: 90,
+        notes: { ...(lead.notes || {}), docs: { received: [], started_at: new Date().toISOString() } },
+      },
+      stage: "awaiting_docs",
+      needsHuman: false,
       intent: "accept",
     };
   }
+
 
   if (/(n[aã]o|nao quero|caro|muito|abusivo|desisti|deixa pra l[aá])/i.test(t)) {
     return {
