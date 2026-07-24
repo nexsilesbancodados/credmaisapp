@@ -551,19 +551,25 @@ serve(async (req) => {
             ? sdrMod.handleSimulatedReply(ctx)
             : sdrMod.decide(ctx);
 
-        // Persiste alterações do lead
+        // Persiste alterações do lead (mantém memória de contexto)
+        const mergedNotes = {
+          ...(lead.notes || {}),
+          ...((decision.updates as any).notes || {}),
+          last_intent: decision.intent,
+          last_bot_reply: decision.reply?.slice(0, 300) || "",
+          last_turn_at: new Date().toISOString(),
+        };
         const patch: any = {
           ...decision.updates,
           stage: decision.stage,
           last_message_at: new Date().toISOString(),
           score: sdrMod.scoreLead({ ...lead, ...decision.updates }, settings),
+          notes: mergedNotes,
         };
         // Follow-up automático (24h) se ficou parado no meio da qualificação
         if (decision.stage === "qualifying") {
           patch.next_followup_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         }
-        // Não sobrescreve updates.notes com undefined
-        if (!patch.notes) delete patch.notes;
         if (!patch.tags) delete patch.tags;
 
         await supabase.from("leads").update(patch).eq("id", lead.id);
