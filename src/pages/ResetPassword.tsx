@@ -321,7 +321,7 @@ const ResetPassword = () => {
 
   return (
     <div
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden font-body bg-black bg-cover bg-center bg-no-repeat px-4"
+      className="relative min-h-dvh flex flex-col items-center justify-center overflow-hidden font-body bg-black bg-cover bg-center bg-no-repeat px-4"
       style={{ backgroundImage: "url('/login-bg.png')" }}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-0" />

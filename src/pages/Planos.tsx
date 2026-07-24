@@ -31,7 +31,7 @@ const Planos = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-hidden">
+    <div className="relative min-h-dvh bg-black text-white overflow-hidden">
       <ConstellationBackground />
 
       <button

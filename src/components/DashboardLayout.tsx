@@ -53,7 +53,7 @@ const DashboardLayout = () => {
   }, [isMobile]);
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="min-h-dvh bg-background relative overflow-hidden">
       {/* Static mesh gradients — no animation (animated blur is one of the heaviest paints). */}
       <div className="pointer-events-none absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[80px] -z-10" />
       <div className="pointer-events-none absolute bottom-0 right-0 w-[480px] h-[480px] bg-indigo-500/[0.03] rounded-full blur-[70px] -z-10" />

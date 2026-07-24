@@ -307,7 +307,7 @@ export default function Checkout() {
   ] as const;
 
   return (
-    <div className="min-h-screen w-full flex items-start justify-center py-6 px-4 md:px-8" style={{ backgroundColor: c.bg, ...body }}>
+    <div className="min-h-dvh w-full flex items-start justify-center py-6 px-4 md:px-8" style={{ backgroundColor: c.bg, ...body }}>
       <div className="w-full max-w-5xl">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-6 text-xs" style={{ color: c.ink }}>

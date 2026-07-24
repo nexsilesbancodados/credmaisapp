@@ -230,7 +230,7 @@ const CobradorExterno = () => {
 
   if (!collectorData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      <div className="min-h-dvh flex items-center justify-center bg-background p-4 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 opacity-60">
           <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-primary/20 blur-[120px]" />
           <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px]" />
@@ -263,7 +263,7 @@ const CobradorExterno = () => {
   const totalPaid = allPaid.reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount), 0);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Top Bar */}
       <div className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-md px-4 md:px-8 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">

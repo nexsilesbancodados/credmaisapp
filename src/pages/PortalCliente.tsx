@@ -420,7 +420,7 @@ const PortalCliente = () => {
 
   return (
     <main className="portal-shell text-foreground">
-      <div className="portal-content mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
+      <div className="portal-content mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
         {!portalData ? (
           justLoggedOut ? (
             /* ═══════════ TELA PÓS-LOGOUT ═══════════ */
