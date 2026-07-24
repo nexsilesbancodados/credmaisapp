@@ -206,7 +206,7 @@ const Suporte = () => {
     const sb = statusBadge(activeTicket.status);
     const StatusIcon = sb.icon;
     return (
-      <div className="min-h-screen p-4 md:p-6 max-w-4xl mx-auto">
+      <div className="min-h-dvh p-4 md:p-6 max-w-4xl mx-auto">
         <button onClick={() => setActiveTicket(null)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
           <ChevronLeft size={16} /> Voltar para tickets
         </button>
@@ -286,7 +286,7 @@ const Suporte = () => {
 
   // ============ LIST VIEW ============
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+    <div className="min-h-dvh p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <div className="page-hero animate-fade-in">
         <div className="page-hero-content flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">

@@ -193,6 +193,23 @@
   html {
     scroll-behavior: smooth;
   }
+
+  /* Respeitar preferência de movimento reduzido */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Alvos de toque mínimos WCAG (44x44) em mobile */
+  @media (max-width: 640px) {
+    button, a[role="button"], [role="button"] {
+      min-height: 40px;
+    }
+  }
 }
 
 @layer utilities {

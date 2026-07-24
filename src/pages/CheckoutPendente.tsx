@@ -47,7 +47,7 @@ export default function CheckoutPendente() {
   const approved = status === "approved";
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+    <div className="min-h-dvh bg-black text-white flex items-center justify-center px-6">
       <div className="max-w-md w-full text-center p-10 rounded-3xl bg-white/[0.04] border border-white/10 backdrop-blur-xl">
         <div className="w-20 h-20 rounded-full bg-yellow-500/15 border border-yellow-400/30 flex items-center justify-center mx-auto mb-6">
           {approved ? <CheckCircle2 size={40} className="text-emerald-400" /> : <Clock size={40} className="text-yellow-400" />}

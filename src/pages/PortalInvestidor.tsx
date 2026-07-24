@@ -55,7 +55,7 @@ export default function PortalInvestidor() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white grid place-items-center">
+      <div className="min-h-dvh bg-slate-950 text-white grid place-items-center">
         <div className="flex items-center gap-3 text-white/70">
           <Clock className="h-5 w-5 animate-spin" /> Carregando portal…
         </div>
@@ -65,7 +65,7 @@ export default function PortalInvestidor() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white grid place-items-center p-6">
+      <div className="min-h-dvh bg-slate-950 text-white grid place-items-center p-6">
         <div className="max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur">
           <Shield className="mx-auto h-10 w-10 text-red-400" />
           <h1 className="mt-3 font-heading text-2xl font-bold">Link inválido</h1>
@@ -82,7 +82,7 @@ export default function PortalInvestidor() {
   const logo = brand.portal_logo_url || brand.company_logo_url;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950/40 to-slate-950 text-white">
+    <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-indigo-950/40 to-slate-950 text-white">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
         {/* Header */}
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4">

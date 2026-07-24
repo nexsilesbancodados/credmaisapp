@@ -22,7 +22,7 @@ const Privacidade = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="max-w-3xl mx-auto px-4 py-8 sm:py-14 space-y-6">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={16} /> Voltar

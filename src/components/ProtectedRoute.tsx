@@ -105,7 +105,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading || (user && access === "checking")) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="flex items-center gap-3 text-muted-foreground text-sm">
           <Loader2 size={16} className="animate-spin" /> Carregando...
         </div>
@@ -128,7 +128,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (profile?.is_blocked) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="max-w-md w-full glass-card p-8 text-center space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
             <Lock className="text-destructive" size={28} />
@@ -144,7 +144,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (access === "denied") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <div className="max-w-md w-full glass-card p-8 text-center space-y-5">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
             <CreditCard className="text-primary" size={28} />

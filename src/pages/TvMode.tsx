@@ -76,7 +76,7 @@ export default function TvMode() {
         <ArrowLeft size={14} /> Sair
       </button>
 
-      <div className="min-h-screen p-6 md:p-10 flex flex-col gap-8">
+      <div className="min-h-dvh p-6 md:p-10 flex flex-col gap-8">
         {/* Header */}
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
