@@ -1034,7 +1034,11 @@ Ex3 — Cliente pede parcelar atraso de 3 parcelas:
         await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "renew_contract_interest_only", toolInput: { contract_id: target.contract_id, installment_id: target.id, valor: receiptValue, nova_data: nextDate.toISOString() } });
       } else {
         // Pagamento Normal (Amortização/Liquidação)
-        let target = installments.find(i => Number(i.amount) === receiptValue);
+        // P1-8: prioriza a parcela identificada pela IA/validador (matchedInstallmentId)
+        let target = receiptCheck?.matchedInstallmentId
+          ? installments.find(i => i.id === receiptCheck.matchedInstallmentId)
+          : undefined;
+        if (!target) target = installments.find(i => Number(i.amount) === receiptValue);
         if (!target) target = installments[0];
 
         await supabase.from("contract_installments").update({ 
