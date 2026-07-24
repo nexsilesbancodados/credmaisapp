@@ -758,6 +758,22 @@ const Cobrancas = () => {
                   {focoDia ? "Foco do dia ativo" : "Foco do dia"}
                 </button>
                 <button
+                  onClick={() => {
+                    const active = period === "today";
+                    setPeriod(active ? "all" : "today");
+                    setFocoDia(false);
+                    setFilter("all");
+                    setBucket("all");
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl border text-sm font-semibold transition-colors focus-ring ${
+                    period === "today" ? "bg-primary/15 border-primary/40 text-primary" : "bg-card border-border text-foreground hover:bg-accent"
+                  }`}
+                  title="Mostrar apenas parcelas que vencem hoje (sem contar atrasadas)"
+                >
+                  <CalendarDays size={14} className={period === "today" ? "text-primary" : "text-muted-foreground"} />
+                  {period === "today" ? "Só vence hoje ativo" : "Só vence hoje"}
+                </button>
+                <button
                   onClick={() => { setCobrarAteDate(todayISO); setCobrarAteSelected(new Set()); setCobrarAteOpen(true); }}
                   className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-card border border-border text-sm font-semibold text-foreground hover:bg-accent transition-colors focus-ring"
                 >
