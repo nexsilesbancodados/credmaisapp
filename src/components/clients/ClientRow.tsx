@@ -73,7 +73,7 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
               <FileText size={10} /> {summary.contracts}
             </span>
             {summary.overdue > 0 && (
-              <span className="inline-flex items-center px-1.5 py-1 rounded-lg bg-destructive/15 text-destructive text-[10px] font-bold ring-1 ring-destructive/30 animate-pulse" title="Parcelas em atraso">
+              <span className="inline-flex items-center px-1.5 py-1 rounded-lg bg-destructive/15 text-destructive text-[10px] font-bold ring-1 ring-destructive/30" title="Parcelas em atraso">
                 {summary.overdue} atras.
               </span>
             )}
