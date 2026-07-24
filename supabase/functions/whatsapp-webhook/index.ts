@@ -283,11 +283,22 @@ serve(async (req) => {
       if (c) client = c;
     }
     if (!client) {
-      const tail = senderPhone.slice(-9);
+      // Normaliza: remove código do país 55 (Brasil) se vier prefixado
+      const normalizedIn = senderPhone.replace(/^55/, "");
+      const tail8 = normalizedIn.slice(-8);
+      const tail9 = normalizedIn.slice(-9);
+      const tail10 = normalizedIn.slice(-10);
+      const tail11 = normalizedIn.slice(-11);
       const { data: clients } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
       client = clients?.find(c => {
-        const cPhone = (c.whatsapp || c.phone || "").replace(/\D/g, "");
-        return cPhone.slice(-9) === tail || cPhone.slice(-8) === senderPhone.slice(-8);
+        const cRaw = ((c.whatsapp || "") + " " + (c.phone || "")).replace(/\D/g, "");
+        if (!cRaw) return false;
+        return (
+          cRaw.endsWith(tail11) ||
+          cRaw.endsWith(tail10) ||
+          cRaw.endsWith(tail9) ||
+          cRaw.endsWith(tail8)
+        );
       });
     }
 
