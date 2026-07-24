@@ -1263,6 +1263,16 @@ const ClienteDetalhe = () => {
           setLoanEarlyDiscount={setLoanEarlyDiscount}
           loanMaxInterestCap={loanMaxInterestCap}
           setLoanMaxInterestCap={setLoanMaxInterestCap}
+          loanValueMode={loanValueMode}
+          setLoanValueMode={setLoanValueMode}
+          loanInstallmentValue={loanInstallmentValue}
+          setLoanInstallmentValue={setLoanInstallmentValue}
+          loanDailyMode={loanDailyMode}
+          setLoanDailyMode={setLoanDailyMode}
+          loanFirstDueAuto={loanFirstDueAuto}
+          setLoanFirstDueAuto={setLoanFirstDueAuto}
+          loanCustomDates={loanCustomDates}
+          setLoanCustomDates={setLoanCustomDates}
           loanCalc={loanCalc}
           loanLoading={loanLoading}
           onClose={() => setNewLoanMode(false)}
