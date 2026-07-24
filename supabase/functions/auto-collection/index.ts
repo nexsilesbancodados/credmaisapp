@@ -405,6 +405,8 @@ ${extraDiversity}`;
                   client_name: client.name, phone: recipient, channel: "whatsapp",
                   rule: matchingRule, days_overdue: daysOverdue, days_until_due: daysUntilDue,
                   pre_due: isPreDue, amount: totalAmount, reliability, ai_generated: !!settings.bot_use_ai,
+                  approach: nextApproach,
+                  message_preview: (message || "").slice(0, 400),
                 },
               });
               // Registra a abordagem usada NA MEMÓRIA do cliente (evita repetir no próximo cron)
