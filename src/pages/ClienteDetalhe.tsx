@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -127,6 +127,31 @@ const ClienteDetalhe = () => {
     enabled: !!id && !!user,
     staleTime: 30_000,
   });
+
+  // Sincroniza os padrões do modal "Novo Empréstimo" com o último contrato do
+  // cliente, para que empréstimos subsequentes herdem taxa, frequência, multas
+  // e condições avançadas do histórico — evitando divergência com o wizard.
+  useEffect(() => {
+    if (!newLoanMode) return;
+    const last = (contracts as any[])[0];
+    if (!last) return;
+    if (last.loan_mode) setLoanMode(last.loan_mode as LoanMode);
+    if (last.frequency) setLoanFreq(last.frequency);
+    if (last.interest_rate != null) setLoanInterestRate(String(last.interest_rate));
+    if (last.num_installments) setLoanInstallments(String(last.num_installments));
+    if (last.daily_interest_percent != null) setLoanDailyFee(String(last.daily_interest_percent));
+    if (last.late_fee_percent != null) setLoanLateFee(String(last.late_fee_percent));
+    if (last.grace_periods) setLoanGracePeriods(String(last.grace_periods));
+    if (last.grace_days != null) setLoanGraceDays(String(last.grace_days));
+    if (last.payment_method) setLoanPaymentMethod(last.payment_method);
+    if (last.early_payment_discount_percent != null) setLoanEarlyDiscount(String(last.early_payment_discount_percent));
+    if (last.max_interest_cap_percent != null) setLoanMaxInterestCap(String(last.max_interest_cap_percent));
+    // valueMode segue o padrão do wizard: "installment" quando o modo é parcelas.
+    setLoanValueMode(last.loan_mode === "installments" ? "installment" : "rate");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newLoanMode]);
+
+
 
   const { data: installments = [] } = useQuery({
     queryKey: ["client-installments", id],
