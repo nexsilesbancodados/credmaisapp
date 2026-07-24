@@ -546,10 +546,42 @@ serve(async (req) => {
           history,
         };
 
+        // 🧠 Camada de compreensão livre (LLM) — entende perguntas, correções
+        // e inversão de cálculo antes da máquina de estados.
+        let understood: Awaited<ReturnType<typeof sdrMod.understand>> = null;
+        try { understood = await sdrMod.understand(ctx); } catch { /* ignora */ }
+
+        // Aplica correções ao lead ANTES de decidir (permite regravar campos).
+        if (understood?.kind === "correction" && understood.corrections) {
+          Object.assign(lead, understood.corrections);
+          ctx.lead = lead;
+        }
+
+        // Reverse calc: lead disse "posso pagar X/mês"
+        if (understood?.kind === "reverse_calc" && understood.monthly_payment) {
+          const rate = Number(settings?.default_interest_rate || profile?.default_interest_rate || 15);
+          const term = lead.term_months || Number(settings?.default_term_months || 6);
+          const amount = sdrMod.reverseCalcAmount(understood.monthly_payment, term, rate);
+          lead.amount_requested = amount;
+          ctx.lead = lead;
+        }
+
         const decision =
           lead.stage === "simulated"
             ? sdrMod.handleSimulatedReply(ctx)
             : sdrMod.decide(ctx);
+
+        // Se o lead PERGUNTOU algo, responde a pergunta ANTES da próxima etapa
+        if (understood?.kind === "question") {
+          const ans = sdrMod.faqAnswer(understood.topic, ctx);
+          decision.reply = `${ans}\n\n${decision.reply}`;
+        }
+
+        // Small talk curto: apenas reforça a pergunta pendente
+        if (understood?.kind === "small_talk" && (lead.notes as any)?.last_intent) {
+          decision.reply = decision.reply; // segue fluxo
+        }
+
 
         // Persiste alterações do lead (mantém memória de contexto)
         const mergedNotes = {
