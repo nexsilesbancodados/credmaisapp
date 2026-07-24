@@ -81,20 +81,35 @@ export default function HistoricoFinanceiro() {
     [period, customFrom, customTo]
   );
 
-  // Filtra contratos quitados pela data de encerramento (updated_at)
-  // com fallback para created_at, quando updated_at não existir.
+  // Data de quitação = maior paid_at das parcelas do contrato.
+  // Fallback: created_at (caso não haja parcelas com paid_at, ex: contratos antigos).
+  const completedAtMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!data) return map;
+    for (const i of data.installments as any[]) {
+      if (!i.paid_at || !i.contract_id) continue;
+      const cur = map.get(i.contract_id);
+      if (!cur || new Date(i.paid_at) > new Date(cur)) {
+        map.set(i.contract_id, i.paid_at);
+      }
+    }
+    return map;
+  }, [data]);
+
   const contractsInRange = useMemo(() => {
     if (!data) return [] as any[];
-    if (!start && !end) return data.contracts;
-    return data.contracts.filter((c: any) => {
-      const dateStr = c.updated_at || c.completed_at || c.created_at;
-      if (!dateStr) return false;
-      const d = new Date(dateStr);
+    const list = data.contracts.map((c: any) => ({
+      ...c,
+      completed_at: completedAtMap.get(c.id) || c.created_at,
+    }));
+    if (!start && !end) return list;
+    return list.filter((c: any) => {
+      const d = new Date(c.completed_at);
       if (start && d < start) return false;
       if (end && d > end) return false;
       return true;
     });
-  }, [data, start, end]);
+  }, [data, completedAtMap, start, end]);
 
   const summary = useMemo(() => {
     if (!data) return null;
