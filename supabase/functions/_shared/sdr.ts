@@ -114,15 +114,46 @@ export function parseMoney(text: string): number | null {
   return null;
 }
 
+// Palavras que NÃO podem virar "nome" mesmo se casarem o formato alfabético.
+const NAME_STOP = new Set([
+  "oi","ola","olá","opa","hey","hi","hello","alo","alô",
+  "bom","boa","dia","tarde","noite","madrugada",
+  "tudo","bem","bom","boa","como","vai","voce","você","vc",
+  "sim","nao","não","ok","beleza","blz","valeu","obrigado","obrigada","obg","vlw",
+  "quero","preciso","gostaria","queria","gostava",
+  "emprestimo","empréstimo","dinheiro","credito","crédito","grana","valor",
+  "info","informacao","informação","informacoes","informações","duvida","dúvida",
+  "atendente","humano","pessoa","consultor","gerente","dono","responsavel","responsável",
+  "por","favor","obrigado","obrigada","boa","tarde","urgente","agora",
+]);
+
+function looksLikeGreeting(text: string): boolean {
+  const toks = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
+  if (!toks.length) return false;
+  const stopHits = toks.filter(t => NAME_STOP.has(t)).length;
+  // Se metade ou mais dos tokens são stop-words de saudação/intent, NÃO é nome.
+  return stopHits >= Math.ceil(toks.length / 2);
+}
+
 export function parseName(text: string, pushName?: string): string | null {
   const t = (text || "").trim();
+  // Padrão explícito "meu nome é ..."
   const m1 = t.match(/(?:meu nome (?:é|eh)|me chamo|sou (?:o|a)?|aqui (?:é|eh) (?:o|a)?)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60})/i);
-  if (m1) return capitalizeName(m1[1].trim());
-  // Se a mensagem é curta e parece só um nome (2+ palavras alfabéticas)
-  if (t.length <= 60 && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(t) && t.split(/\s+/).length >= 2) {
+  if (m1) {
+    const cand = m1[1].trim();
+    if (!looksLikeGreeting(cand)) return capitalizeName(cand);
+  }
+  // Só aceita mensagem inteira como nome quando NÃO parece saudação/intent
+  // e tem 2+ palavras alfabéticas puras.
+  if (
+    t.length <= 60 &&
+    /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(t) &&
+    t.split(/\s+/).length >= 2 &&
+    !looksLikeGreeting(t)
+  ) {
     return capitalizeName(t);
   }
-  if (pushName && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(pushName)) {
+  if (pushName && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(pushName) && !looksLikeGreeting(pushName)) {
     return capitalizeName(pushName);
   }
   return null;
