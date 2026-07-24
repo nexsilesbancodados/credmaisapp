@@ -522,17 +522,17 @@ const Clientes = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/40 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent">
-                  <th className="w-10 px-4 py-3.5">
+                  <th className="w-10 px-4 py-2.5">
                     <input type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible}
                       ref={(el) => { if (el) el.indeterminate = !allVisibleSelected && selected.size > 0; }}
                       className="check-premium" />
                   </th>
-                  <th className="text-left px-5 py-3.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Cliente</th>
-                  <th className="text-left px-5 py-3.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Contato</th>
-                  <th className="text-left px-5 py-3.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Contratos</th>
-                  <th className="text-left px-5 py-3.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Score</th>
-                  <th className="text-left px-5 py-3.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Status</th>
-                  <th className="text-right px-5 py-3.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Ações</th>
+                  <th className="text-left px-5 py-2.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Cliente</th>
+                  <th className="text-left px-5 py-2.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Contato</th>
+                  <th className="text-left px-5 py-2.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Contratos</th>
+                  <th className="text-left px-5 py-2.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Score</th>
+                  <th className="text-left px-5 py-2.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Status</th>
+                  <th className="text-right px-5 py-2.5 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.14em]">Ações</th>
                 </tr>
               </thead>
               <tbody>
