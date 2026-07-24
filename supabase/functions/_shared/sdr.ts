@@ -459,6 +459,84 @@ export function handleSimulatedReply(ctx: SdrContext): SdrDecision {
   };
 }
 
+/**
+ * Fase de coleta de documentos após aceite.
+ * @param ctx contexto padrão do SDR
+ * @param opts.mediaReceived true se a mensagem trouxe imagem/PDF (o webhook já salvou)
+ * @param opts.docKey chave do doc que acabou de ser aceito (quando mediaReceived=true)
+ */
+export function handleAwaitingDocsReply(
+  ctx: SdrContext,
+  opts: { mediaReceived: boolean; docKey?: string } = { mediaReceived: false },
+): SdrDecision {
+  const lead = ctx.lead;
+  const firstName = (lead.name || "").split(/\s+/)[0] || "";
+  const t = (ctx.incomingText || "").toLowerCase();
+  const empresa = ctx.companyName;
+
+  // Escape: pediu humano
+  if (/(atendente|humano|pessoa|consultor|falar com algu[eé]m)/i.test(t)) {
+    return {
+      reply: `Sem problema, ${firstName}! Vou chamar um consultor da *${empresa}* pra continuar com você.`,
+      updates: { stage: "handoff", tags: mergeTags(lead.tags, ["pediu_humano_docs"]) },
+      stage: "handoff",
+      needsHuman: true,
+      handoffReason: "Lead pediu atendente durante coleta de docs",
+      intent: "handoff",
+    };
+  }
+
+  const notes: any = lead.notes || {};
+  let received: string[] = Array.isArray(notes?.docs?.received) ? [...notes.docs.received] : [];
+
+  if (opts.mediaReceived && opts.docKey && !received.includes(opts.docKey)) {
+    received.push(opts.docKey);
+  }
+
+  const nextDoc = REQUIRED_DOCS.find(d => !received.includes(d.key));
+  const updatedNotes = { ...notes, docs: { ...(notes.docs || {}), received } };
+
+  // Todos os documentos entregues → handoff
+  if (!nextDoc) {
+    return {
+      reply: `Perfeito, ${firstName}! ✅ Recebi todos os documentos. Um consultor da *${empresa}* já vai revisar e te chamar pra fechar o contrato. Obrigado! 🙌`,
+      updates: {
+        stage: "handoff",
+        tags: mergeTags(lead.tags, ["docs_completos"]),
+        score: 100,
+        notes: { ...updatedNotes, docs: { ...updatedNotes.docs, completed_at: new Date().toISOString() } },
+      },
+      stage: "handoff",
+      needsHuman: true,
+      handoffReason: "Documentação completa — pronto para fechar",
+      intent: "docs_complete",
+    };
+  }
+
+  // Recebeu um doc e ainda faltam
+  if (opts.mediaReceived) {
+    const done = REQUIRED_DOCS.length - REQUIRED_DOCS.findIndex(d => d.key === nextDoc.key);
+    const total = REQUIRED_DOCS.length;
+    return {
+      reply: `Recebido ✅ (${total - REQUIRED_DOCS.findIndex(d => d.key === nextDoc.key)}/${total})\n\nAgora me envia o *${nextDoc.label}*, por favor. 📎`,
+      updates: { notes: updatedNotes },
+      stage: "awaiting_docs",
+      needsHuman: false,
+      intent: "doc_received",
+    };
+  }
+
+  // Nada anexado — apenas nudge com o próximo pendente
+  return {
+    reply: `${firstName ? firstName + ", " : ""}ainda estou aguardando o *${nextDoc.label}* aqui pelo WhatsApp (foto ou PDF). Se preferir falar com alguém, é só responder *atendente*. 🙂`,
+    updates: {},
+    stage: "awaiting_docs",
+    needsHuman: false,
+    intent: "await_doc",
+  };
+}
+
+
 function mergeTags(existing: string[] | undefined, add: string[]): string[] {
   const set = new Set([...(existing || []), ...add]);
   return Array.from(set);
