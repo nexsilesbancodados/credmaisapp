@@ -1810,7 +1810,7 @@ const ClienteDetalhe = () => {
             <Plus size={16} /> Novo Empréstimo
           </button>
           {contracts.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhum contrato</p>
+            <EmptyState compact title="Nenhum contrato" description="Clique em Novo Empréstimo para começar." />
           ) : contracts.map((c: any) => {
             const cInsts = installments.filter((i: any) => i.contract_id === c.id);
             const total = cInsts.length;
