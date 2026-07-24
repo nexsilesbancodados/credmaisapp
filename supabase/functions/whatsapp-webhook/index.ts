@@ -78,6 +78,104 @@ function matchesAny(text: string, words: string[]): boolean {
   return words.some(w => t.includes(w));
 }
 
+function money(v: number) {
+  return `R$ ${Number(v || 0).toFixed(2).replace(".", ",")}`;
+}
+
+function buildLocalBotResult(params: {
+  client: any;
+  incomingText: string;
+  overdue: any[];
+  dueToday: any[];
+  totalOverdue: number;
+  totalDueToday: number;
+  profile: any;
+  tone: any;
+}) {
+  const { client, incomingText, overdue, dueToday, totalOverdue, totalDueToday, profile, tone } = params;
+  const txt = (incomingText || "").toLowerCase();
+  const firstName = (client?.name || "").split(" ").filter(Boolean)[0] || "tudo bem";
+  const hasDebt = overdue.length > 0 || dueToday.length > 0;
+  const total = totalOverdue + totalDueToday;
+  const oldest = overdue[0] || dueToday[0];
+  const pix = profile?.pix_key ? `\nPIX: *${profile.pix_key}*` : "";
+
+  if (/comprovante|paguei|pix feito|transferi|enviei/i.test(incomingText || "")) {
+    return {
+      reply: `Perfeito, ${firstName}. Me manda o comprovante em imagem ou PDF por aqui, por favor. Assim eu confiro e registro a baixa certinho 👍`,
+      is_receipt: false,
+      is_rollover: false,
+      is_promise: false,
+      promise_date: null,
+      receipt_value: 0,
+      needs_human: false,
+      intent: "comprovante",
+      sentiment: "neutro",
+      urgencia: "media",
+      dificuldade_financeira: false,
+      desconto_pct: 0,
+      summary: "Cliente informou pagamento; aguardando comprovante",
+    };
+  }
+
+  const wantsDeal = /negoci|acordo|desconto|parcela|parcelar|prazo|consigo pagar|deixar por|fazer por|dividir/i.test(txt);
+  if (wantsDeal) {
+    const base = hasDebt
+      ? `Oi ${firstName}, consigo te ajudar sim. Consta ${oldest ? `a parcela #${oldest.installment_number}` : "pendência"} e o total em aberto está em *${money(total)}*.`
+      : `Oi ${firstName}, consigo te ajudar sim. Não localizei parcela vencida agora, mas vou registrar seu pedido.`;
+    return {
+      reply: `${base}\nMe diga quanto você consegue pagar hoje e qual data para o restante, que eu encaminho para validar a melhor condição. 🤝${pix}`,
+      is_receipt: false,
+      is_rollover: false,
+      is_promise: /dia|amanh|hoje|semana|pago|pagar/i.test(txt),
+      promise_date: null,
+      receipt_value: 0,
+      needs_human: true,
+      intent: "negociacao",
+      sentiment: tone?.frustrated ? "frustrado" : "neutro",
+      urgencia: "alta",
+      dificuldade_financeira: tone?.hardship === true,
+      desconto_pct: /desconto|deixar por|fazer por/i.test(txt) ? 10 : 0,
+      summary: "Cliente pediu negociação; precisa validação humana",
+    };
+  }
+
+  if (hasDebt) {
+    const label = overdue.length > 0 ? "em atraso" : "vencendo hoje";
+    return {
+      reply: `Oi ${firstName}! Vi aqui ${oldest ? `a parcela #${oldest.installment_number}` : "uma pendência"} ${label}.\nTotal para regularizar agora: *${money(total)}*.\nConsegue acertar hoje ou prefere combinar um prazo?${pix}`,
+      is_receipt: false,
+      is_rollover: false,
+      is_promise: false,
+      promise_date: null,
+      receipt_value: 0,
+      needs_human: false,
+      intent: "pagamento",
+      sentiment: "neutro",
+      urgencia: overdue.length > 0 ? "alta" : "media",
+      dificuldade_financeira: tone?.hardship === true,
+      desconto_pct: 0,
+      summary: "Cobrança objetiva com valores do sistema",
+    };
+  }
+
+  return {
+    reply: `Oi ${firstName}! Tudo bem? Me conta o que você precisa que eu te ajudo por aqui. 🙂`,
+    is_receipt: false,
+    is_rollover: false,
+    is_promise: false,
+    promise_date: null,
+    receipt_value: 0,
+    needs_human: false,
+    intent: "duvida",
+    sentiment: "neutro",
+    urgencia: "baixa",
+    dificuldade_financeira: false,
+    desconto_pct: 0,
+    summary: "Atendimento geral sem pendência vencida",
+  };
+}
+
 function isWithinBusinessHours(settings: any): boolean {
   if (!settings?.bot_business_hours_only) return true;
   const start = settings.bot_business_start || "08:00";
