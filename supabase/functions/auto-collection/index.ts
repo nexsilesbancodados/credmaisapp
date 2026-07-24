@@ -453,6 +453,8 @@ ${extraDiversity}`;
                   client_name: client.name, email, channel: "email",
                   rule: matchingRule, days_overdue: daysOverdue, days_until_due: daysUntilDue,
                   pre_due: isPreDue, amount: totalAmount, reliability, ai_generated: !!settings.bot_use_ai,
+                  approach: nextApproach,
+                  message_preview: (message || "").slice(0, 400),
                 },
               });
             } else { errors.push(`${client.name} (email): ${JSON.stringify(res.error).slice(0, 120)}`); }
