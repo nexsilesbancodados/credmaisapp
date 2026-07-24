@@ -68,6 +68,10 @@ const ClienteDetalhe = () => {
   const [loanLateFee, setLoanLateFee] = useState("2");
   const [loanMode, setLoanMode] = useState<LoanMode>("installments");
   const [loanGracePeriods, setLoanGracePeriods] = useState("2");
+  const [loanGraceDays, setLoanGraceDays] = useState("0");
+  const [loanPaymentMethod, setLoanPaymentMethod] = useState("pix");
+  const [loanEarlyDiscount, setLoanEarlyDiscount] = useState("0");
+  const [loanMaxInterestCap, setLoanMaxInterestCap] = useState("");
   const [loanNotes, setLoanNotes] = useState("");
   const [loanLoading, setLoanLoading] = useState(false);
   const [showMoreActions, setShowMoreActions] = useState(false);
@@ -315,6 +319,10 @@ const ClienteDetalhe = () => {
         total_amount: loanCalc.total, total_interest: loanCalc.totalInterest, status: "active",
         loan_mode: loanMode,
         grace_periods: loanMode === "grace" ? (parseInt(loanGracePeriods) || 0) : 0,
+        grace_days: parseInt(loanGraceDays) || 0,
+        payment_method: loanPaymentMethod,
+        early_payment_discount_percent: parseFloat(loanEarlyDiscount) || 0,
+        max_interest_cap_percent: loanMaxInterestCap ? parseFloat(loanMaxInterestCap) : null,
         notes: loanNotes || null,
       }).select().single();
       if (cErr) throw cErr;
@@ -1227,6 +1235,14 @@ const ClienteDetalhe = () => {
           setLoanLateFee={setLoanLateFee}
           loanNotes={loanNotes}
           setLoanNotes={setLoanNotes}
+          loanGraceDays={loanGraceDays}
+          setLoanGraceDays={setLoanGraceDays}
+          loanPaymentMethod={loanPaymentMethod}
+          setLoanPaymentMethod={setLoanPaymentMethod}
+          loanEarlyDiscount={loanEarlyDiscount}
+          setLoanEarlyDiscount={setLoanEarlyDiscount}
+          loanMaxInterestCap={loanMaxInterestCap}
+          setLoanMaxInterestCap={setLoanMaxInterestCap}
           loanCalc={loanCalc}
           loanLoading={loanLoading}
           onClose={() => setNewLoanMode(false)}

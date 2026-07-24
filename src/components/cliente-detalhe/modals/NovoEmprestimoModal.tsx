@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, Shield } from "lucide-react";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import { INPUT, FREQ, LOAN_MODES, fmt } from "../constants";
 import type { LoanMode } from "@/lib/loanMath";
@@ -27,6 +27,14 @@ type Props = {
   setLoanLateFee: (v: string) => void;
   loanNotes: string;
   setLoanNotes: (v: string | ((n: string) => string)) => void;
+  loanGraceDays: string;
+  setLoanGraceDays: (v: string) => void;
+  loanPaymentMethod: string;
+  setLoanPaymentMethod: (v: string) => void;
+  loanEarlyDiscount: string;
+  setLoanEarlyDiscount: (v: string) => void;
+  loanMaxInterestCap: string;
+  setLoanMaxInterestCap: (v: string) => void;
   loanCalc: { totalInterest: number; total: number; installmentAmount: number; schedule: number[] } | null;
   loanLoading: boolean;
   onClose: () => void;
@@ -116,6 +124,44 @@ export default function NovoEmprestimoModal(p: Props) {
             </div>
           </div>
         </div>
+
+        {/* ── Condições Avançadas ─────────────────────────────────────── */}
+        <details className="rounded-xl border border-border bg-card/60 p-3 group">
+          <summary className="cursor-pointer flex items-center justify-between list-none">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-2">
+              <Shield size={13} className="text-primary" /> Condições Avançadas
+            </span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground group-open:hidden">Abrir</span>
+            <span className="text-[10px] uppercase tracking-wider text-primary hidden group-open:inline">Fechar</span>
+          </summary>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Carência (dias)</label>
+              <input type="number" value={p.loanGraceDays} onChange={e => p.setLoanGraceDays(e.target.value)} placeholder="0" className={INPUT} />
+              <p className="text-[10px] text-muted-foreground mt-1">Dias sem multa após vencimento</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Forma de Pagamento</label>
+              <select value={p.loanPaymentMethod} onChange={e => p.setLoanPaymentMethod(e.target.value)} className={INPUT}>
+                <option value="pix">PIX</option>
+                <option value="cash">Dinheiro</option>
+                <option value="boleto">Boleto</option>
+                <option value="transfer">Transferência</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Desconto Antecipação (%)</label>
+              <input type="number" step="0.1" value={p.loanEarlyDiscount} onChange={e => p.setLoanEarlyDiscount(e.target.value)} placeholder="0" className={INPUT} />
+              <p className="text-[10px] text-muted-foreground mt-1">% se pagar antes do vencimento</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Teto de Juros (%)</label>
+              <input type="number" step="1" value={p.loanMaxInterestCap} onChange={e => p.setLoanMaxInterestCap(e.target.value)} placeholder="Sem limite" className={INPUT} />
+              <p className="text-[10px] text-muted-foreground mt-1">Máx. % do capital em juros</p>
+            </div>
+          </div>
+        </details>
+
         {p.loanCalc && (
           <div className="space-y-2">
             <div className="bg-muted/30 rounded-lg p-3 grid grid-cols-3 gap-3 text-sm">
