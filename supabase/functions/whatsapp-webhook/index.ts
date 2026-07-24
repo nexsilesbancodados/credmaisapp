@@ -1347,7 +1347,61 @@ serve(async (req) => {
       };
     }).filter(Boolean);
 
+    // ─── FAQ KNOWLEDGE BASE ─────────────────────────────────────────
+    // Antes de ir pra IA (que custa tokens), checamos a base de
+    // conhecimento local com centenas de intents. Match direto = resposta
+    // instantânea, determinística e sem consumir crédito.
+    try {
+      if (messageType === "text" && incomingText && incomingText.length >= 2) {
+        const siteUrlFaq = (Deno.env.get("SITE_URL") || "https://credmaisapp.com.br").replace(/\/$/, "");
+        const firstNameFaq = (client.name || "").split(" ")[0] || "";
+        const faqCtx = {
+          companyName: settings.company_name || profile?.name || "nossa equipe",
+          firstName: firstNameFaq,
+          portalLink: `${siteUrlFaq}/portal`,
+          pixKey: profile?.pix_key || undefined,
+          pixKeyType: profile?.pix_key_type || undefined,
+          ownerName: profile?.name || undefined,
+          rate: Number(settings.default_interest_rate ?? profile?.default_interest_rate ?? 15),
+          term: Number(settings.default_term_months ?? 6),
+          minAmount: Number(settings.min_loan_amount ?? 100),
+          maxAmount: Number(settings.max_loan_amount ?? 100000),
+          lateFeePct: Number(settings.late_fee_percent ?? 2),
+          dailyFeePct: Number(settings.daily_interest_percent ?? 0.033),
+          earlyDiscountPct: Number(settings.early_payment_discount_percent ?? 0),
+          supportPhone: settings.portal_contact_phone || undefined,
+          supportEmail: settings.portal_contact_email || undefined,
+          businessHours: settings.business_hours || undefined,
+          hasOpenInstallments: (installments || []).some((i: any) => i.status !== "paid"),
+          isKnownClient: true,
+        };
+        const faqHit = findFaqMatch(incomingText, faqCtx);
+        // Só respondemos direto da base se:
+        // - Score alto (≥ 10 = match direto de regex)
+        // - Não há tom hostil detectado (deixa a IA modular a resposta)
+        // - Cliente não pediu explicitamente humano (roteado antes no menu)
+        if (faqHit && faqHit.score >= 10 && !detectClientTone(incomingText).hostile) {
+          await botSay(faqHit.answer);
+          await supabase.from("audit_logs").insert({
+            user_id: userId, entity_type: "whatsapp_bot", action: "faq_hit",
+            entity_id: client.id, details: {
+              phone: senderPhone,
+              faq_id: faqHit.entry.id,
+              category: faqHit.entry.category,
+              score: faqHit.score,
+              knowledge_base_size: FAQ_COUNT,
+              message_preview: incomingText.slice(0, 120),
+            },
+          });
+          return new Response(JSON.stringify({ status: "faq_hit", id: faqHit.entry.id, score: faqHit.score }), { headers: corsHeaders });
+        }
+      }
+    } catch (e) {
+      console.warn("[faq] falhou (seguindo pra IA):", (e as Error).message);
+    }
+
     // Histórico de conversa (mais largo)
+
     const conversationHistory: any[] = [];
     if (convoId) {
       const { data: msgHistory } = await supabase
