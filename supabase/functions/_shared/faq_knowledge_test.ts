@@ -243,12 +243,8 @@ const CASE_MUTATORS: Array<(s: string) => string> = [
 const TYPO_MAP: Record<string, string> = {
   "não": "nao", "você": "vc", "voce": "vc", "está": "ta", "esta": "ta",
   "também": "tbm", "obrigado": "brigado", "muito": "mto",
-  "por favor": "pfv", "quando": "qnd", "hoje": "hj", "hoje": "hj",
+  "por favor": "pfv", "quando": "qnd", "hoje": "hj",
 };
-// Nota: chaves duplicadas geram warning TS. Segunda passada abaixo trata "também" → "tb"
-function typoExtra(s: string): string {
-  return s.replaceAll("também", "tb");
-}
 function typo(s: string): string {
   let out = s;
   for (const [k, v] of Object.entries(TYPO_MAP)) {
