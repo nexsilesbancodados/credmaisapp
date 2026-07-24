@@ -217,6 +217,30 @@ export default function NovoEmprestimoModal(p: Props) {
           </div>
         </details>
 
+        {p.loanFreq === "custom" && p.loanCalc && (
+          <div className="rounded-xl border border-border bg-card/60 p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarCog size={13} className="text-primary" />
+              <span className="text-xs font-semibold text-foreground">Datas Customizadas</span>
+              <span className="text-[10px] text-muted-foreground ml-auto">{p.loanCalc.schedule.length} parcela(s)</span>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {p.loanCalc.schedule.map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground w-8">#{i + 1}</span>
+                  <input type="date" value={p.loanCustomDates[i] || ""}
+                    onChange={e => {
+                      const next = [...p.loanCustomDates];
+                      next[i] = e.target.value;
+                      p.setLoanCustomDates(next);
+                    }}
+                    className={INPUT + " flex-1 py-1.5 text-xs"} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {p.loanCalc && (
           <div className="space-y-2">
             <div className="bg-muted/30 rounded-lg p-3 grid grid-cols-3 gap-3 text-sm">
