@@ -47,7 +47,7 @@ const sections: MenuSection[] = [
     items: [
       { label: "Clientes", icon: Users, path: "/clientes" },
       { label: "Cobranças", icon: Receipt, path: "/cobrancas" },
-      { label: "Investidores", icon: Landmark, path: "/investidores", highlight: true },
+      { label: "Investidores", icon: Landmark, path: "/investidores" },
       { label: "Carteira", icon: Wallet, path: "/carteira" },
     ],
   },
@@ -57,24 +57,17 @@ const sections: MenuSection[] = [
       { label: "Lucros", icon: TrendingUp, path: "/lucros", module: "lucros" },
       { label: "Gastos", icon: DollarSign, path: "/gastos", module: "gastos" },
       { label: "Relatórios", icon: FileText, path: "/relatorios", module: "relatorios" },
-      { label: "Histórico financeiro", icon: Archive, path: "/historico-financeiro", highlight: true },
+      { label: "Histórico financeiro", icon: Archive, path: "/historico-financeiro" },
     ],
   },
   {
-    title: "Bot & Automações",
+    title: "Comunicação & Automações",
     collapsible: true,
     defaultOpen: true,
     items: [
-      { label: "WhatsApp & Cobrança automática", icon: Bot, path: "/comunicacao", highlight: true },
+      { label: "WhatsApp & Cobrança automática", icon: Bot, path: "/comunicacao" },
       { label: "Inbox WhatsApp", icon: MessageCircle, path: "/comunicacao/inbox", module: "comunicacao_inbox" },
       { label: "Chat interno", icon: MessageCircle, path: "/chat", module: "chat_interno" },
-    ],
-  },
-  {
-    title: "Equipe & Portais",
-    collapsible: true,
-    defaultOpen: false,
-    items: [
       { label: "Cobradores", icon: UserCheck, path: "/cobradores", module: "cobradores" },
       { label: "QR Code de acesso", icon: QrCode, path: "/qrcode", module: "portais" },
     ],
@@ -99,7 +92,6 @@ const sections: MenuSection[] = [
     items: [
       { label: "Configurações", icon: Settings, path: "/configuracoes" },
       { label: "Suporte", icon: LifeBuoy, path: "/suporte" },
-      { label: "Histórico", icon: ClipboardList, path: "/historico" },
       { label: "Auditoria", icon: Shield, path: "/auditoria" },
       { label: "Admin", icon: Crown, path: "/admin" },
     ],
@@ -154,7 +146,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         onClick={() => navigate(item.path)}
         title={collapsed ? item.label : undefined}
         className={`
-          group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium
+          group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium
           transition-all duration-200 ease-out will-change-transform
           hover:translate-x-0.5
           ${active
