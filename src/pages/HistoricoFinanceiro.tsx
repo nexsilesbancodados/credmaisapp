@@ -257,7 +257,7 @@ export default function HistoricoFinanceiro() {
                       Quitado
                     </Badge>
                     <span className="text-[11px] text-muted-foreground">
-                      {formatBR(c.updated_at || c.created_at)} · {c.num_installments}x
+                      {formatBR(c.completed_at || c.created_at)} · {c.num_installments}x
                     </span>
                   </div>
                 </div>
