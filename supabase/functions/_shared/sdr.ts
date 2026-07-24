@@ -192,6 +192,8 @@ export function decide(ctx: SdrContext): SdrDecision {
   const low = text.toLowerCase();
   const lead = ctx.lead || {};
   const updates: Partial<Lead> = {};
+  const lastIntent: string = (lead.notes as any)?.last_intent || "";
+  const hasHistory = (ctx.history || []).length > 0;
 
   // stop / desqualifica
   if (/(parar|para de|cancela|remove|não\s*quero|nao\s*quero)/i.test(low) && /(mensagem|contato|falar|voc[eê])/i.test(low)) {
@@ -226,10 +228,15 @@ export function decide(ctx: SdrContext): SdrDecision {
   const emailFound = parseEmail(text);
   if (emailFound && !lead.email) updates.email = emailFound;
 
-  // Valor / renda / finalidade — heurística contextual
+  // Roteamento CONTEXTUAL por última pergunta feita.
+  // Se o bot acabou de perguntar algo, direciona a resposta pro slot certo.
   const money1 = parseMoney(text);
   if (money1) {
-    if (!lead.amount_requested && /(quero|preciso|pegar|empr[eé]stimo|valor|r\$|mil|k)/i.test(low)) {
+    if (lastIntent === "ask_amount" && !lead.amount_requested) {
+      updates.amount_requested = money1;
+    } else if (lastIntent === "ask_income" && !lead.income_monthly) {
+      updates.income_monthly = money1;
+    } else if (!lead.amount_requested && /(quero|preciso|pegar|empr[eé]stimo|valor|r\$|mil|k)/i.test(low)) {
       updates.amount_requested = money1;
     } else if (!lead.income_monthly && /(ganho|renda|sal[aá]rio|recebo|fatur)/i.test(low)) {
       updates.income_monthly = money1;
@@ -240,8 +247,17 @@ export function decide(ctx: SdrContext): SdrDecision {
     }
   }
 
-  const purposeFound = !lead.purpose ? parsePurpose(text) : null;
+  // Se a última pergunta foi sobre finalidade, aceita o texto como finalidade
+  const purposeFound = !lead.purpose
+    ? (lastIntent === "ask_purpose" && text.length >= 3 && text.length <= 120 && !money1 && !cpfFound && !emailFound
+        ? (parsePurpose(text) || text.trim())
+        : parsePurpose(text))
+    : null;
   if (purposeFound && purposeFound !== lead.name) updates.purpose = purposeFound;
+
+  // Afirmações curtas ("sim", "isso", "confirmo") — apenas confirmam, não avançam campo
+  const isYes = /^(sim|isso|isso mesmo|confirmo|correto|ok|beleza|pode ser)\.?$/i.test(text);
+  const isNo = /^(n[aã]o|nao|negativo)\.?$/i.test(text);
 
   const merged: Partial<Lead> = { ...lead, ...updates };
 
@@ -250,10 +266,13 @@ export function decide(ctx: SdrContext): SdrDecision {
   const firstName = (merged.name || "").split(/\s+/)[0] || "";
   const oi = firstName ? `${firstName}, ` : "";
 
-  // NEW → primeiro contato
+  // NEW → primeiro contato (só saúda se ainda não houver histórico)
   if (!lead.name && !merged.name) {
+    const opener = hasHistory
+      ? `Pra eu te chamar pelo nome, me diz seu *nome completo*, por favor. 😊`
+      : `Oi! 👋 Aqui é da *${empresa}*, atendimento de empréstimos. Antes de simular pra você, me diz seu *nome completo*, por favor. 😊`;
     return {
-      reply: `Oi! 👋 Aqui é da *${empresa}*, atendimento de empréstimos. Antes de simular pra você, me diz seu *nome completo*, por favor. 😊`,
+      reply: opener,
       updates: { ...updates, stage: "qualifying" },
       stage: "qualifying",
       needsHuman: false,
