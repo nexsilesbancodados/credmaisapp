@@ -256,11 +256,6 @@ serve(async (req) => {
           acordo_desconto: ["acordo_desconto", "condicao_especial", "parcelamento_flex", "desconto_a_vista"],
           cobranca_padrao: ["cobranca_padrao", "opcao_parcelar", "pergunta_previsao", "cta_portal"],
         };
-        const stageApproach = isPreDue ? "lembrete_amigavel"
-          : selectedDays >= 30 ? "cobranca_firme"
-          : selectedDays >= 15 ? "acordo_desconto"
-          : selectedDays >= 7 ? "cobranca_padrao"
-          : "cobranca_padrao";
         const recentApproaches = (intentsList || [])
           .map((i: any) => i && typeof i.abordagem === "string" ? i.abordagem : null)
           .filter(Boolean).slice(0, 3) as string[];
