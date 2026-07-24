@@ -1487,7 +1487,7 @@ const ClienteDetalhe = () => {
                   <button onClick={() => setActiveTab("historico")} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
                 </div>
                 {sortedEvents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">Nenhuma atividade registrada</p>
+                  <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações e eventos aparecerão aqui." />
                 ) : (
                   <div className="relative pl-5 space-y-3">
                     <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
