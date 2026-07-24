@@ -197,10 +197,16 @@ serve(async (req) => {
         const cutoff = new Date(now.getTime() - cooldownHours * 3600000).toISOString();
 
         const { data: alreadySent } = await supabase
-          .from("audit_logs").select("id, created_at")
+          .from("audit_logs").select("id, created_at, details")
           .eq("user_id", userId).eq("entity_type", "auto_collection")
-          .eq("entity_id", clientId).gte("created_at", cutoff).limit(1);
-        if (alreadySent?.length) { skipped++; continue; }
+          .eq("entity_id", clientId).order("created_at", { ascending: false }).limit(5);
+        const withinCooldown = alreadySent?.find(r => new Date(r.created_at as string).getTime() >= new Date(cutoff).getTime());
+        if (withinCooldown) { skipped++; continue; }
+        // Últimas mensagens enviadas — para banir repetição no prompt
+        const recentSentTexts: string[] = (alreadySent || [])
+          .map(r => (r.details as any)?.message_preview)
+          .filter((s: any) => typeof s === "string" && s.length > 0)
+          .slice(0, 3);
 
         const { data: history } = await supabase
           .from("contract_installments").select("status, paid_at, due_date")
