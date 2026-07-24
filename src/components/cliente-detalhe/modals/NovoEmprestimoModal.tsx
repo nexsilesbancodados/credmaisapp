@@ -1,7 +1,7 @@
-import { X, Shield } from "lucide-react";
+import { X, Shield, CalendarCog, Plus, Trash2 } from "lucide-react";
 import VoiceRecorder from "@/components/VoiceRecorder";
-import { INPUT, FREQ, LOAN_MODES, fmt } from "../constants";
-import type { LoanMode } from "@/lib/loanMath";
+import { INPUT, FREQ, LOAN_MODES, DAILY_MODES, fmt } from "../constants";
+import type { LoanMode, DailyMode } from "@/lib/loanMath";
 
 type Props = {
   clientName: string;
@@ -35,7 +35,17 @@ type Props = {
   setLoanEarlyDiscount: (v: string) => void;
   loanMaxInterestCap: string;
   setLoanMaxInterestCap: (v: string) => void;
-  loanCalc: { totalInterest: number; total: number; installmentAmount: number; schedule: number[] } | null;
+  loanValueMode: "rate" | "installment";
+  setLoanValueMode: (v: "rate" | "installment") => void;
+  loanInstallmentValue: string;
+  setLoanInstallmentValue: (v: string) => void;
+  loanDailyMode: DailyMode;
+  setLoanDailyMode: (v: DailyMode) => void;
+  loanFirstDueAuto: boolean;
+  setLoanFirstDueAuto: (v: boolean) => void;
+  loanCustomDates: string[];
+  setLoanCustomDates: (v: string[]) => void;
+  loanCalc: { totalInterest: number; total: number; installmentAmount: number; schedule: number[]; derivedRate?: number } | null;
   loanLoading: boolean;
   onClose: () => void;
   onSubmit: () => void;
