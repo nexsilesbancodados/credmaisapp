@@ -14,6 +14,7 @@ import {
   detectResponseLoop,
   detectClientTone,
 } from "../_shared/bot_utils.ts";
+import { findFaqMatch, FAQ_COUNT } from "../_shared/faq_knowledge.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
