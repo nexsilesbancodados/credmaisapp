@@ -114,15 +114,46 @@ export function parseMoney(text: string): number | null {
   return null;
 }
 
+// Palavras que NÃO podem virar "nome" mesmo se casarem o formato alfabético.
+const NAME_STOP = new Set([
+  "oi","ola","olá","opa","hey","hi","hello","alo","alô",
+  "bom","boa","dia","tarde","noite","madrugada",
+  "tudo","bem","bom","boa","como","vai","voce","você","vc",
+  "sim","nao","não","ok","beleza","blz","valeu","obrigado","obrigada","obg","vlw",
+  "quero","preciso","gostaria","queria","gostava",
+  "emprestimo","empréstimo","dinheiro","credito","crédito","grana","valor",
+  "info","informacao","informação","informacoes","informações","duvida","dúvida",
+  "atendente","humano","pessoa","consultor","gerente","dono","responsavel","responsável",
+  "por","favor","obrigado","obrigada","boa","tarde","urgente","agora",
+]);
+
+function looksLikeGreeting(text: string): boolean {
+  const toks = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
+  if (!toks.length) return false;
+  const stopHits = toks.filter(t => NAME_STOP.has(t)).length;
+  // Se metade ou mais dos tokens são stop-words de saudação/intent, NÃO é nome.
+  return stopHits >= Math.ceil(toks.length / 2);
+}
+
 export function parseName(text: string, pushName?: string): string | null {
   const t = (text || "").trim();
+  // Padrão explícito "meu nome é ..."
   const m1 = t.match(/(?:meu nome (?:é|eh)|me chamo|sou (?:o|a)?|aqui (?:é|eh) (?:o|a)?)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60})/i);
-  if (m1) return capitalizeName(m1[1].trim());
-  // Se a mensagem é curta e parece só um nome (2+ palavras alfabéticas)
-  if (t.length <= 60 && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(t) && t.split(/\s+/).length >= 2) {
+  if (m1) {
+    const cand = m1[1].trim();
+    if (!looksLikeGreeting(cand)) return capitalizeName(cand);
+  }
+  // Só aceita mensagem inteira como nome quando NÃO parece saudação/intent
+  // e tem 2+ palavras alfabéticas puras.
+  if (
+    t.length <= 60 &&
+    /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(t) &&
+    t.split(/\s+/).length >= 2 &&
+    !looksLikeGreeting(t)
+  ) {
     return capitalizeName(t);
   }
-  if (pushName && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(pushName)) {
+  if (pushName && /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}$/.test(pushName) && !looksLikeGreeting(pushName)) {
     return capitalizeName(pushName);
   }
   return null;
@@ -608,8 +639,12 @@ export interface Understood {
  * modelo falhou — nesse caso o caller usa apenas a máquina de estados.
  */
 export async function understand(ctx: SdrContext): Promise<Understood | null> {
+  // Fallback determinístico primeiro — funciona SEM LLM.
+  // Cobre os casos mais comuns pra o bot não ficar mudo se a IA estiver off.
+  const localFirst = understandLocal(ctx);
+
   try {
-    if (!Deno.env.get("ANTHROPIC_API_KEY")) return null;
+    if (!Deno.env.get("ANTHROPIC_API_KEY")) return localFirst;
     const lead = ctx.lead || {};
     const filled = {
       name: lead.name || null,
@@ -649,7 +684,7 @@ export async function understand(ctx: SdrContext): Promise<Understood | null> {
       temperature: 0.1,
     });
     const m = (out || "").match(/\{[\s\S]*\}/);
-    if (!m) return null;
+    if (!m) return localFirst;
     const parsed = JSON.parse(m[0]);
     // sanitiza corrections
     const c = parsed.corrections || {};
@@ -671,9 +706,62 @@ export async function understand(ctx: SdrContext): Promise<Understood | null> {
     };
   } catch (e) {
     console.error("[sdr.understand] falhou:", (e as Error).message);
-    return null;
+    return localFirst;
   }
 }
+
+/**
+ * Compreensão puramente determinística (sem LLM). Usada como fallback quando
+ * o Anthropic está indisponível — evita que o bot fique mudo/robótico.
+ */
+export function understandLocal(ctx: SdrContext): Understood | null {
+  const raw = (ctx.incomingText || "").trim();
+  if (!raw) return null;
+  const t = raw.toLowerCase();
+
+  // Small talk / agradecimento
+  if (/^(obrigad[oa]|valeu|vlw|agradeç|agradec|show|top|beleza|blz|ok|okay|tá bom|ta bom|entendi|certo|👍|🙏|❤️)[!.?\s]*$/i.test(raw)) {
+    return { kind: "small_talk", confidence: 0.9 };
+  }
+
+  // Perguntas: heurística por interrogação/palavras-gatilho
+  const isQuestion = raw.includes("?") ||
+    /^(qual|quanto|como|quando|onde|posso|dá|da pra|precisa|precisam|tem|existe|é possivel|é possível|será|sera|quero saber|me diz|explica|pode|posso antecipar|se eu)/i.test(t);
+  if (isQuestion) {
+    let topic: Understood["topic"] = "other";
+    if (/(juro|taxa|percentual|porcentagem|cet|encargo)/i.test(t)) topic = "rate";
+    else if (/(prazo|parcela|quantas.*vezes|em quantas|em quantos meses|meses)/i.test(t)) topic = "term";
+    else if (/(car[eê]ncia|come[çc]ar.*pagar depois|adiar.*primeira)/i.test(t)) topic = "grace";
+    else if (/(antecipa|quitar antes|pagar adiantado|desconto.*antecipa)/i.test(t)) topic = "early_pay";
+    else if (/(atras|multa|juros.*dia|se n[aã]o pagar)/i.test(t)) topic = "late_fee";
+    else if (/(m[ií]nimo|m[aá]ximo|at[eé] quanto|quanto.*empresta|valor m[ií]nimo)/i.test(t)) topic = "min_max";
+    else if (/(precisa|documento|exigencia|exigência|garantia|avalist|comprovante)/i.test(t)) topic = "requirements";
+    else if (/(como funciona|como fecha|como assina|passo a passo|processo)/i.test(t)) topic = "how_it_works";
+    else if (/(seguro|golpe|confi[aá]vel|verdade|s[eé]rio|golpist)/i.test(t)) topic = "safety";
+    else if (/(quem s[aã]o|empresa|voc[eê]s s[aã]o|cnpj)/i.test(t)) topic = "company";
+    return { kind: "question", topic, raw_question: raw.slice(0, 200), confidence: 0.75 };
+  }
+
+  // Objeção / desânimo
+  if (/(muito caro|abusiv|absurd|desisti|deixa pra l[aá]|n[aã]o compensa|caro demais|juros alto|taxa alta)/i.test(t)) {
+    return { kind: "objection", confidence: 0.8 };
+  }
+
+  // Reverse calc: "posso pagar 300 por mês", "consigo 500/mês"
+  const rev = t.match(/(?:pago|posso|consigo|d[aá] pra pagar|caberia|encaixa)\s*(?:uns\s*|umas\s*|cerca de\s*|r\$\s*)?(\d[\d.,]*)\s*(?:por m[eê]s|\/m[eê]s|mensai|mensal|no m[eê]s)/i);
+  if (rev) {
+    const n = parseFloat(rev[1].replace(/\./g, "").replace(",", "."));
+    if (!isNaN(n) && n >= 20) return { kind: "reverse_calc", monthly_payment: n, confidence: 0.8 };
+  }
+
+  // Correção explícita: "na verdade...", "corrigindo..."
+  if (/(na verdade|corrigindo|correção|desculpa|errei|é\s+\d)/i.test(t)) {
+    return { kind: "correction", confidence: 0.5 };
+  }
+
+  return null; // deixa a máquina de estados seguir
+}
+
 
 /** Inversão: quanto o lead consegue tomar dado que quer parcela = P em n meses. */
 export function reverseCalcAmount(monthly: number, term: number, monthlyRatePct: number): number {

@@ -605,10 +605,20 @@ serve(async (req) => {
           decision.reply = `${ans}\n\n${decision.reply}`;
         }
 
-        // Small talk curto: apenas reforça a pergunta pendente
-        if (understood?.kind === "small_talk" && (lead.notes as any)?.last_intent) {
-          decision.reply = decision.reply; // segue fluxo
+        // Small talk ("ok", "valeu", "obrigado", "beleza") — acusa recebimento
+        // e traz de volta a pergunta pendente sem soar robótico.
+        if (understood?.kind === "small_talk") {
+          const ack = /obrigad|valeu|vlw|agrade/i.test(incomingText) ? "Imagina! 🙌" :
+                      /^ok|beleza|blz|show|top|ta bom|tá bom/i.test(incomingText.trim()) ? "Perfeito! 👌" :
+                      "Show! 👍";
+          decision.reply = `${ack} ${decision.reply}`;
         }
+
+        // Se o modelo não entendeu (unclear) e existe pergunta pendente, reforça claramente
+        if (understood?.kind === "unclear" && (lead.notes as any)?.last_intent) {
+          decision.reply = `Desculpa, não peguei bem 🙈 ${decision.reply}`;
+        }
+
 
 
         // Persiste alterações do lead (mantém memória de contexto)
@@ -699,16 +709,50 @@ serve(async (req) => {
       if (shouldGreet && (isGreetingIntent || !incomingText)) {
         const firstName = (client.name || "").split(" ")[0] || "tudo bem";
         const empresa = settings.company_name || profile?.name || "nossa equipe";
-        const greetings = [
-          `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Como posso te ajudar hoje?`,
-          `Olá ${firstName}, tudo bem? 🙂 Aqui é da *${empresa}*. Me conta, em que posso te ajudar?`,
-          `E aí ${firstName}! 🤝 Aqui é da *${empresa}*. O que você precisa hoje?`,
-          `Oi ${firstName}! 😊 Aqui é da *${empresa}*. Manda pra mim o que você precisa que eu já te ajudo.`,
-        ];
-        await botSay(greetings[Math.floor(Math.random() * greetings.length)]);
+
+        // Puxa contexto MÍNIMO pra saudação ficar consciente:
+        //  - parcelas em atraso / vence hoje
+        //  - promessa de pagamento em aberto
+        //  - última intenção registrada na memória
+        const { data: openInst } = await supabase
+          .from("contract_installments")
+          .select("id, amount, due_date, status, late_fee, installment_number")
+          .eq("client_id", client.id)
+          .in("status", ["pending", "overdue"])
+          .order("due_date", { ascending: true })
+          .limit(20);
+
+        const nowBr = new Date(Date.now() - 3 * 60 * 60 * 1000);
+        const todayStr = nowBr.toISOString().split("T")[0];
+        const overdueQ = (openInst || []).filter((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) < todayStr);
+        const dueTodayQ = (openInst || []).filter((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) === todayStr);
+        const totOver = overdueQ.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
+        const totToday = dueTodayQ.reduce((s: number, i: any) => s + Number(i.amount), 0);
+
+        const memObj = parseMemory(client.bot_memory);
+        const openPromise = (memObj.promessas || []).find((p: any) => p && typeof p === "object" && p.data && p.data >= todayStr);
+
+        let greeting: string;
+        if (openPromise) {
+          greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Vi aqui que você tinha combinado de acertar até *${openPromise.data}*${openPromise.valor ? ` (${money(Number(openPromise.valor))})` : ""}. Consegue fechar hoje?`;
+        } else if (overdueQ.length > 0) {
+          const oldest = overdueQ[0];
+          greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Passando pra alinhar a parcela #${oldest.installment_number} (${money(totOver)} em aberto). Consegue resolver hoje ou prefere combinar um prazo?`;
+        } else if (dueTodayQ.length > 0) {
+          greeting = `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Sua parcela de *${money(totToday)}* vence *hoje*. Quer que eu te envie o PIX?`;
+        } else {
+          const generic = [
+            `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Como posso te ajudar hoje?`,
+            `Olá ${firstName}, tudo bem? 🙂 Aqui é da *${empresa}*. Me conta, em que posso te ajudar?`,
+            `E aí ${firstName}! 🤝 Aqui é da *${empresa}*. O que você precisa hoje?`,
+          ];
+          greeting = generic[Math.floor(Math.random() * generic.length)];
+        }
+
+        await botSay(greeting);
         await supabase.from("audit_logs").insert({
           user_id: userId, entity_type: "whatsapp_bot", action: "greeted_known_client",
-          entity_id: client.id, details: { phone: senderPhone },
+          entity_id: client.id, details: { phone: senderPhone, overdue: overdueQ.length, due_today: dueTodayQ.length, has_promise: !!openPromise },
         });
         return new Response(JSON.stringify({ status: "greeted" }), { headers: corsHeaders });
       }
