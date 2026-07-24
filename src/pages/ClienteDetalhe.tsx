@@ -305,13 +305,10 @@ const ClienteDetalhe = () => {
   // quinzenal = 15 dias e diária = dias úteis (mon-fri), igual à criação padrão.
   const generateDueDates = (start: string, freq: string, count: number, periodsAhead?: number) => {
     return generateInstallmentSchedule({
-      startDate: loanStartDate,
-      firstDueDate: loanFirstDueAuto ? undefined : start,
+      startDate: start,
       frequency: freq as Frequency,
       count,
       periodsAhead,
-      dailyMode: loanDailyMode,
-      customDates: freq === "custom" ? loanCustomDates : undefined,
     });
   };
 
