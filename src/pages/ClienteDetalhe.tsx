@@ -1487,7 +1487,7 @@ const ClienteDetalhe = () => {
                   <button onClick={() => setActiveTab("historico")} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
                 </div>
                 {sortedEvents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-6">Nenhuma atividade registrada</p>
+                  <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações e eventos aparecerão aqui." />
                 ) : (
                   <div className="relative pl-5 space-y-3">
                     <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
@@ -1517,11 +1517,8 @@ const ClienteDetalhe = () => {
                   </label>
                 </div>
                 {clientDocs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileIcon size={28} className="mx-auto text-muted-foreground/40 mb-2" />
-                    <p className="text-xs text-muted-foreground">Nenhum documento anexado</p>
-                    <p className="text-[10px] text-muted-foreground/70 mt-1">RG, comprovante de renda, contrato assinado...</p>
-                  </div>
+                  <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
+
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {clientDocs.map((d: any) => {
@@ -1813,7 +1810,7 @@ const ClienteDetalhe = () => {
             <Plus size={16} /> Novo Empréstimo
           </button>
           {contracts.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhum contrato</p>
+            <EmptyState compact title="Nenhum contrato" description="Clique em Novo Empréstimo para começar." />
           ) : contracts.map((c: any) => {
             const cInsts = installments.filter((i: any) => i.contract_id === c.id);
             const total = cInsts.length;

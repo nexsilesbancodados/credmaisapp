@@ -1636,7 +1636,7 @@ const Cobrancas = () => {
               </div>
               <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2">
                 {list.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Nenhuma tentativa registrada ainda.</p>
+                  <EmptyState compact title="Sem tentativas" description="Nenhuma cobrança foi registrada para esta parcela ainda." />
                 ) : list.map((a: any) => (
                   <div key={a.id} className="rounded-xl border border-border bg-card/50 p-3">
                     <div className="flex items-center justify-between gap-2 mb-1">
