@@ -1155,7 +1155,7 @@ const ClienteDetalhe = () => {
               </h1>
               <div className="flex flex-wrap justify-center md:justify-start items-center gap-1.5 mt-2.5">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${client.status === "Ativo" ? "bg-success/10 text-success border-success/30" : "bg-muted text-muted-foreground border-border"}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${client.status === "Ativo" ? "bg-success animate-pulse" : "bg-muted-foreground"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${client.status === "Ativo" ? "bg-success" : "bg-muted-foreground"}`} />
                   {client.status}
                 </span>
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${riskTone}`}>
