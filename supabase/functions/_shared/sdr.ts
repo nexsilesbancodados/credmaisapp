@@ -465,3 +465,146 @@ export async function polishWithAI(
     return base;
   }
 }
+
+/* ─────────────── Compreensão livre (LLM) ─────────────── */
+
+export type UnderstoodKind =
+  | "answer_slot"       // resposta normal ao slot atual — segue máquina de estados
+  | "question"          // lead perguntou algo (taxa, prazo, carência, etc.)
+  | "correction"        // lead corrigiu um dado já coletado
+  | "reverse_calc"      // "posso pagar X por mês, quanto consigo?"
+  | "small_talk"        // agradecimento, saudação, "ok", "obrigado"
+  | "objection"         // achou caro, desistiu, reclamou
+  | "off_topic"         // pergunta fora do escopo
+  | "unclear";
+
+export interface Understood {
+  kind: UnderstoodKind;
+  /** tópico da pergunta quando kind=question */
+  topic?: "rate" | "term" | "grace" | "early_pay" | "late_fee" | "min_max" | "requirements" | "how_it_works" | "safety" | "company" | "other";
+  /** correções: campo -> novo valor (parseado) */
+  corrections?: Partial<Pick<Lead, "name" | "cpf" | "email" | "amount_requested" | "income_monthly" | "purpose" | "term_months">>;
+  /** para reverse_calc */
+  monthly_payment?: number;
+  /** texto livre da pergunta original (para responder) */
+  raw_question?: string;
+  /** confiança 0..1 */
+  confidence?: number;
+}
+
+/**
+ * Camada de compreensão via LLM. Devolve `null` quando não há API key ou o
+ * modelo falhou — nesse caso o caller usa apenas a máquina de estados.
+ */
+export async function understand(ctx: SdrContext): Promise<Understood | null> {
+  try {
+    if (!Deno.env.get("ANTHROPIC_API_KEY")) return null;
+    const lead = ctx.lead || {};
+    const filled = {
+      name: lead.name || null,
+      cpf: lead.cpf ? "***" + String(lead.cpf).slice(-2) : null,
+      email: lead.email || null,
+      amount_requested: lead.amount_requested || null,
+      income_monthly: lead.income_monthly || null,
+      purpose: lead.purpose || null,
+      term_months: lead.term_months || null,
+    };
+    const lastIntent = (lead.notes as any)?.last_intent || "";
+    const hist = (ctx.history || []).slice(-6).map(h => `${h.role === "bot" ? "Assistente" : "Cliente"}: ${h.text}`).join("\n");
+
+    const system =
+      `Você classifica mensagens de um lead num bot de empréstimos pessoais brasileiro. ` +
+      `Retorne SOMENTE JSON válido (sem markdown, sem comentário), no formato: ` +
+      `{"kind":"answer_slot|question|correction|reverse_calc|small_talk|objection|off_topic|unclear",` +
+      `"topic":"rate|term|grace|early_pay|late_fee|min_max|requirements|how_it_works|safety|company|other",` +
+      `"corrections":{"name":str|null,"cpf":str|null,"email":str|null,"amount_requested":num|null,"income_monthly":num|null,"purpose":str|null,"term_months":num|null},` +
+      `"monthly_payment":num|null,"raw_question":str|null,"confidence":0..1}. ` +
+      `Regras: (1) "question" = lead PERGUNTOU algo (ex.: "qual a taxa?", "tem carência?", "posso antecipar?"). ` +
+      `(2) "correction" = lead alterou um dado JÁ preenchido (ex.: "na verdade meu CPF é 111..."). ` +
+      `(3) "reverse_calc" = lead disse quanto pode pagar por mês e quer saber o valor total. ` +
+      `(4) "answer_slot" = respondeu à pergunta pendente. (5) só popule corrections com valores que já existem em campos_ja_preenchidos.`;
+
+    const user =
+      `Última pergunta do bot (intent): ${lastIntent}\n` +
+      `Campos já preenchidos: ${JSON.stringify(filled)}\n` +
+      `Histórico recente:\n${hist || "(vazio)"}\n\n` +
+      `Mensagem do lead: """${ctx.incomingText}"""\n\n` +
+      `Responda apenas com o JSON.`;
+
+    const out = await callAnthropic({
+      system,
+      messages: [{ role: "user", content: user }],
+      maxTokens: 350,
+      temperature: 0.1,
+    });
+    const m = (out || "").match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    const parsed = JSON.parse(m[0]);
+    // sanitiza corrections
+    const c = parsed.corrections || {};
+    const clean: any = {};
+    if (typeof c.name === "string" && c.name.trim().length >= 2) clean.name = c.name.trim();
+    if (typeof c.cpf === "string") { const p = parseCPF(c.cpf); if (p) clean.cpf = p; }
+    if (typeof c.email === "string") { const p = parseEmail(c.email); if (p) clean.email = p; }
+    if (typeof c.amount_requested === "number" && c.amount_requested > 0) clean.amount_requested = c.amount_requested;
+    if (typeof c.income_monthly === "number" && c.income_monthly > 0) clean.income_monthly = c.income_monthly;
+    if (typeof c.purpose === "string" && c.purpose.trim().length >= 3) clean.purpose = c.purpose.trim();
+    if (typeof c.term_months === "number") clean.term_months = Math.max(1, Math.min(60, Math.round(c.term_months)));
+    return {
+      kind: parsed.kind || "unclear",
+      topic: parsed.topic,
+      corrections: Object.keys(clean).length ? clean : undefined,
+      monthly_payment: typeof parsed.monthly_payment === "number" ? parsed.monthly_payment : undefined,
+      raw_question: typeof parsed.raw_question === "string" ? parsed.raw_question : undefined,
+      confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.5,
+    };
+  } catch (e) {
+    console.error("[sdr.understand] falhou:", (e as Error).message);
+    return null;
+  }
+}
+
+/** Inversão: quanto o lead consegue tomar dado que quer parcela = P em n meses. */
+export function reverseCalcAmount(monthly: number, term: number, monthlyRatePct: number): number {
+  const n = Math.max(1, Math.min(60, Math.round(term || 6)));
+  const total = monthly * n;
+  const amount = total / (1 + (monthlyRatePct / 100) * n);
+  return Math.round(amount * 100) / 100;
+}
+
+/** Gera resposta factual às perguntas do lead a partir das settings. */
+export function faqAnswer(topic: Understood["topic"], ctx: SdrContext): string {
+  const s = ctx.settings || {};
+  const rate = Number(s.default_interest_rate || ctx.profile?.default_interest_rate || 15);
+  const term = Number(s.default_term_months || 6);
+  const min = Number(s.min_loan_amount || 100);
+  const max = Number(s.max_loan_amount || 100000);
+  const lateFee = Number(s.late_fee_percent ?? 2);
+  const dailyFee = Number(s.daily_interest_percent ?? 0.033);
+  const company = ctx.companyName;
+  switch (topic) {
+    case "rate":
+      return `Nossa taxa padrão é de *${rate}% ao mês* (juros simples). A taxa final pode variar conforme o valor, prazo e sua análise. 📊`;
+    case "term":
+      return `Trabalhamos com prazos de *1 a 60 parcelas*. O padrão é *${term}x*, mas você escolhe o que couber no seu bolso.`;
+    case "grace":
+      return `Sim, temos opção de *carência* (você começa a pagar depois de alguns meses). Posso incluir isso na sua simulação — quer?`;
+    case "early_pay":
+      return `Claro! Você pode *antecipar parcelas* a qualquer momento e ainda ganha desconto proporcional sobre os juros que não vencerem. 💚`;
+    case "late_fee":
+      return `Em caso de atraso: multa de *${lateFee}%* sobre a parcela + juros de *${dailyFee}% ao dia*. Mas se avisar antes, a gente sempre tenta ajustar. 🤝`;
+    case "min_max":
+      return `Emprestamos de *R$ ${min.toLocaleString("pt-BR")}* até *R$ ${max.toLocaleString("pt-BR")}* por contrato.`;
+    case "requirements":
+      return `Precisamos só de: *CPF*, *nome completo*, *comprovante de renda* (opcional) e um *contato de referência*. Sem consulta ao SPC/Serasa na maioria dos casos. ✅`;
+    case "how_it_works":
+      return `Funciona assim: 1) você me passa valor, finalidade e renda; 2) faço a simulação; 3) se aprovar, um consultor da *${company}* fecha o contrato por aqui mesmo; 4) o dinheiro cai no seu Pix. 🚀`;
+    case "safety":
+      return `Somos a *${company}* e trabalhamos com contrato assinado digitalmente. Seus dados ficam protegidos e só uso o CPF pra análise interna. 🔒`;
+    case "company":
+      return `Aqui é a *${company}*, atendimento oficial. Estou aqui pra te ajudar a montar a melhor proposta. 😉`;
+    default:
+      return `Boa pergunta! Se puder me dar um pouco mais de detalhe eu te respondo certinho. Enquanto isso, seguimos com a simulação? 🙂`;
+  }
+}
+
