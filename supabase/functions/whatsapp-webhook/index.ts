@@ -90,19 +90,28 @@ function isWithinBusinessHours(settings: any): boolean {
 
 async function evolutionFetch(apiUrl: string, apiKey: string, path: string, body: any) {
   try {
-    return await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
+    const resp = await fetch(`${apiUrl.replace(/\/$/, "")}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: apiKey },
       body: JSON.stringify(body),
     });
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => "");
+      console.warn("[evolution] request failed", path, resp.status, errBody.slice(0, 300));
+    }
+    return resp;
   } catch (e) {
     console.error("evolution fetch failed", path, e);
     return null;
   }
 }
 
+function whatsappNumber(value: string) {
+  return String(value || "").split("@")[0].replace(/\D/g, "");
+}
+
 async function sendPresence(apiUrl: string, apiKey: string, instance: string, jid: string, presence: "composing" | "paused" | "available") {
-  await evolutionFetch(apiUrl, apiKey, `/chat/sendPresence/${instance}`, { number: jid, presence, delay: 1200 });
+  await evolutionFetch(apiUrl, apiKey, `/chat/sendPresence/${instance}`, { number: whatsappNumber(jid), presence, delay: 1200 });
 }
 
 async function markAsRead(apiUrl: string, apiKey: string, instance: string, key: any) {
@@ -112,10 +121,11 @@ async function markAsRead(apiUrl: string, apiKey: string, instance: string, key:
 async function sendText(apiUrl: string, apiKey: string, instance: string, jid: string, text: string) {
   const chunks = text.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
   const list = chunks.length > 0 ? chunks : [text];
+  const number = whatsappNumber(jid);
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await new Promise(r => setTimeout(r, 800));
     await evolutionFetch(apiUrl, apiKey, `/message/sendText/${instance}`, {
-      number: jid,
+      number,
       text: list[i],
       delay: Math.min(1500, 400 + list[i].length * 25),
     });
