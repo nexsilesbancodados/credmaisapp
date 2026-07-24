@@ -1082,13 +1082,14 @@ Ex3 — Cliente pede parcelar atraso de 3 parcelas:
       await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "register_payment_promise", toolInput: { data: result.promise_date, contexto: incomingText.slice(0,200) } });
     }
 
-    // Aumento de Score por bom comportamento (pagou em dia ou renovou)
-    if (result.is_receipt) {
+    // Aumento de Score APENAS quando o comprovante foi de fato validado (trusted).
+    // P1-9: antes o score subia mesmo em comprovantes rejeitados/duvidosos.
+    if (result.is_receipt && trustedReceipt) {
       const currentScore = client.credit_score || 50;
       let newScore = currentScore;
       if (result.is_rollover) newScore = Math.min(100, currentScore + 2); // Renovação = +2
       else newScore = Math.min(100, currentScore + 5); // Pagamento = +5
-      
+
       if (newScore !== currentScore) {
         await supabase.from("clients").update({ credit_score: newScore }).eq("id", client.id);
       }
