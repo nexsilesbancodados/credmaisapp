@@ -216,7 +216,7 @@ const Dashboard = () => {
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <span className="status-dot status-dot-success animate-pulse" />
+                <span className="status-dot status-dot-success" />
                 Ao vivo
               </span>
               <span className="opacity-30">·</span>
