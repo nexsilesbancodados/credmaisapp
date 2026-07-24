@@ -1136,6 +1136,78 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          ai_summary: string | null
+          amount_requested: number | null
+          converted_client_id: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          id: string
+          income_monthly: number | null
+          last_message_at: string | null
+          name: string | null
+          next_followup_at: string | null
+          notes: Json
+          phone: string
+          purpose: string | null
+          score: number
+          source: string
+          stage: string
+          tags: string[]
+          term_months: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          amount_requested?: number | null
+          converted_client_id?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          income_monthly?: number | null
+          last_message_at?: string | null
+          name?: string | null
+          next_followup_at?: string | null
+          notes?: Json
+          phone: string
+          purpose?: string | null
+          score?: number
+          source?: string
+          stage?: string
+          tags?: string[]
+          term_months?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: string | null
+          amount_requested?: number | null
+          converted_client_id?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          income_monthly?: number | null
+          last_message_at?: string | null
+          name?: string | null
+          next_followup_at?: string | null
+          notes?: Json
+          phone?: string
+          purpose?: string | null
+          score?: number
+          source?: string
+          stage?: string
+          tags?: string[]
+          term_months?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_templates: {
         Row: {
           content: string

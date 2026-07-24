@@ -491,13 +491,121 @@ serve(async (req) => {
     if (apiUrl && apiKey) sendPresence(apiUrl, apiKey, instanceName, senderJid, "composing").catch(() => {});
 
     if (!client) {
-      const { data: recentLead } = await supabase.from("audit_logs").select("created_at").eq("user_id", userId).eq("entity_type", "whatsapp_lead").eq("action", "lead_message").ilike("details->>phone", senderPhone).order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (!recentLead || Date.now() - new Date(recentLead.created_at).getTime() > 60 * 60 * 1000) {
+      // ─── SDR: Agente completo de qualificação de lead ────────────
+      try {
+        const companyName = settings.company_name || profile?.name || "nossa equipe";
+
+        // Carrega (ou cria) o lead persistente
+        const { data: existingLead } = await supabase
+          .from("leads")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("phone", senderPhone)
+          .maybeSingle();
+
+        let lead: any = existingLead;
+        if (!lead) {
+          const { data: created } = await supabase
+            .from("leads")
+            .insert({
+              user_id: userId,
+              phone: senderPhone,
+              stage: "new",
+              source: "whatsapp",
+              last_message_at: new Date().toISOString(),
+              notes: { pushName: pushName || null },
+            })
+            .select("*")
+            .single();
+          lead = created;
+        }
+
+        // Histórico recente da conversa para contexto
+        let history: Array<{ role: "user" | "bot"; text: string }> = [];
+        if (convoId) {
+          const { data: msgs } = await supabase
+            .from("whatsapp_messages")
+            .select("direction, content")
+            .eq("conversation_id", convoId)
+            .order("created_at", { ascending: false })
+            .limit(10);
+          history = (msgs || [])
+            .reverse()
+            .map((m: any) => ({ role: m.direction === "in" ? "user" as const : "bot" as const, text: m.content || "" }))
+            .filter(h => h.text);
+        }
+
+        const sdrMod = await import("../_shared/sdr.ts");
+        const ctx = {
+          lead,
+          incomingText,
+          pushName,
+          settings,
+          profile,
+          companyName,
+          history,
+        };
+
+        const decision =
+          lead.stage === "simulated"
+            ? sdrMod.handleSimulatedReply(ctx)
+            : sdrMod.decide(ctx);
+
+        // Persiste alterações do lead
+        const patch: any = {
+          ...decision.updates,
+          stage: decision.stage,
+          last_message_at: new Date().toISOString(),
+          score: sdrMod.scoreLead({ ...lead, ...decision.updates }, settings),
+        };
+        // Follow-up automático (24h) se ficou parado no meio da qualificação
+        if (decision.stage === "qualifying") {
+          patch.next_followup_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        }
+        // Não sobrescreve updates.notes com undefined
+        if (!patch.notes) delete patch.notes;
+        if (!patch.tags) delete patch.tags;
+
+        await supabase.from("leads").update(patch).eq("id", lead.id);
+
+        // Polimento com IA (mantém o conteúdo determinístico)
+        let finalReply = decision.reply;
+        try {
+          finalReply = await sdrMod.polishWithAI(decision.reply, ctx, history);
+        } catch { /* mantém fallback */ }
+
+        await botSay(finalReply);
+
+        // Handoff para humano
+        if (decision.needsHuman && convoId) {
+          await supabase.from("whatsapp_conversations").update({
+            needs_human: true,
+            human_takeover_reason: decision.handoffReason || "SDR handoff",
+            updated_at: new Date().toISOString(),
+          }).eq("id", convoId);
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "Lead pronto para atendimento",
+            message: `${lead.name || "Lead"} (${senderPhone}) — ${decision.handoffReason || "aguardando consultor"}`,
+            type: "info",
+          });
+        }
+
+        // Notifica dono quando é a primeira interação relevante
+        if (lead.stage === "new" && decision.stage !== "new") {
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "Novo lead no WhatsApp",
+            message: `${senderPhone} iniciou uma conversa de empréstimo`,
+            type: "info",
+          });
+        }
+      } catch (sdrErr) {
+        console.error("[sdr] falha, caindo no fallback simples:", sdrErr);
         await botSay(pickGreeting(settings.company_name || profile?.name || "nossa empresa"));
-        await supabase.from("notifications").insert({ user_id: userId, title: "Novo contato", message: `Número ${senderPhone} não cadastrado.`, type: "info" });
       }
-      await supabase.from("audit_logs").insert({ user_id: userId, entity_type: "whatsapp_lead", action: "lead_message", details: { phone: senderPhone, message: incomingText } });
       return new Response(JSON.stringify({ status: "lead" }), { headers: corsHeaders });
+
     }
 
     // ─── SAUDAÇÃO PERSONALIZADA (cliente conhecido, primeira mensagem) ──
