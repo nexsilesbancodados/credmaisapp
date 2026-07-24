@@ -251,6 +251,82 @@ async function sendText(apiUrl: string, apiKey: string, instance: string, jid: s
   return allSent;
 }
 
+// ─── PIX EMV (BR Code Copia e Cola) ────────────────────────────────
+function pixCrc16(payload: string): string {
+  let crc = 0xffff;
+  for (let i = 0; i < payload.length; i++) {
+    crc ^= payload.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+      crc &= 0xffff;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, "0");
+}
+function pixTLV(id: string, value: string): string {
+  const len = value.length.toString().padStart(2, "0");
+  return `${id}${len}${value}`;
+}
+function pixNormalize(s: string): string {
+  return (s || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9 ]/g, "").slice(0, 25).trim() || "PAGADOR";
+}
+export function buildPixEmv(params: {
+  key: string;
+  amount: number;
+  merchantName: string;
+  merchantCity?: string;
+  txid?: string;
+}): string {
+  const key = (params.key || "").trim();
+  if (!key) return "";
+  const name = pixNormalize(params.merchantName || "RECEBEDOR");
+  const city = pixNormalize(params.merchantCity || "SAO PAULO").slice(0, 15);
+  const txid = pixNormalize(params.txid || "PAG").slice(0, 25) || "PAG";
+  const amount = Math.max(0, Number(params.amount || 0)).toFixed(2);
+  const mai = pixTLV("00", "br.gov.bcb.pix") + pixTLV("01", key);
+  const payload =
+    pixTLV("00", "01") +
+    pixTLV("26", mai) +
+    pixTLV("52", "0000") +
+    pixTLV("53", "986") +
+    (amount !== "0.00" ? pixTLV("54", amount) : "") +
+    pixTLV("58", "BR") +
+    pixTLV("59", name) +
+    pixTLV("60", city) +
+    pixTLV("62", pixTLV("05", txid));
+  const toCrc = payload + "6304";
+  return toCrc + pixCrc16(toCrc);
+}
+
+// ─── Envia mensagem com botões (Evolution) — fallback pra texto ─────
+async function sendButtons(apiUrl: string, apiKey: string, instance: string, jid: string, params: {
+  title?: string; body: string; footer?: string; buttons: Array<{ id: string; label: string }>;
+}): Promise<boolean> {
+  try {
+    const resp = await fetch(`${apiUrl.replace(/\/$/, "")}/message/sendButtons/${instance}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: JSON.stringify({
+        number: whatsappNumber(jid),
+        title: params.title || "",
+        description: params.body,
+        footer: params.footer || "",
+        buttons: params.buttons.slice(0, 3).map((b, i) => ({
+          buttonText: { displayText: b.label.slice(0, 20) },
+          buttonId: b.id,
+          type: 1,
+          index: i,
+        })),
+      }),
+    });
+    if (resp.ok) return true;
+  } catch (_) { /* fallback */ }
+  return false;
+}
+
+
 async function upsertConversation(supabase: any, params: {
   userId: string; phone: string; jid: string; instance: string;
   clientId?: string | null; contactName?: string | null;
@@ -685,142 +761,390 @@ serve(async (req) => {
     }
 
     // ─── MENU INTERATIVO (cliente conhecido) ───────────────────────────
-    // Fluxo determinístico: cliente digita 1/2/3/4 (ou "menu") e o bot
-    // executa a ação correspondente sem depender de IA.
+    // Menu contextual + linguagem natural + PIX Copia&Cola + deep-link
+    // portal + escolha de parcela + pagamento parcial + confirmação de
+    // handoff + follow-up + cooldown por opção + idempotência.
     try {
       const txtRaw = (incomingText || "").trim();
       const txtLow = txtRaw.toLowerCase();
-      const isMenuTrigger = /^(menu|opc[oõ]es|opcoes|ajuda|op[cç][aã]o)$/i.test(txtLow);
-      const menuChoice = /^([1-4])[\.\)\s]*$/.test(txtRaw) ? txtRaw.match(/^([1-4])/)![1] : null;
 
       const siteUrl = (Deno.env.get("SITE_URL") || "https://credmaisapp.com.br").replace(/\/$/, "");
-      const portalLink = `${siteUrl}/portal`;
       const empresa = settings.company_name || profile?.name || "nossa equipe";
       const firstName = (client.name || "").split(" ")[0] || "";
 
-      const showMenu = async (prefix?: string) => {
-        const header = prefix ? `${prefix}\n\n` : "";
-        const menu =
-          `${header}📋 *Menu — ${empresa}*\n` +
-          `Escolha uma opção respondendo com o número:\n\n` +
-          `*1* — Consultar minhas parcelas\n` +
-          `*2* — Acessar o portal do cliente\n` +
-          `*3* — Quitar parcela (chave PIX)\n` +
-          `*4* — Falar com um atendente 👤\n\n` +
-          `_Digite *menu* a qualquer momento pra ver essas opções novamente._`;
-        await botSay(menu);
-      };
+      // Estado leve do cliente (memória bot)
+      const mem = parseMemory(client.bot_memory);
+      const lastMenuAt: number = Number(mem.last_menu_at || 0);
+      const lastChoice: string | null = mem.last_menu_choice || null;
+      const now = Date.now();
+      const nowBrDay = new Date(now - 3 * 60 * 60 * 1000).toISOString().split("T")[0];
 
       // Helper: parcelas em aberto do cliente
       const loadOpenInstallments = async () => {
         const { data } = await supabase
           .from("contract_installments")
-          .select("id, amount, due_date, status, late_fee, installment_number, paid_amount")
+          .select("id, amount, due_date, status, late_fee, installment_number, paid_amount, contract_id")
           .eq("client_id", client.id)
           .in("status", ["pending", "overdue"])
           .order("due_date", { ascending: true })
           .limit(30);
         return data || [];
       };
+      const loadContractStats = async () => {
+        const { data: all } = await supabase
+          .from("contract_installments")
+          .select("amount, paid_amount, status")
+          .eq("client_id", client.id);
+        const total = (all || []).length;
+        const paid = (all || []).filter((i: any) => i.status === "paid").length;
+        const totalDue = (all || []).reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
+        const totalPaid = (all || []).reduce((s: number, i: any) => s + Number(i.paid_amount || 0), 0);
+        return { total, paid, totalDue, totalPaid, pct: total > 0 ? Math.round((paid / total) * 100) : 0 };
+      };
 
-      if (menuChoice) {
-        if (menuChoice === "1") {
-          const inst = await loadOpenInstallments();
-          if (inst.length === 0) {
-            await botSay(`Boa notícia, ${firstName}! ✅ Você não tem parcelas em aberto no momento. Se precisar de outra coisa, digite *menu*.`);
-          } else {
-            const nowBr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().split("T")[0];
-            const lines = inst.slice(0, 10).map((i: any) => {
-              const due = typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date;
-              const [y, m, d] = due.split("-");
-              const dueFmt = `${d}/${m}/${y}`;
-              const atrasada = due < nowBr;
-              const total = Number(i.amount) + (Number(i.late_fee) || 0);
-              const flag = atrasada ? "🔴" : (due === nowBr ? "🟡" : "🟢");
-              return `${flag} Parcela *#${i.installment_number}* — venc. *${dueFmt}* — ${money(total)}${atrasada && i.late_fee ? ` _(inclui multa ${money(i.late_fee)})_` : ""}`;
-            }).join("\n");
-            const totalGeral = inst.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0) - Number(i.paid_amount || 0), 0);
+      // Deep-link do portal com sessão pré-autenticada
+      const buildPortalDeepLink = async (): Promise<string> => {
+        try {
+          const { data } = await supabase
+            .from("portal_sessions")
+            .insert({ client_id: client.id })
+            .select("token").single();
+          const tk = data?.token;
+          return tk ? `${siteUrl}/portal?t=${tk}` : `${siteUrl}/portal`;
+        } catch { return `${siteUrl}/portal`; }
+      };
+
+      // Follow-up automático (agenda mensagem em 24h se cliente não retornar)
+      const scheduleFollowUp = async (text: string, hours = 24) => {
+        if (!convoId) return;
+        try {
+          await supabase.from("whatsapp_scheduled_messages").insert({
+            conversation_id: convoId,
+            user_id: userId,
+            text,
+            scheduled_for: new Date(now + hours * 3600_000).toISOString(),
+            status: "pending",
+          });
+        } catch (e) { console.warn("[followup] falhou:", e); }
+      };
+
+      // Estatística rápida pra decidir menu contextual
+      const openInstQuick = await loadOpenInstallments().catch(() => [] as any[]);
+      const hasOpen = openInstQuick.length > 0;
+      const hasPix = !!profile?.pix_key;
+      const humanRequested = !!(convoExisting as any)?.needs_human;
+
+      // Constrói itens do menu contextual
+      type MenuItem = { id: string; label: string; short: string };
+      const menuItems: MenuItem[] = [];
+      if (hasOpen) menuItems.push({ id: "1", label: "1️⃣ Consultar parcelas", short: "Consultar parcelas" });
+      menuItems.push({ id: "2", label: "2️⃣ Portal do cliente", short: "Portal" });
+      if (hasOpen && hasPix) menuItems.push({ id: "3", label: "3️⃣ Quitar parcela (PIX)", short: "Quitar (PIX)" });
+      if (!humanRequested) menuItems.push({ id: "4", label: "4️⃣ Falar com atendente", short: "Atendente" });
+      if (hasOpen && openInstQuick.some((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) < nowBrDay)) {
+        menuItems.push({ id: "5", label: "5️⃣ Renegociar dívida", short: "Renegociar" });
+      }
+
+      const menuBody =
+        menuItems.map(m => `*${m.id}* — ${m.label.replace(/^[0-9]️⃣ /, "")}`).join("\n") +
+        `\n\n_Você também pode escrever naturalmente (ex.: "quero ver minhas parcelas", "me manda o pix", "quitar #3", "quero pagar R$ 200"). Digite *menu* pra voltar._`;
+
+      const showMenu = async (prefix?: string) => {
+        const header = prefix ? `${prefix}\n\n` : "";
+        // Tenta botões nativos (Evolution) — se falhar, cai pra texto
+        let usedButtons = false;
+        if (apiUrl && apiKey && menuItems.length > 0) {
+          usedButtons = await sendButtons(apiUrl, apiKey, instanceName, senderJid, {
+            title: `📋 Menu — ${empresa}`,
+            body: `${prefix || `Oi ${firstName}!`} Escolha uma opção:`,
+            footer: "Ou digite o número",
+            buttons: menuItems.slice(0, 3).map(m => ({ id: `menu_${m.id}`, label: m.short })),
+          });
+        }
+        if (!usedButtons) {
+          await botSay(`${header}📋 *Menu — ${empresa}*\nEscolha uma opção respondendo com o número:\n\n${menuBody}`);
+        } else if (menuItems.length > 3) {
+          // Botões só suporta 3 itens — manda o resto por texto
+          const extra = menuItems.slice(3).map(m => `*${m.id}* — ${m.label.replace(/^[0-9]️⃣ /, "")}`).join("\n");
+          await botSay(`_Outras opções:_\n${extra}`);
+        }
+        await supabase.from("clients").update({
+          bot_memory: serializeMemory({ ...mem, last_menu_at: now }),
+        }).eq("id", client.id);
+      };
+
+      // ─── Roteamento por linguagem natural ────────────────────────────
+      const naturalRoute = (): { choice: string; parcelHint?: number; amountHint?: number } | null => {
+        const t = txtLow;
+        // Números direto
+        const numMatch = /^([1-5])[\.\)\s]*$/.exec(txtRaw);
+        if (numMatch) return { choice: numMatch[1] };
+        // Botão pressionado (buttonId → menu_X)
+        const btn = /menu_([1-5])/.exec(txtRaw);
+        if (btn) return { choice: btn[1] };
+        // Palavras naturais
+        const parcelHint = /(?:parcela\s*[#nº]?\s*|#)(\d{1,3})/i.exec(txtRaw)?.[1];
+        const amountHint = /r\$?\s*([\d\.]+(?:,\d{1,2})?)/i.exec(txtRaw)?.[1];
+        const amountNum = amountHint ? Number(amountHint.replace(/\./g, "").replace(",", ".")) : undefined;
+        if (/(consultar|ver|quais|minhas|listar|abertas?).*parc|parcela.*aberta|extrato|meu.?debito|débito|debito|em atraso|atrasadas?/i.test(t)) {
+          return { choice: "1" };
+        }
+        if (/(portal|site|link|acess|logar|entrar).*(cliente|conta|portal)?|link do portal|link do site/i.test(t)) {
+          return { choice: "2" };
+        }
+        if (/(quitar|pagar|paga hoje|paga agora|pix|chave|copia\s*e\s*cola|boleto|qrcode|qr code|c[oó]digo pix)/i.test(t)) {
+          return { choice: "3", parcelHint: parcelHint ? Number(parcelHint) : undefined, amountHint: amountNum };
+        }
+        if (matchesAny(t, HUMAN_WORDS) || /(atendente|humano|pessoa|consultor|gerente|responsavel|falar com voc[eê])/i.test(t)) {
+          return { choice: "4" };
+        }
+        if (/(renegoci|acordo|parcel(ar)? de novo|refinanc|nova negocia)/i.test(t)) {
+          return { choice: "5" };
+        }
+        // Cliente já mostrou parcelas antes e agora manda só um número/valor → interpreta como quitação
+        if (lastChoice === "1" && parcelHint) {
+          return { choice: "3", parcelHint: Number(parcelHint) };
+        }
+        if (lastChoice === "3" && amountNum) {
+          return { choice: "3", amountHint: amountNum };
+        }
+        return null;
+      };
+
+      const isMenuTrigger = /^(menu|opc[oõ]es|opcoes|ajuda|op[cç][aã]o|comandos)$/i.test(txtLow);
+      const route = naturalRoute();
+
+      // Idempotência: se cliente repetir a mesma opção em <30s, silencia
+      const cooldown = 30_000;
+      if (route && route.choice === lastChoice && (now - lastMenuAt) < cooldown) {
+        console.log("[menu] cooldown — resposta suprimida", { choice: route.choice });
+        return new Response(JSON.stringify({ status: "menu_cooldown" }), { headers: corsHeaders });
+      }
+
+      if (route) {
+        const choice = route.choice;
+
+        // Confirmação inteligente do handoff (#4): pergunta o assunto antes
+        if (choice === "4") {
+          const askedBefore = mem.human_reason_asked_at && (now - Number(mem.human_reason_asked_at) < 10 * 60_000);
+          if (!askedBefore) {
             await botSay(
-              `📄 *Suas parcelas em aberto* (${inst.length}):\n\n${lines}\n\n` +
-              `💰 *Total a regularizar:* ${money(totalGeral)}\n\n` +
-              `Digite *3* para quitar ou *menu* pra voltar às opções.`
+              `👤 Claro, ${firstName}! Antes de eu chamar um atendente, me diz *em uma linha o que você precisa* — assim ele já entra ciente do assunto. 😉\n\n` +
+              `_(Se preferir seguir direto, é só responder "quero atendente")._`
             );
+            await supabase.from("clients").update({
+              bot_memory: serializeMemory({ ...mem, human_reason_asked_at: now, last_menu_choice: "4_waiting" }),
+            }).eq("id", client.id);
+            await scheduleFollowUp(`Oi ${firstName}, ainda precisa falar com um atendente? Se sim, me responde qualquer mensagem e eu chamo já. Se resolveu, digite *menu*.`);
+            return new Response(JSON.stringify({ status: "human_reason_pending" }), { headers: corsHeaders });
           }
-        } else if (menuChoice === "2") {
-          const cpfHint = client.cpf_cnpj ? `\n\n📌 *Seu CPF de acesso:* ${client.cpf_cnpj}\n📅 *Data de nascimento:* usada para login.` : "";
-          await botSay(
-            `🔐 *Portal do Cliente — ${empresa}*\n\n` +
-            `Acesse aqui: ${portalLink}\n\n` +
-            `No portal você pode:\n` +
-            `• Ver todas as parcelas e comprovantes\n` +
-            `• Baixar recibos em PDF\n` +
-            `• Acompanhar seu contrato em tempo real${cpfHint}\n\n` +
-            `Digite *menu* pra voltar às opções.`
-          );
-        } else if (menuChoice === "3") {
-          const inst = await loadOpenInstallments();
-          if (inst.length === 0) {
-            await botSay(`Tudo em dia por aqui, ${firstName}! ✅ Sem parcelas a quitar. Digite *menu* se precisar de algo.`);
-          } else {
-            const oldest = inst[0];
-            const total = Number(oldest.amount) + (Number(oldest.late_fee) || 0);
-            const pixLine = profile?.pix_key
-              ? `\n💠 *PIX (${(profile.pix_key_type || "chave").toUpperCase()}):* \`${profile.pix_key}\`\n👤 *Favorecido:* ${profile.name || empresa}`
-              : `\n⚠️ Chave PIX ainda não configurada. Vou chamar um atendente pra te ajudar.`;
-            await botSay(
-              `💸 *Quitação — parcela #${oldest.installment_number}*\n\n` +
-              `Valor a pagar: *${money(total)}*${oldest.late_fee ? `\n_(inclui multa/juros de ${money(oldest.late_fee)})_` : ""}${pixLine}\n\n` +
-              `Após o pagamento, *envie o comprovante* aqui mesmo (imagem ou PDF) que eu registro a baixa na hora. 📎`
-            );
-            if (!profile?.pix_key && convoId) {
-              await supabase.from("whatsapp_conversations").update({
-                needs_human: true,
-                human_takeover_reason: "Cliente pediu PIX mas chave não configurada",
-                updated_at: new Date().toISOString(),
-              }).eq("id", convoId);
-            }
-          }
-        } else if (menuChoice === "4") {
           if (convoId) {
             await supabase.from("whatsapp_conversations").update({
-              needs_human: true,
-              bot_paused: true,
-              human_takeover_reason: "Cliente solicitou atendimento humano via menu",
+              needs_human: true, bot_paused: true,
+              human_takeover_reason: txtRaw.slice(0, 300) || "Cliente solicitou atendimento humano via menu",
               updated_at: new Date().toISOString(),
             }).eq("id", convoId);
           }
           await supabase.from("notifications").insert({
             user_id: userId,
             title: "Cliente pediu atendimento humano",
-            message: `${client.name || senderPhone} solicitou falar com atendente via menu WhatsApp.`,
+            message: `${client.name || senderPhone}: ${txtRaw.slice(0, 180) || "sem detalhes"}`,
             type: "warning",
           });
           await botSay(
-            `👤 Entendido, ${firstName}! Já avisei um atendente e *pausei o robô* aqui na sua conversa.\n\n` +
-            `Em breve alguém do time da *${empresa}* vai te responder por aqui mesmo. 🙏`
+            `👤 Perfeito, ${firstName}! Já avisei um atendente e *pausei o robô* aqui.\n\n` +
+            `Em breve alguém do time da *${empresa}* te responde por aqui mesmo. 🙏`
           );
         }
+
+        else if (choice === "1") {
+          const inst = openInstQuick;
+          if (inst.length === 0) {
+            const stats = await loadContractStats();
+            await botSay(
+              `Boa notícia, ${firstName}! ✅ Você *não tem parcelas em aberto*.\n\n` +
+              (stats.total > 0 ? `📊 Contrato: ${stats.paid}/${stats.total} parcelas pagas (${stats.pct}%).\n\n` : "") +
+              `Se precisar de outra coisa, digite *menu*.`
+            );
+          } else {
+            const lines = inst.slice(0, 10).map((i: any) => {
+              const due = typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date;
+              const [y, m, d] = due.split("-");
+              const dueFmt = `${d}/${m}/${y}`;
+              const atrasada = due < nowBrDay;
+              const total = Number(i.amount) + (Number(i.late_fee) || 0);
+              const flag = atrasada ? "🔴" : (due === nowBrDay ? "🟡" : "🟢");
+              return `${flag} *#${i.installment_number}* — venc. *${dueFmt}* — ${money(total)}${atrasada && i.late_fee ? ` _(+multa ${money(i.late_fee)})_` : ""}`;
+            }).join("\n");
+            const totalGeral = inst.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0) - Number(i.paid_amount || 0), 0);
+            const stats = await loadContractStats();
+            const progressBar = (() => {
+              const filled = Math.round(stats.pct / 10);
+              return `[${"█".repeat(filled)}${"░".repeat(10 - filled)}] ${stats.pct}%`;
+            })();
+            await botSay(
+              `📄 *Suas parcelas em aberto* (${inst.length}):\n\n${lines}\n\n` +
+              `💰 *Total a regularizar:* ${money(totalGeral)}\n` +
+              `📊 *Progresso do contrato:* ${progressBar}\n` +
+              `   ${stats.paid} pagas de ${stats.total}\n\n` +
+              `Digite *3* pra quitar (ou "quitar #N"), *2* pro portal, ou *menu*.`
+            );
+          }
+        }
+
+        else if (choice === "2") {
+          const link = await buildPortalDeepLink();
+          const isDeep = link.includes("?t=");
+          await botSay(
+            `🔐 *Portal do Cliente — ${empresa}*\n\n` +
+            `${isDeep ? "🔑 *Acesso automático* (link exclusivo, válido por 24h):" : "Acesse aqui:"}\n${link}\n\n` +
+            `Lá você pode:\n` +
+            `• Ver todas as parcelas e comprovantes 📄\n` +
+            `• Baixar recibos em PDF 📥\n` +
+            `• Renegociar direto no app 🤝\n` +
+            `• Acompanhar em tempo real ⚡\n\n` +
+            `Digite *menu* pra voltar.`
+          );
+        }
+
+        else if (choice === "3") {
+          const inst = openInstQuick;
+          if (inst.length === 0) {
+            await botSay(`Tudo em dia por aqui, ${firstName}! ✅ Sem parcelas a quitar. Digite *menu* se precisar de algo.`);
+          } else if (!hasPix) {
+            if (convoId) {
+              await supabase.from("whatsapp_conversations").update({
+                needs_human: true,
+                human_takeover_reason: "Cliente pediu PIX mas chave não configurada",
+                updated_at: new Date().toISOString(),
+              }).eq("id", convoId);
+            }
+            await botSay(`⚠️ A chave PIX ainda não foi configurada aqui. Já chamei um atendente pra te passar os dados. 🙏`);
+          } else {
+            // Escolha da parcela específica
+            let target: any = inst[0];
+            if (route.parcelHint) {
+              const found = inst.find((i: any) => Number(i.installment_number) === route.parcelHint);
+              if (found) target = found;
+            }
+            // Pagamento parcial
+            const partialAmount = route.amountHint && route.amountHint > 0 ? route.amountHint : null;
+            const fullAmount = Number(target.amount) + (Number(target.late_fee) || 0);
+            const amountToCharge = partialAmount ? Math.min(partialAmount, fullAmount) : fullAmount;
+
+            // Desconto pra quitação à vista de tudo
+            const discountPct = Number((settings as any).early_payment_discount_percent || 0);
+            const totalAll = inst.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0) - Number(i.paid_amount || 0), 0);
+            const isFullQuit = !partialAmount && inst.length > 1 && /(tudo|quitar tudo|à ?vista|a ?vista|total|todas)/i.test(txtRaw);
+            let finalAmount = amountToCharge;
+            let discountLine = "";
+            if (isFullQuit && discountPct > 0) {
+              finalAmount = totalAll * (1 - discountPct / 100);
+              discountLine = `\n💥 *Desconto à vista ${discountPct}%:* -${money(totalAll - finalAmount)}`;
+            } else if (isFullQuit) {
+              finalAmount = totalAll;
+            }
+
+            // PIX Copia e Cola
+            const emv = buildPixEmv({
+              key: profile.pix_key!,
+              amount: finalAmount,
+              merchantName: profile.name || empresa,
+              merchantCity: "SAO PAULO",
+              txid: `PARC${target.installment_number || 1}`,
+            });
+            const pixTypeLabel = (profile.pix_key_type || "chave").toString().toUpperCase();
+
+            const label = isFullQuit
+              ? `*Quitação total* (${inst.length} parcelas)`
+              : partialAmount
+              ? `*Pagamento parcial — parcela #${target.installment_number}*\n_Valor total: ${money(fullAmount)}_`
+              : `*Parcela #${target.installment_number}*`;
+
+            await botSay(
+              `💸 ${label}\n\n` +
+              `Valor a pagar: *${money(finalAmount)}*${discountLine}\n\n` +
+              `💠 *Chave PIX (${pixTypeLabel}):*\n\`${profile.pix_key}\`\n` +
+              `👤 *Favorecido:* ${profile.name || empresa}\n\n` +
+              `📋 *PIX Copia e Cola:*\n\`\`\`${emv}\`\`\`\n\n` +
+              `Depois de pagar, *envie o comprovante* aqui (imagem ou PDF) que eu registro a baixa na hora. 📎`
+            );
+            if (partialAmount) {
+              // Registra promessa/pagamento parcial na memória
+              const mem2 = parseMemory(client.bot_memory);
+              const promessas = Array.isArray(mem2.promessas) ? mem2.promessas : [];
+              promessas.push({ data: nowBrDay, valor: partialAmount, parcela: target.installment_number, tipo: "parcial" });
+              await supabase.from("clients").update({
+                bot_memory: serializeMemory({ ...mem2, promessas }),
+              }).eq("id", client.id);
+            }
+            // Follow-up: se em 24h não veio comprovante, pergunta
+            await scheduleFollowUp(`Oi ${firstName}! Já conseguiu concluir o pagamento da parcela #${target.installment_number}? Se sim, me manda o comprovante que registro na hora 📎`);
+          }
+        }
+
+        else if (choice === "5") {
+          if (convoId) {
+            await supabase.from("whatsapp_conversations").update({
+              needs_human: true,
+              human_takeover_reason: "Cliente pediu renegociação via menu",
+              updated_at: new Date().toISOString(),
+            }).eq("id", convoId);
+          }
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "Cliente quer renegociar",
+            message: `${client.name || senderPhone} pediu renegociação via menu WhatsApp.`,
+            type: "info",
+          });
+          const link = await buildPortalDeepLink();
+          await botSay(
+            `🤝 *Renegociação — ${empresa}*\n\n` +
+            `Que ótimo que você quer regularizar! Você tem *duas opções*:\n\n` +
+            `1️⃣ *Simular no portal* (mais rápido): ${link}\n` +
+            `      Lá você escolhe: parcelamento novo, prazo maior ou entrada + saldo.\n\n` +
+            `2️⃣ *Aguardar atendente* — já chamei um consultor, ele vai te propor um acordo personalizado.\n\n` +
+            `Enquanto isso, se quiser me dizer *quanto consegue pagar hoje* ou *quantas parcelas cabem no bolso*, eu já adianto pro consultor. 😉`
+          );
+        }
+
+        // Persiste última escolha
+        await supabase.from("clients").update({
+          bot_memory: serializeMemory({ ...mem, last_menu_at: now, last_menu_choice: choice }),
+        }).eq("id", client.id);
+
+        // Log estruturado
         await supabase.from("audit_logs").insert({
           user_id: userId, entity_type: "whatsapp_bot", action: "menu_choice",
-          entity_id: client.id, details: { phone: senderPhone, choice: menuChoice },
+          entity_id: client.id, details: {
+            phone: senderPhone, choice,
+            parcel_hint: route.parcelHint || null,
+            amount_hint: route.amountHint || null,
+            has_open: hasOpen,
+            has_pix: hasPix,
+            natural_language: !/^[1-5]$/.test(txtRaw),
+          },
         });
-        return new Response(JSON.stringify({ status: "menu_choice", choice: menuChoice }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ status: "menu_choice", choice }), { headers: corsHeaders });
       }
 
       if (isMenuTrigger) {
         await showMenu(`Oi ${firstName}! 👋`);
         await supabase.from("audit_logs").insert({
           user_id: userId, entity_type: "whatsapp_bot", action: "menu_shown",
-          entity_id: client.id, details: { phone: senderPhone, trigger: "keyword" },
+          entity_id: client.id, details: { phone: senderPhone, trigger: "keyword", items: menuItems.length },
         });
         return new Response(JSON.stringify({ status: "menu_shown" }), { headers: corsHeaders });
       }
 
       // Deixa o menu disponível para o bloco de saudação abaixo
       (globalThis as any).__renderMenu = async (prefix?: string) => showMenu(prefix);
+      (globalThis as any).__menuBody = menuBody;
     } catch (e) {
       console.warn("[menu] falhou (seguindo fluxo normal):", (e as Error).message);
     }
+
+
 
 
     // ─── SAUDAÇÃO PERSONALIZADA (cliente conhecido, primeira mensagem) ──
