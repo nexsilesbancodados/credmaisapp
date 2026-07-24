@@ -335,12 +335,30 @@ ${extraDiversity}`;
               .replace(/\{parcelas\}/gi, String(insts.length))
               .replace(/\{dias\}/gi, String(isPreDue ? daysUntilDue : daysOverdue));
           } else {
-            const greeting = settings.bot_greeting_message
+            const baseGreet = settings.bot_greeting_message
               ?.replace(/\{nome\}/gi, client.name)?.replace(/\{empresa\}/gi, companyName) || `Olá ${client.name}`;
+            // Rotaciona aberturas para NÃO repetir a mesma mensagem toda vez
+            const greetVariants = isPreDue
+              ? [`${baseGreet}, tudo bem?`, `Oi ${client.name}!`, `${client.name}, passando rapidinho aqui.`, `E aí, ${client.name}?`]
+              : [`${baseGreet},`, `${client.name}, tudo certo?`, `Oi ${client.name},`, `${client.name}, precisamos alinhar um ponto.`];
+            const bodyPreVariants = [
+              `⏰ Só um lembrete: sua parcela de R$ ${totalAmount.toFixed(2)} vence em ${daysUntilDue} dia(s).`,
+              `📅 Passando pra avisar: vencimento em ${daysUntilDue} dia(s) — R$ ${totalAmount.toFixed(2)}.`,
+              `💡 Falta ${daysUntilDue} dia(s) pra sua parcela de R$ ${totalAmount.toFixed(2)}.`,
+              `🔔 Aviso rápido: R$ ${totalAmount.toFixed(2)} programado(s) daqui a ${daysUntilDue} dia(s).`,
+            ];
+            const bodyOverVariants = [
+              `Identificamos ${insts.length} parcela(s) pendente(s) — R$ ${totalAmount.toFixed(2)}. Atraso de ${daysOverdue} dia(s).`,
+              `Está com ${insts.length} parcela(s) em aberto totalizando R$ ${totalAmount.toFixed(2)} (${daysOverdue} dia(s) em atraso).`,
+              `Pendência: R$ ${totalAmount.toFixed(2)} em ${insts.length} parcela(s), ${daysOverdue} dia(s) sem pagamento.`,
+              `Verificamos aqui: R$ ${totalAmount.toFixed(2)} em atraso há ${daysOverdue} dia(s).`,
+            ];
+            const closing = settings.bot_closing_message || "Qualquer dúvida, chama aqui.";
+            const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
             if (isPreDue) {
-              message = `${greeting}\n\n⏰ Só um lembrete: sua parcela de R$ ${totalAmount.toFixed(2)} vence em ${daysUntilDue} dia(s).\nSe preferir, já deixe o pagamento agendado.`;
+              message = `${pick(greetVariants)}\n\n${pick(bodyPreVariants)}\nSe preferir, já deixe o pagamento agendado.`;
             } else {
-              message = `${greeting}\n\nIdentificamos ${insts.length} parcela(s) pendente(s) totalizando R$ ${totalAmount.toFixed(2)}.\nAtraso de ${daysOverdue} dia(s).\n\n${settings.bot_closing_message || "Qualquer dúvida, entre em contato."}`;
+              message = `${pick(greetVariants)}\n\n${pick(bodyOverVariants)}\n\n${closing}`;
             }
           }
           // Variação por intenção no template básico (evita eco literal)
