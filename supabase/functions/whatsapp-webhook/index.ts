@@ -348,6 +348,48 @@ serve(async (req) => {
       return new Response(JSON.stringify({ status: "lead" }), { headers: corsHeaders });
     }
 
+    // ─── SAUDAÇÃO PERSONALIZADA (cliente conhecido, primeira mensagem) ──
+    // Se nunca conversamos com esse número (sem convo prévia) OU não há
+    // nenhuma resposta do bot nas últimas 12h, cumprimenta pelo nome e
+    // pergunta o que precisa — sem entrar direto em modo cobrança.
+    try {
+      let shouldGreet = !convoExisting;
+      if (!shouldGreet && convoId) {
+        const { data: lastOut } = await supabase
+          .from("whatsapp_messages")
+          .select("created_at")
+          .eq("conversation_id", convoId)
+          .eq("direction", "out")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!lastOut) shouldGreet = true;
+        else if (Date.now() - new Date(lastOut.created_at).getTime() > 12 * 60 * 60 * 1000) shouldGreet = true;
+      }
+      // Só saúda se a mensagem do cliente for curta/genérica (oi, olá, bom dia…)
+      // — se ele já mandou pergunta específica, deixa a IA responder.
+      const txt = (incomingText || "").toLowerCase().trim();
+      const isGreetingIntent = txt.length <= 20 && /^(oi+|ol[áa]|bom\s*dia|boa\s*tarde|boa\s*noite|opa|e\s*a[ií]|hey|hi|hello|tudo\s*bem|tudo\s*bom)[\s!?.,👋🙂😊🤝]*$/i.test(txt);
+      if (shouldGreet && (isGreetingIntent || !incomingText)) {
+        const firstName = (client.name || "").split(" ")[0] || "tudo bem";
+        const empresa = settings.company_name || profile?.name || "nossa equipe";
+        const greetings = [
+          `Oi ${firstName}! 👋 Aqui é da *${empresa}*. Como posso te ajudar hoje?`,
+          `Olá ${firstName}, tudo bem? 🙂 Aqui é da *${empresa}*. Me conta, em que posso te ajudar?`,
+          `E aí ${firstName}! 🤝 Aqui é da *${empresa}*. O que você precisa hoje?`,
+          `Oi ${firstName}! 😊 Aqui é da *${empresa}*. Manda pra mim o que você precisa que eu já te ajudo.`,
+        ];
+        await botSay(greetings[Math.floor(Math.random() * greetings.length)]);
+        await supabase.from("audit_logs").insert({
+          user_id: userId, entity_type: "whatsapp_bot", action: "greeted_known_client",
+          entity_id: client.id, details: { phone: senderPhone },
+        });
+        return new Response(JSON.stringify({ status: "greeted" }), { headers: corsHeaders });
+      }
+    } catch (e) {
+      console.warn("[greet] falhou (seguindo fluxo normal):", (e as Error).message);
+    }
+
     if (isRateLimited(senderJid)) return new Response(JSON.stringify({ status: "rate_limit" }), { headers: corsHeaders });
 
     // DEBOUNCE
