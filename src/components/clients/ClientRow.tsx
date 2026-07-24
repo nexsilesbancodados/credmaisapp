@@ -37,7 +37,7 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
       onClick={() => onOpen(c.id)}
       className={`group border-t border-border/30 hover:bg-primary/[0.04] cursor-pointer transition-colors ${isSel ? "bg-primary/[0.06]" : striped ? "bg-muted/[0.04]" : ""}`}
     >
-      <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+      <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
         <input
           type="checkbox"
           checked={isSel}
@@ -46,7 +46,7 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           className="check-premium"
         />
       </td>
-      <td className="px-5 py-3.5">
+      <td className="px-5 py-2.5">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${pal} ring-1 flex items-center justify-center text-[13px] font-bold shrink-0 transition-transform group-hover:scale-105`}>
             {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover" /> : initial}
@@ -57,14 +57,14 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           </div>
         </div>
       </td>
-      <td className="px-5 py-3.5 text-muted-foreground">
+      <td className="px-5 py-2.5 text-muted-foreground">
         <div className="space-y-0.5">
           {(c.phone || c.whatsapp) && <p className="text-[12.5px] text-foreground/85">{c.phone || c.whatsapp}</p>}
           {c.email && <p className="text-[11px] text-muted-foreground/70 truncate max-w-[200px]">{c.email}</p>}
           {!c.phone && !c.whatsapp && !c.email && <span className="text-xs text-muted-foreground/40">—</span>}
         </div>
       </td>
-      <td className="px-5 py-3.5">
+      <td className="px-5 py-2.5">
         {summary.contracts === 0 ? (
           <span className="text-xs text-muted-foreground/50">—</span>
         ) : (
@@ -80,7 +80,7 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           </div>
         )}
       </td>
-      <td className="px-5 py-3.5">
+      <td className="px-5 py-2.5">
         <div className="flex items-center gap-2">
           <div className="flex flex-col gap-1 min-w-[54px]">
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md text-center ring-1 ${scoreColor(sc)}`}>{sc}</span>
@@ -94,13 +94,13 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           <RiskBadge score={c.credit_score} compact />
         </div>
       </td>
-      <td className="px-5 py-3.5">
+      <td className="px-5 py-2.5">
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ring-1 ${c.status === "Ativo" ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/25" : "bg-muted/40 text-muted-foreground ring-border/40"}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${c.status === "Ativo" ? "bg-emerald-400 shadow-[0_0_6px_hsl(152_76%_50%/0.8)]" : "bg-muted-foreground/50"}`} />
           {c.status}
         </span>
       </td>
-      <td className="px-5 py-3.5 text-right">
+      <td className="px-5 py-2.5 text-right">
         <div className="flex items-center justify-end gap-1.5">
           <button
             onClick={(e) => { e.stopPropagation(); onOpen(c.id); }}
