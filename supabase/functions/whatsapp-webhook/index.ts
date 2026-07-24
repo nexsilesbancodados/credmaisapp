@@ -1234,7 +1234,13 @@ Ex3 — Cliente pede parcelar atraso de 3 parcelas:
     }
 
     if (result.needs_human) {
-      await escalateToHuman(supabase, convoId!, result.summary || "IA detectou necessidade de humano");
+      await supabase.from("whatsapp_conversations").update({
+        needs_human: true,
+        bot_status: "active",
+        bot_paused: false,
+        human_takeover_reason: result.summary || "Bot recomendou revisão humana, mas continuará respondendo",
+        updated_at: new Date().toISOString(),
+      }).eq("id", convoId);
       await supabase.from("notifications").insert({ user_id: userId, title: "🚨 Intervenção Humana", message: `Cliente ${client.name} solicita atendimento humano ou negociação.`, type: "warning" });
       await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "escalate_to_human", toolInput: { reason: result.summary || "ai_detected" } });
     }
