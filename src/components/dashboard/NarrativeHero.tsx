@@ -188,7 +188,7 @@ export default function NarrativeHero({
             <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Saúde da carteira
             </span>
-            <div className={`w-2 h-2 rounded-full ${healthy ? "bg-success animate-pulse" : "bg-destructive animate-pulse"}`} />
+            <div className={`w-2 h-2 rounded-full ${healthy ? "bg-success" : "bg-destructive"}`} />
           </div>
 
           <div>
