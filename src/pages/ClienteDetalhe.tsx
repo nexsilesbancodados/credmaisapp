@@ -48,8 +48,10 @@ const ClienteDetalhe = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"contratos" | "parcelas" | "historico">("contratos");
+  const [activeTab, setActiveTab] = useState<"contratos" | "parcelas">("contratos");
   const [docsOpen, setDocsOpen] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
+
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "contract" | "payment" | "profit" | "note" | "contact">("all");
   const [editMode, setEditMode] = useState(false);
@@ -1053,8 +1055,8 @@ const ClienteDetalhe = () => {
   const tabs = [
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
     { key: "parcelas" as const, label: "Parcelas", Icon: Receipt },
-    { key: "historico" as const, label: "Histórico", Icon: Clock },
   ];
+
 
 
 
@@ -1519,7 +1521,15 @@ const ClienteDetalhe = () => {
             <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{clientDocs.length}</span>
           )}
         </button>
+        <button
+          onClick={() => setHistOpen(true)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+        >
+          <Clock size={14} />
+          <span className="hidden sm:inline">Histórico</span>
+        </button>
       </div>
+
 
       {/* Modal de Documentos & Anexos */}
       <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
@@ -1848,8 +1858,17 @@ const ClienteDetalhe = () => {
         </div>
       )}</section>
 
-      {/* Section: Histórico (timeline unificada) */}
-      <section id="sec-historico" className="scroll-mt-24">{(() => {
+      {/* Modal: Histórico (timeline unificada) */}
+      <Dialog open={histOpen} onOpenChange={setHistOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Clock size={14} /></div>
+              Histórico de Atividades
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto pr-1">{(() => {
+
         const events: any[] = [];
         // Contratos criados
         contracts.forEach((c: any) => events.push({
@@ -1930,7 +1949,10 @@ const ClienteDetalhe = () => {
             )}
           </div>
         );
-      })()}</section>
+      })()}</div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };
