@@ -784,7 +784,7 @@ export function assertReplySafe(input: ReplyGuardrailInput): ReplyGuardrailResul
       .map((v) => Math.round(Number(v) * 100))
       .filter((v) => Number.isFinite(v) && v > 0);
     const invented: string[] = [];
-    for (const m of reply.matchAll(MONEY_RE)) {
+    for (const m of reply.matchAll(MONEY_RE_GUARD)) {
       const cents = parseBRLToCents(m[1]);
       if (cents == null || cents <= 0) continue;
       const ok = allowedCents.some((a) => Math.abs(a - cents) <= tol);
