@@ -7,7 +7,7 @@ import {
   Receipt, Check, MessageSquare, Search, X, AlertTriangle, Clock, CheckCircle,
   CalendarDays, Mail, CheckSquare, Square, MinusSquare, List, Copy,
   Calendar as CalendarIcon, SlidersHorizontal, ArrowUpDown, Zap, Flame,
-  History, Bell, Send
+  History, Bell, Send, Phone
   , ChevronDown, ChevronRight, Layers, ListTree
 } from "lucide-react";
 import { computeLateFee, computeLateFeeBreakdown } from "@/lib/lateFee";
@@ -1002,118 +1002,170 @@ const Cobrancas = () => {
               : "bg-muted/40 text-muted-foreground border-border";
             const barPct = Math.min(100, Math.round(((group.totalWithFees || group.total) / maxTotalWithFees) * 100));
             const firstUnpaid = groupSelectable[0];
+            // Progress: paid installments across active contracts of this client
+            const agg = clientAggregates.get(group.client_id);
+            const totalActiveInst = agg?.totalInstallments || group.items.length;
+            const paidCount = Math.max(0, totalActiveInst - unpaidCount);
+            const progressPct = totalActiveInst > 0 ? Math.round((paidCount / totalActiveInst) * 100) : 0;
+            const initials = (group.client_name || "?").split(/\s+/).map((s: string) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+            const rawPhone = group.items[0]?.client_phone || "";
+            const phoneDigits = rawPhone.replace(/\D/g, "");
+            const phoneMasked = phoneDigits.length >= 10
+              ? phoneDigits.replace(/(\d{2})(\d{4,5})(\d{4})/, "($1) $2-$3")
+              : rawPhone;
+            // Last attempt across group
+            let lastAttemptAt: number | null = null;
+            for (const it of group.items) {
+              const a = lastAttemptByInst.get(it.id);
+              if (a?.created_at) {
+                const t = new Date(a.created_at).getTime();
+                if (!lastAttemptAt || t > lastAttemptAt) lastAttemptAt = t;
+              }
+            }
+            const daysSinceContact = lastAttemptAt ? Math.floor((Date.now() - lastAttemptAt) / 86400000) : null;
+            // Next unpaid due date
+            const nextUnpaid = [...groupSelectable].sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+            const nextDueDate = nextUnpaid ? new Date(nextUnpaid.due_date + "T00:00:00") : null;
+            const nextDueLabel = nextDueDate ? nextDueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : null;
+            const avatarRing =
+              dueInfo.tone === "danger" ? "ring-destructive/50 bg-destructive/15 text-destructive"
+              : dueInfo.tone === "warn" ? "ring-amber-500/50 bg-amber-500/15 text-amber-500"
+              : dueInfo.tone === "ok" ? "ring-success/40 bg-success/15 text-success"
+              : "ring-border bg-muted/40 text-muted-foreground";
             return (
-              <div key={group.client_id} className="rounded-2xl border border-border bg-card/50 hover:bg-card transition-colors overflow-hidden">
+              <div key={group.client_id} className={`group rounded-2xl border bg-card/60 hover:bg-card transition-all overflow-hidden ${dueInfo.tone === "danger" ? "border-destructive/25 shadow-[0_0_0_1px_hsl(var(--destructive)/0.06)]" : "border-border"}`}>
                 {showHeader && (
-                  <div className="px-3 sm:px-4 py-3 flex flex-col gap-2.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <button
-                          aria-label="Selecionar todas as parcelas do cliente"
-                          onClick={(e) => { e.stopPropagation(); toggleGroupSelect(group); }}
-                          className="shrink-0 p-1 rounded hover:bg-accent transition-colors focus-ring"
-                          title="Selecionar todas"
-                        >
-                          {allSelected
-                            ? <CheckSquare size={18} className="text-primary" />
-                            : someSelected
-                              ? <MinusSquare size={18} className="text-primary" />
-                              : <Square size={18} className="text-muted-foreground" />}
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.client_id); }}
-                          className="min-w-0 flex-1 text-left focus-ring rounded-lg px-1"
-                          title={isCollapsed ? "Mostrar parcelas" : "Ocultar parcelas"}
-                          aria-label="Alternar exibição das parcelas"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <p className="text-sm font-bold text-foreground truncate">{group.client_name}</p>
-                            <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${toneClass}`}>
-                              {dueInfo.text}
-                            </span>
-                          </div>
-                          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-                            <span className="text-lg font-black text-foreground tabular-nums">
-                              R$ {fmt(group.totalWithFees || group.total)}
-                            </span>
-                            {group.totalFees > 0 && (
-                              <span className="text-[11px] text-destructive font-medium">
-                                +R$ {fmt(group.totalFees)} multa
-                              </span>
-                            )}
-                            <span className="text-[11px] text-muted-foreground">
-                              · {unpaidCount} parcela{unpaidCount === 1 ? "" : "s"} em aberto
-                            </span>
-                            <span className="ml-auto text-[10px] text-muted-foreground inline-flex items-center gap-1">
-                              {isCollapsed ? <><ChevronRight size={12} /> ver parcelas</> : <><ChevronDown size={12} /> ocultar</>}
-                            </span>
-                          </div>
-                          {(() => {
-                            const agg = clientAggregates.get(group.client_id);
-                            if (!agg) return null;
-                            const profit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
-                            return (
-                              <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                                <div className="rounded-lg border border-border/60 bg-background/40 px-2 py-1.5">
-                                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Emprestado</p>
-                                  <p className="text-xs font-bold text-foreground tabular-nums">R$ {fmt(agg.loaned)}</p>
-                                </div>
-                                <div className="rounded-lg border border-border/60 bg-background/40 px-2 py-1.5">
-                                  <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Parcelas</p>
-                                  <p className="text-xs font-bold text-foreground tabular-nums">{agg.totalInstallments || group.items.length}</p>
-                                </div>
-                                <div className="rounded-lg border border-success/30 bg-success/10 px-2 py-1.5">
-                                  <p className="text-[9px] uppercase tracking-wide text-success/80">Lucro</p>
-                                  <p className="text-xs font-bold text-success tabular-nums">R$ {fmt(profit)}</p>
-                                </div>
-                                {agg.overdueCount > 0 ? (
-                                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-2 py-1.5">
-                                    <p className="text-[9px] uppercase tracking-wide text-destructive/80">{agg.overdueCount} atrasada{agg.overdueCount === 1 ? "" : "s"} · a receber</p>
-                                    <div className="flex items-baseline gap-1.5 flex-wrap">
-                                      <p className="text-xs font-bold text-foreground tabular-nums">R$ {fmt(agg.overdueAmount)}</p>
-                                      <p className="text-[10px] font-semibold text-destructive tabular-nums">c/ multa R$ {fmt(agg.overdueAmount + agg.overdueFees)}</p>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="rounded-lg border border-border/60 bg-background/40 px-2 py-1.5">
-                                    <p className="text-[9px] uppercase tracking-wide text-muted-foreground">Situação</p>
-                                    <p className="text-xs font-bold text-success tabular-nums">Em dia</p>
-                                  </div>
-                                )}
-
-                              </div>
-                            );
-                          })()}
-                        </button>
+                  <div className="p-4 flex flex-col gap-3">
+                    {/* Top row: avatar + name + status + quick chips + select */}
+                    <div className="flex items-start gap-3">
+                      <button
+                        aria-label="Selecionar todas as parcelas do cliente"
+                        onClick={(e) => { e.stopPropagation(); toggleGroupSelect(group); }}
+                        className="shrink-0 p-1 rounded hover:bg-accent transition-colors focus-ring mt-1"
+                        title="Selecionar todas"
+                      >
+                        {allSelected
+                          ? <CheckSquare size={18} className="text-primary" />
+                          : someSelected
+                            ? <MinusSquare size={18} className="text-primary" />
+                            : <Square size={18} className="text-muted-foreground" />}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${group.client_id}`); }}
+                        className={`shrink-0 w-11 h-11 rounded-full ring-2 ${avatarRing} flex items-center justify-center text-sm font-bold focus-ring transition-transform hover:scale-105`}
+                        title="Abrir ficha do cliente"
+                      >
+                        {initials || "?"}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.client_id); }}
+                        className="min-w-0 flex-1 text-left focus-ring rounded-lg"
+                        title={isCollapsed ? "Mostrar parcelas" : "Ocultar parcelas"}
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-bold text-foreground truncate max-w-[240px]">{group.client_name}</p>
+                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${toneClass}`}>
+                            {dueInfo.text}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
+                          {phoneMasked && (
+                            <span className="inline-flex items-center gap-1"><Phone size={11} /> {phoneMasked}</span>
+                          )}
+                          {nextDueLabel && (
+                            <span className="inline-flex items-center gap-1"><CalendarDays size={11} /> próx: <span className="font-semibold text-foreground">{nextDueLabel}</span></span>
+                          )}
+                          <span className="inline-flex items-center gap-1">
+                            <MessageSquare size={11} />
+                            {daysSinceContact === null ? "nunca cobrado" : daysSinceContact === 0 ? "cobrado hoje" : `há ${daysSinceContact}d`}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="hidden sm:flex shrink-0 flex-col items-end gap-0.5">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total</span>
+                        <span className="text-lg font-black text-foreground tabular-nums leading-none">R$ {fmt(group.totalWithFees || group.total)}</span>
+                        {group.totalFees > 0 && (
+                          <span className="text-[10px] text-destructive font-semibold">+R$ {fmt(group.totalFees)} multa</span>
+                        )}
                       </div>
                     </div>
 
-                    {/* Barra visual de ranking (relativa ao maior devedor) */}
-                    <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${dueInfo.tone === "danger" ? "bg-destructive" : dueInfo.tone === "warn" ? "bg-amber-500" : "bg-primary"}`}
-                        style={{ width: `${barPct}%` }}
-                      />
+                    {/* Mobile total */}
+                    <div className="sm:hidden flex items-baseline gap-2 flex-wrap">
+                      <span className="text-xl font-black text-foreground tabular-nums">R$ {fmt(group.totalWithFees || group.total)}</span>
+                      {group.totalFees > 0 && (
+                        <span className="text-[11px] text-destructive font-semibold">+R$ {fmt(group.totalFees)} multa</span>
+                      )}
+                      <span className="text-[11px] text-muted-foreground">· {unpaidCount} em aberto</span>
                     </div>
 
-                    {/* Ações grandes e óbvias */}
-                    <div className="grid grid-cols-3 gap-2">
+                    {/* KPIs */}
+                    {agg && (() => {
+                      const profit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
+                            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Emprestado</p>
+                            <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">R$ {fmt(agg.loaned)}</p>
+                          </div>
+                          <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
+                            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Parcelas</p>
+                            <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">
+                              <span className="text-success">{paidCount}</span>
+                              <span className="text-muted-foreground">/{totalActiveInst}</span>
+                            </p>
+                          </div>
+                          <div className="rounded-xl border border-success/30 bg-success/10 px-2.5 py-2">
+                            <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold">Lucro</p>
+                            <p className="text-sm font-bold text-success tabular-nums mt-0.5">R$ {fmt(profit)}</p>
+                          </div>
+                          {agg.overdueCount > 0 ? (
+                            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-2">
+                              <p className="text-[9px] uppercase tracking-wide text-destructive/90 font-semibold">{agg.overdueCount} atrasada{agg.overdueCount === 1 ? "" : "s"}</p>
+                              <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">R$ {fmt(agg.overdueAmount)}</p>
+                              <p className="text-[10px] font-semibold text-destructive tabular-nums">c/ multa R$ {fmt(agg.overdueAmount + agg.overdueFees)}</p>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-success/30 bg-success/10 px-2.5 py-2">
+                              <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold">Situação</p>
+                              <p className="text-sm font-bold text-success mt-0.5">Em dia</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Progress bar: paid vs total */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span className="font-semibold">Progresso do contrato</span>
+                        <span className="tabular-nums font-semibold text-foreground">{paidCount}/{totalActiveInst} · {progressPct}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${progressPct >= 80 ? "bg-success" : progressPct >= 40 ? "bg-primary" : "bg-amber-500"}`}
+                          style={{ width: `${Math.max(2, progressPct)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-3 gap-2 pt-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleWhatsAppGroup(group); }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-success text-success-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all focus-ring"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-success text-success-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all focus-ring shadow-sm"
                         title="Cobrar via WhatsApp"
                       >
                         <MessageSquare size={15} /> Cobrar
                       </button>
-
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           if (unpaidCount === 1 && firstUnpaid) setConfirmPayId(firstUnpaid.id);
                           else toggleGroupCollapse(group.client_id);
                         }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all focus-ring"
-                        title={unpaidCount === 1 ? "Marcar como paga" : "Ver parcelas para pagar"}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all focus-ring shadow-sm"
+                        title={unpaidCount === 1 ? "Marcar como paga" : "Ver parcelas"}
                       >
                         <Check size={15} /> {unpaidCount === 1 ? "Pagar" : "Parcelas"}
                       </button>
@@ -1127,6 +1179,7 @@ const Cobrancas = () => {
                     </div>
                   </div>
                 )}
+
                 {(!showHeader || !isCollapsed) && (
                   <div className={showHeader ? "border-t border-border bg-background/40 px-2 py-2 space-y-1.5" : ""}>
                     {group.items.map((inst: any) => renderRow(inst))}
