@@ -53,7 +53,7 @@ const DashboardLayout = () => {
   }, [isMobile]);
 
   return (
-    <div className="min-h-dvh bg-background relative overflow-hidden">
+    <div className="min-h-dvh bg-background relative overflow-hidden overscroll-none">
       {/* Static mesh gradients — no animation (animated blur is one of the heaviest paints). */}
       <div className="pointer-events-none absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[80px] -z-10" />
       <div className="pointer-events-none absolute bottom-0 right-0 w-[480px] h-[480px] bg-indigo-500/[0.03] rounded-full blur-[70px] -z-10" />
@@ -66,7 +66,9 @@ const DashboardLayout = () => {
       <div className={`transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[76px]" : "ml-[260px]"}`}>
         <TopBar onSearchClick={() => setSearchOpen(true)} />
         <Breadcrumbs />
-        <main className={`px-4 py-5 lg:px-8 lg:py-8 max-w-[1600px] mx-auto ${isMobile ? "pb-40" : ""}`}>
+        <main
+          className={`max-w-[1600px] mx-auto ${isMobile ? "px-3 py-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))]" : "px-4 py-5 lg:px-8 lg:py-8"}`}
+        >
           <Outlet />
         </main>
       </div>
@@ -74,6 +76,7 @@ const DashboardLayout = () => {
 
       {/* Mobile: bottom nav */}
       {isMobile && <MobileBottomNav />}
+
 
       <Suspense fallback={null}>
         {searchOpen && <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />}
