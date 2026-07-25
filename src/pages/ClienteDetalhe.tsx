@@ -36,6 +36,8 @@ import ClientToolsPanel, { type ToolGroup } from "@/components/clients/ClientToo
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { computeLateFee } from "@/lib/lateFee";
 import { friendlyError } from "@/lib/friendlyError";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 
 const ClienteDetalhe = () => {
