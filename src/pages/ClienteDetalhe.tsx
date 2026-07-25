@@ -1493,7 +1493,8 @@ const ClienteDetalhe = () => {
         </div>
 
         {/* Documentos & Anexos (full width) */}
-        <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+        <section id="sec-documentos" className="scroll-mt-24 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
