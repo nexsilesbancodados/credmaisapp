@@ -1897,10 +1897,11 @@ const ClienteDetalhe = () => {
             );
           })}
         </div>
-      )}
+      )}</section>
 
-      {/* Tab: Parcelas */}
-      {activeTab === "parcelas" && (
+      {/* Section: Parcelas */}
+      <section id="sec-parcelas" className="scroll-mt-24">{(
+
         <div className="space-y-6">
           {installments.length === 0 ? (
             <EmptyState icon={Receipt} title="Nenhuma parcela" description="As parcelas aparecerão aqui quando o contrato for criado." compact />
