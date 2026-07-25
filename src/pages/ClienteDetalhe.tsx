@@ -1736,29 +1736,29 @@ const ClienteDetalhe = () => {
                     });
                     const totalDue = base + feeLive;
                     return (
-                      <div key={inst.id} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors ${isOverdue ? "bg-destructive/5 border-destructive/15" : isPaid ? "bg-success/5 border-success/15" : "bg-card border-border"}`}>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isOverdue ? "bg-destructive/10 text-destructive" : isPaid ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+                      <div key={inst.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${isOverdue ? "bg-destructive/[0.04] border-destructive/20 hover:border-destructive/30" : isPaid ? "bg-success/[0.04] border-success/15" : "bg-card border-border/60 hover:border-border"}`}>
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isOverdue ? "bg-destructive/10 text-destructive ring-1 ring-destructive/20" : isPaid ? "bg-success/10 text-success ring-1 ring-success/20" : "bg-muted text-muted-foreground"}`}>
                           {inst.installment_number}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground flex items-center gap-2 flex-wrap">
-                            R$ {fmt(base)}
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-foreground tabular-nums">R$ {fmt(base)}</p>
                             {isOverdue && feeLive > 0 && (
                               <>
-                                <span className="text-[10px] font-semibold text-destructive">
-                                  + R$ {fmt(feeLive)} multa/juros
+                                <span className="text-[10px] font-medium text-destructive/80 tabular-nums">
+                                  + R$ {fmt(feeLive)}
                                 </span>
-                                <span className="text-[10px] font-bold text-destructive">
-                                  = R$ {fmt(totalDue)}
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive tabular-nums ml-auto sm:ml-0">
+                                  <span className="opacity-50">=</span> R$ {fmt(totalDue)}
                                 </span>
                               </>
                             )}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {formatBR(inst.due_date)}
-                            {isOverdue && ` · ${daysOverdue} dia(s) em atraso`}
-                            {inst.paid_at && ` · Pago: ${formatBR(inst.paid_at)}`}
-                            {partial && ` · Parcial: R$ ${fmt(Number(inst.paid_amount))}`}
+                            {isOverdue && <span className="text-destructive/70 font-medium"> · {daysOverdue} dia(s) em atraso</span>}
+                            {inst.paid_at && ` · Pago ${formatBR(inst.paid_at)}`}
+                            {partial && ` · Parcial R$ ${fmt(Number(inst.paid_amount))}`}
                             {inst.payment_method && ` · ${String(inst.payment_method).toUpperCase()}`}
                           </p>
                           {inst.receipt_url && (
@@ -1767,12 +1767,12 @@ const ClienteDetalhe = () => {
                             </a>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-0.5 shrink-0">
                           {isOverdue && (
                             <Popover>
                               <PopoverTrigger asChild>
                                 <button
-                                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive"
+                                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
                                   title="Ver cálculo da multa e juros" aria-label="Ver cálculo da multa e juros"
                                 >
                                   <Info size={14} />
