@@ -1949,7 +1949,10 @@ const ClienteDetalhe = () => {
             )}
           </div>
         );
-      })()}</section>
+      })()}</div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };
