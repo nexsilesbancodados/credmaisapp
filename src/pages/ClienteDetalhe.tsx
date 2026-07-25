@@ -1575,9 +1575,16 @@ const ClienteDetalhe = () => {
 
 
         <div className="space-y-3">
-          <button onClick={() => navigate(`/clientes/novo?clientId=${id}`)} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-border text-sm font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors">
-            <Plus size={16} /> Novo Empréstimo
+          <button
+            onClick={() => navigate(`/clientes/novo?clientId=${id}`)}
+            className="group w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl border border-dashed border-border/70 bg-card/30 text-sm font-semibold text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all"
+          >
+            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              <Plus size={14} strokeWidth={2.5} />
+            </span>
+            Novo Empréstimo
           </button>
+
           {contracts.length === 0 ? (
             <EmptyState compact title="Nenhum contrato" description="Clique em Novo Empréstimo para começar." />
           ) : contracts.map((c: any) => {
@@ -1587,80 +1594,91 @@ const ClienteDetalhe = () => {
             const overdue = cInsts.filter((i: any) => i.status === "overdue").length;
             const isPaid = total > 0 && paid === total;
             const status = isPaid
-              ? { label: "Quitado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
+              ? { label: "Quitado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-500" }
               : overdue > 0
-              ? { label: `${overdue} em atraso`, cls: "bg-destructive/15 text-destructive border-destructive/30" }
-              : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
+              ? { label: `${overdue} em atraso`, cls: "bg-destructive/15 text-destructive border-destructive/25", dot: "bg-destructive" }
+              : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/25", dot: "bg-amber-400" };
             const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-            const accent = isPaid ? "from-emerald-500/60 via-emerald-400/30" : overdue > 0 ? "from-destructive/60 via-destructive/30" : "from-primary/60 via-primary/20";
             const barColor = isPaid ? "bg-emerald-500" : overdue > 0 ? "bg-destructive" : "bg-primary";
             return (
-            <div key={c.id} className="group relative overflow-hidden bg-gradient-to-br from-card to-card/60 border border-border/60 rounded-2xl p-4 hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.3)] transition-all">
-              <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${accent} to-transparent`} />
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-lg font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>{status.label}</span>
+            <div key={c.id} className="group relative overflow-hidden bg-card border border-border/60 rounded-2xl hover:border-primary/40 hover:shadow-[0_8px_24px_-16px_hsl(var(--primary)/0.4)] transition-all">
+              {/* Faixa lateral de status */}
+              <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor}`} />
+
+              <div className="p-4 pl-5">
+                {/* Linha 1: valor + status + lucro */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <p className="text-xl font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                        {status.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <span className="text-foreground/80 font-semibold tabular-nums">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
+                      <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
+                      <span className="mx-1.5 opacity-40">·</span>{formatBR(c.start_date)}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 truncate">
-                    <span className="text-foreground/80 font-medium">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
-                    <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
-                  </p>
+                  <div className="text-right shrink-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Lucro</p>
+                    <p className="text-base font-bold text-primary tabular-nums leading-tight">+R$ {fmt(Number(c.total_interest))}</p>
+                  </div>
                 </div>
-                <div className="text-right cursor-pointer shrink-0" onClick={() => navigate(`/contratos/${c.id}`)}>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{formatBR(c.start_date)}</p>
-                  <p className="text-sm font-bold text-primary tabular-nums mt-0.5">+R$ {fmt(Number(c.total_interest))}</p>
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Lucro</p>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-border/40 flex-wrap justify-end">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
-                    title="Exportar contrato em PDF"
-                  >
-                    <Download size={13} /> PDF
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-medium transition-colors"
-                    title="Enviar contrato por WhatsApp"
-                  >
-                    <MessageSquare size={13} /> Enviar
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
-                    title="Editar empréstimo"
-                  >
-                    <Edit size={13} /> Editar
-                  </button>
+
+                {/* Progresso */}
+                {total > 0 && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                      <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0 w-8 text-right">{pct}%</span>
+                  </div>
+                )}
+
+                {/* Ações — primárias visíveis, secundárias sob "Mais" */}
+                <div className="mt-3 pt-3 border-t border-border/40 flex items-center gap-1.5 flex-wrap">
                   {c.status === "active" && !isPaid && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setRenegotiating(c); }}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-medium transition-colors"
-                      title="Renegociar contrato"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-semibold transition-colors"
                     >
-                      <Repeat size={13} /> Renegociar
+                      <Repeat size={12} /> Renegociar
                     </button>
                   )}
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-medium transition-colors"
-                    title="Excluir empréstimo"
+                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-semibold transition-colors"
                   >
-                    <Trash2 size={13} /> Excluir
+                    <MessageSquare size={12} /> Enviar
                   </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-colors"
+                  >
+                    <Download size={12} /> PDF
+                  </button>
+
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
+                      className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      title="Editar empréstimo"
+                    >
+                      <Edit size={13} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
+                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Excluir empréstimo"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
-              {total > 0 && (
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
-                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0">{pct}%</span>
-                </div>
-              )}
             </div>
             );
           })}
