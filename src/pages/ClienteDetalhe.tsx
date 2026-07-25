@@ -2161,7 +2161,7 @@ const ClienteDetalhe = () => {
             )}
           </div>
         );
-      })()}
+      })()}</section>
     </div>
   );
 };
