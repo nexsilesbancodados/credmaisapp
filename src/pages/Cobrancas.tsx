@@ -110,6 +110,8 @@ const Cobrancas = () => {
     setCollapsed(prev => { const n = new Set(prev); n.has(cid) ? n.delete(cid) : n.add(cid); return n; });
   }, []);
   const [historyFor, setHistoryFor] = useState<{ installmentId: string; clientName: string } | null>(null);
+  const [showAutomation, setShowAutomation] = useState(false);
+  const [showAging, setShowAging] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Keyboard "/" focus
