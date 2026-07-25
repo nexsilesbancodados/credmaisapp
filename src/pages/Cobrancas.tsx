@@ -726,61 +726,22 @@ const Cobrancas = () => {
             </div>
             <div>
               <h1 className="text-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">Cobranças</h1>
-              <p className="text-muted-foreground text-xs mt-0.5">
-                {simpleMode ? "Modo simples — só o essencial" : "Modo avançado — todas as ferramentas"}
-              </p>
+              <p className="text-muted-foreground text-xs mt-0.5">Foque no que precisa ser resolvido hoje</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setSimpleMode(v => !v)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border text-xs font-semibold transition-colors focus-ring ${
-                simpleMode ? "bg-primary/10 border-primary/30 text-primary" : "bg-card border-border text-muted-foreground hover:text-foreground"
-              }`}
-              title={simpleMode ? "Mostrar mais opções" : "Voltar ao modo simples"}
-            >
-              <SlidersHorizontal size={13} /> {simpleMode ? "Ver tudo" : "Modo simples"}
-            </button>
             {stats.overdue > 0 && selected.size === 0 && (
               <button onClick={() => handleBulk("whatsapp")} className="btn-premium" style={{ background: "linear-gradient(135deg, hsl(var(--success)), hsl(152 65% 55%))" }}>
                 <MessageSquare size={14} /> Cobrar atrasadas ({stats.overdue})
               </button>
             )}
-            {!simpleMode && (
-              <>
-                <button
-                  onClick={() => { setFocoDia(v => !v); setFilter("all"); setPeriod("all"); }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl border text-sm font-semibold transition-colors focus-ring ${
-                    focoDia ? "bg-destructive/15 border-destructive/40 text-destructive" : "bg-card border-border text-foreground hover:bg-accent"
-                  }`}
-                >
-                  <Flame size={14} className={focoDia ? "text-destructive" : "text-warning"} />
-                  {focoDia ? "Foco do dia ativo" : "Foco do dia"}
-                </button>
-                <button
-                  onClick={() => {
-                    const active = period === "today";
-                    setPeriod(active ? "all" : "today");
-                    setFocoDia(false);
-                    setFilter("all");
-                    setBucket("all");
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl border text-sm font-semibold transition-colors focus-ring ${
-                    period === "today" ? "bg-primary/15 border-primary/40 text-primary" : "bg-card border-border text-foreground hover:bg-accent"
-                  }`}
-                  title="Mostrar apenas parcelas que vencem hoje (sem contar atrasadas)"
-                >
-                  <CalendarDays size={14} className={period === "today" ? "text-primary" : "text-muted-foreground"} />
-                  {period === "today" ? "Só vence hoje ativo" : "Só vence hoje"}
-                </button>
-                <button
-                  onClick={() => { setCobrarAteDate(todayISO); setCobrarAteSelected(new Set()); setCobrarAteOpen(true); }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-card border border-border text-sm font-semibold text-foreground hover:bg-accent transition-colors focus-ring"
-                >
-                  <CalendarIcon size={14} className="text-primary" /> Cobrar até…
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => { setCobrarAteDate(todayISO); setCobrarAteSelected(new Set()); setCobrarAteOpen(true); }}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-card border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring"
+              title="Selecionar parcelas até uma data"
+            >
+              <CalendarIcon size={13} className="text-primary" /> Cobrar até…
+            </button>
           </div>
         </div>
       </div>
