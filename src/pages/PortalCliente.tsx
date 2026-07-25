@@ -11,6 +11,7 @@ import { computeLateFee } from "@/lib/lateFee";
 import { generatePortalStatementPdf } from "@/utils/portalPdf";
 import { isPortalLoginBlocked, recordPortalLoginAttempt, performFullPortalLogout } from "@/lib/portalSession";
 import { isValidCPF, onlyDigits } from "@/lib/cpfCnpj";
+import eagleBg from "@/assets/portal-eagle-bg.jpg";
 
 type PortalInstallment = {
   id: string;
@@ -175,11 +176,9 @@ const PortalCliente = () => {
     try {
       const parsed = JSON.parse(saved);
       const c = parsed?.cpf;
-      const b = parsed?.birth_date;
-      if (c && b) {
+      if (c) {
         setCpf(c);
-        setBirthDate(b);
-        void doLogin(c, true, b);
+        void doLogin(c, true);
       }
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -197,10 +196,8 @@ const PortalCliente = () => {
         { event: "*", schema: "public", table: "contract_installments", filter: `client_id=eq.${clientId}` },
         () => {
           const cleanCpf = (portalData.client.cpf_cnpj || "").replace(/\D/g, "");
-          const b = portalData.client.birth_date || birthDate;
-          if (cleanCpf && b) {
-            void doLogin(cleanCpf, true, b);
-
+          if (cleanCpf) {
+            void doLogin(cleanCpf, true);
           }
         },
       )
@@ -253,7 +250,7 @@ const PortalCliente = () => {
     };
   }, [portalData]);
 
-  const doLogin = async (cleanCpf: string, silent = false, birth?: string) => {
+  const doLogin = async (cleanCpf: string, silent = false) => {
     if (!silent) {
       const block = isPortalLoginBlocked();
       if (block.blocked) {
@@ -265,16 +262,10 @@ const PortalCliente = () => {
         return;
       }
     }
-    const birthToUse = birth || birthDate;
-    if (!birthToUse) {
-      if (!silent) toast({ title: "Data de nascimento obrigatória", variant: "destructive" });
-      return;
-    }
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("portal_client_login" as never, {
+      const { data, error } = await supabase.rpc("portal_client_login_cpf" as never, {
         _cpf: cleanCpf,
-        _birth_date: birthToUse,
       } as never);
 
       if (error) {
@@ -289,14 +280,14 @@ const PortalCliente = () => {
       if (!data) {
         if (!silent) {
           recordPortalLoginAttempt(false);
-          toast({ title: "Acesso negado", description: "CPF ou data de nascimento não conferem.", variant: "destructive" });
+          toast({ title: "CPF não encontrado", description: "Confira os dígitos e tente novamente.", variant: "destructive" });
         }
         sessionStorage.removeItem(SESSION_KEY);
         return;
       }
 
       setPortalData(data as unknown as PortalData);
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cpf: cleanCpf, birth_date: birthToUse }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cpf: cleanCpf }));
       if (!silent) {
         recordPortalLoginAttempt(true);
         toast({ title: "Acesso autorizado!" });
@@ -331,13 +322,7 @@ const PortalCliente = () => {
       return;
     }
     setCpfError(null);
-    if (!birthDate) {
-      setBirthError("Informe sua data de nascimento.");
-      toast({ title: "Data de nascimento obrigatória", variant: "destructive" });
-      return;
-    }
-    setBirthError(null);
-    await doLogin(cleanCpf, false, birthDate);
+    await doLogin(cleanCpf, false);
   };
 
   const handleLogout = async () => {
@@ -420,7 +405,20 @@ const PortalCliente = () => {
 
   return (
     <main className="portal-shell text-foreground">
-      <div className="portal-content mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
+      {!portalData && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none fixed inset-0 z-0 bg-center bg-cover bg-no-repeat opacity-40 md:opacity-55"
+            style={{ backgroundImage: `url(${eagleBg})` }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"
+          />
+        </>
+      )}
+      <div className="portal-content relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
         {!portalData ? (
           justLoggedOut ? (
             /* ═══════════ TELA PÓS-LOGOUT ═══════════ */
@@ -518,32 +516,9 @@ const PortalCliente = () => {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="ml-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
-                      <Shield size={11} /> Data de nascimento
-                    </label>
-                    <input
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => {
-                        setBirthDate(e.target.value);
-                        setBirthError(e.target.value ? null : "Informe sua data de nascimento.");
-                      }}
-                      required
-                      max={new Date().toISOString().slice(0, 10)}
-                      aria-invalid={!!birthError}
-                      className={`portal-input w-full rounded-2xl px-5 py-4 text-center font-mono text-lg tracking-wider ${birthError ? "border-red-500/60 focus:border-red-500" : ""}`}
-                    />
-                    {birthError && (
-                      <p className="ml-1 flex items-center gap-1.5 text-xs text-red-400">
-                        <AlertTriangle size={12} /> {birthError}
-                      </p>
-                    )}
-                  </div>
-
                   <button
                     type="submit"
-                    disabled={loading || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf)) || !birthDate}
+                    disabled={loading || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf))}
                     className="portal-btn-primary flex w-full items-center justify-center gap-2 py-5 text-base disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? <Clock className="animate-spin" size={18} /> : <ArrowRight size={18} />}
@@ -564,7 +539,7 @@ const PortalCliente = () => {
                 <div className="grid grid-cols-3 gap-2 pt-2">
                   {[
                     { icon: Lock, label: "Criptografado" },
-                    { icon: Shield, label: "CPF + Nascimento" },
+                    { icon: Shield, label: "Acesso por CPF" },
                     { icon: BadgeCheck, label: "LGPD" },
                   ].map(({ icon: I, label }) => (
                     <div key={label} className="flex flex-col items-center gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] px-2 py-3 text-center">
