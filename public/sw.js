@@ -2,7 +2,7 @@
 // - NetworkFirst para navegações HTML, com fallback /offline.html
 // - StaleWhileRevalidate para JS/CSS/imagens
 // - Nunca cacheia Supabase, APIs ou rotas internas (~oauth)
-const VERSION = "sj-v6";
+const VERSION = "credmais-v8";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const HTML_CACHE = `${VERSION}-html`;
@@ -61,19 +61,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets → StaleWhileRevalidate
+  // Static assets → NetworkFirst. This avoids users staying stuck with an old
+  // subscription gate bundle after admin/manual releases or payment migrations.
   if (isAsset(url)) {
     event.respondWith(
       (async () => {
         const cache = await caches.open(RUNTIME_CACHE);
-        const cached = await cache.match(request);
-        const network = fetch(request)
-          .then((res) => {
-            if (res && res.status === 200 && res.type === "basic") cache.put(request, res.clone());
-            return res;
-          })
-          .catch(() => cached);
-        return cached || network;
+        try {
+          const fresh = await fetch(request, { cache: "no-store" });
+          if (fresh && fresh.status === 200 && fresh.type === "basic") cache.put(request, fresh.clone());
+          return fresh;
+        } catch {
+          return cache.match(request);
+        }
       })()
     );
   }

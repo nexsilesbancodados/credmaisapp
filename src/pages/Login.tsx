@@ -195,7 +195,7 @@ const Login = () => {
   };
 
   // NEW FLOW: don't create the auth user here. Send the visitor straight to checkout.
-  // The Hubla webhook will create the account (invite email) only after a confirmed payment.
+  // The Mercado Pago webhook will create the account (invite email) only after a confirmed payment.
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -212,7 +212,7 @@ const Login = () => {
         return;
       }
 
-      // Pass email + name to the checkout so Hubla can pre-fill and link the payer.
+      // Pass email + name to the checkout so Mercado Pago can pre-fill and link the payer.
       let url = String(checkoutUrl);
       try {
         const u = new URL(url);
@@ -487,7 +487,7 @@ const Login = () => {
 
                 <div className="mb-5 p-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.04] text-[11px] text-amber-100/80 leading-relaxed">
                   <strong className="text-amber-200">Como funciona:</strong> preencha nome e e-mail →
-                  é redirecionado para o pagamento (Hubla) → recebe e-mail de boas-vindas com link para entrar.
+                  é redirecionado para o pagamento no Mercado Pago → recebe e-mail de boas-vindas com link para entrar.
                 </div>
 
                 {formError && (
@@ -577,7 +577,7 @@ const Login = () => {
                   </button>
 
                   <p className="text-[10px] text-white/30 text-center leading-relaxed">
-                    Pagamento processado de forma segura pelo Hubla. Sem fidelidade — cancele quando quiser.
+                    Pagamento processado de forma segura pelo Mercado Pago. Sem fidelidade — cancele quando quiser.
                   </p>
                 </form>
               </div>

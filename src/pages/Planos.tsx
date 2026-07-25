@@ -81,7 +81,7 @@ const Planos = () => {
         <div className="container mx-auto max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             { icon: Zap, title: "Ativação imediata", desc: "Acesso liberado em segundos após o pagamento via link mágico no e-mail." },
-            { icon: Shield, title: "Pagamento seguro", desc: "Processado pela Hubla — PIX, cartão ou boleto. Sem fidelidade." },
+            { icon: Shield, title: "Pagamento seguro", desc: "Processado pelo Mercado Pago — PIX, cartão ou boleto. Sem fidelidade." },
             { icon: Sparkles, title: "Atualizações inclusas", desc: "Todo recurso novo já vem incluso no seu plano, sem custo extra." },
           ].map((b, i) => (
             <motion.div
