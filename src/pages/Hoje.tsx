@@ -312,7 +312,7 @@ const Hoje = () => {
       </header>
 
       {/* ═══ Atalhos ═══ Linha compacta abaixo do hero */}
-      <nav aria-label="Ações rápidas" className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+      <nav aria-label="Ações rápidas" className="grid grid-cols-2 gap-2 sm:gap-3">
         {quickActions.map(a => {
           const t = toneMap[a.tone];
           return (
