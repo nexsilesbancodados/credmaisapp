@@ -1230,7 +1230,7 @@ const Cobrancas = () => {
         </div>
       )}
       </>)}
-      </>)}
+
 
 
       {/* Payment Confirmation Modal (com pagamento parcial) */}
