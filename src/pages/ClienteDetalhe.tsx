@@ -1055,8 +1055,8 @@ const ClienteDetalhe = () => {
   const tabs = [
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
     { key: "parcelas" as const, label: "Parcelas", Icon: Receipt },
-    { key: "historico" as const, label: "Histórico", Icon: Clock },
   ];
+
 
 
 
