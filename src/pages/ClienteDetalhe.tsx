@@ -1522,7 +1522,10 @@ const ClienteDetalhe = () => {
             </div>
           </section>
         </div>
+        </div>
+        )}
       </section>
+
 
 
       {/* Ações rápidas: Documentos e Histórico */}
