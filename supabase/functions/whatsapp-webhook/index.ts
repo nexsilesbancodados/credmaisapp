@@ -19,6 +19,7 @@ import {
 
 import { findFaqMatch, FAQ_COUNT } from "../_shared/faq_knowledge.ts";
 import { identifyClient, loadClientInstallments, auditDecision, todayInSP, samePhoneBR } from "../_shared/agent_core.ts";
+import { runAgentWithTools } from "../_shared/agent_tools.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
