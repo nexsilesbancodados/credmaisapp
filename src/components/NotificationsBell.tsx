@@ -303,6 +303,8 @@ const NotificationsBell = () => {
                         {list.map((n) => {
                           const meta = typeMeta(n.type);
                           const Icon = meta.icon;
+                          const chips = extractHighlights(n.message);
+                          const isLong = n.message.length > 140;
                           return (
                             <div
                               key={n.id}
@@ -311,22 +313,43 @@ const NotificationsBell = () => {
                                 !n.is_read ? "bg-primary/[0.04]" : ""
                               }`}
                             >
+                              {!n.is_read && (
+                                <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+                              )}
                               <div className="flex gap-3">
                                 <div className={`shrink-0 w-9 h-9 rounded-xl ${meta.bg} ring-1 ${meta.ring} flex items-center justify-center`}>
                                   <Icon size={15} className={meta.color} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start gap-2">
-                                    <p className={`text-[13px] leading-snug flex-1 ${!n.is_read ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                                      {n.message}
-                                    </p>
-                                    {!n.is_read && <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />}
-                                  </div>
+                                  <p
+                                    className={`text-[13px] leading-snug ${!n.is_read ? "text-foreground font-medium" : "text-muted-foreground"} line-clamp-2 group-hover:line-clamp-none break-words`}
+                                    title={isLong ? n.message : undefined}
+                                  >
+                                    {n.message}
+                                  </p>
+                                  {chips.length > 0 && (
+                                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                      {chips.map((c, i) => (
+                                        <span
+                                          key={i}
+                                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ring-1 ${
+                                            c.tone === "money"
+                                              ? "bg-success/10 text-success ring-success/20"
+                                              : c.tone === "count"
+                                              ? "bg-warning/10 text-warning ring-warning/20"
+                                              : "bg-info/10 text-info ring-info/20"
+                                          }`}
+                                        >
+                                          {c.label}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                   <div className="flex items-center gap-2 mt-1.5">
                                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${meta.bg} ${meta.color}`}>
                                       {meta.label}
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground/70">{n.from}</span>
+                                    <span className="text-[10px] text-muted-foreground/70 truncate max-w-[130px]">{n.from}</span>
                                     <span className="text-[10px] text-muted-foreground/50">·</span>
                                     <span className="text-[10px] text-muted-foreground/70">{timeAgo(n.created_at)}</span>
                                     {n.link && <ExternalLink size={9} className="text-muted-foreground/40 ml-auto" />}
