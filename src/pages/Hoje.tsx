@@ -205,21 +205,24 @@ const Hoje = () => {
   }
 
   const quickActions = [
-    { label: "Novo cliente", Icon: UserPlus, to: "/clientes/novo", tone: "primary",     iconBg: "bg-primary/15 text-primary ring-primary/25",             glow: "hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.6)]" },
-    { label: "Registrar pagamento", Icon: DollarSign, to: "/cobrancas", tone: "success", iconBg: "bg-success/15 text-success ring-success/25",           glow: "hover:shadow-[0_10px_30px_-12px_hsl(var(--success)/0.6)]" },
-    { label: "Lançar gasto", Icon: Wallet, to: "/gastos", tone: "danger",               iconBg: "bg-destructive/15 text-destructive ring-destructive/25", glow: "hover:shadow-[0_10px_30px_-12px_hsl(var(--destructive)/0.55)]" },
-    { label: "Lançar lucro", Icon: TrendingUp, to: "/lucros", tone: "amber",            iconBg: "bg-amber-500/15 text-amber-400 ring-amber-500/25",       glow: "hover:shadow-[0_10px_30px_-12px_hsl(38_92%_50%/0.55)]" },
+    { label: "Novo cliente",         Icon: UserPlus,   to: "/clientes/novo", tone: "primary" },
+    { label: "Registrar pagamento",  Icon: DollarSign, to: "/cobrancas",     tone: "success" },
+    { label: "Lançar gasto",         Icon: Wallet,     to: "/gastos",        tone: "danger"  },
+    { label: "Lançar lucro",         Icon: TrendingUp, to: "/lucros",        tone: "amber"   },
   ] as const;
 
-  const toneVeil: Record<string, string> = {
-    primary: "before:bg-[radial-gradient(120%_80%_at_0%_0%,hsl(var(--primary)/0.18),transparent_60%)]",
-    success: "before:bg-[radial-gradient(120%_80%_at_0%_0%,hsl(var(--success)/0.18),transparent_60%)]",
-    danger:  "before:bg-[radial-gradient(120%_80%_at_0%_0%,hsl(var(--destructive)/0.18),transparent_60%)]",
-    amber:   "before:bg-[radial-gradient(120%_80%_at_0%_0%,hsl(38_92%_50%/0.20),transparent_60%)]",
+  const toneMap: Record<string, { chip: string; ring: string; dot: string }> = {
+    primary: { chip: "bg-primary/10 text-primary",           ring: "ring-primary/20",     dot: "bg-primary" },
+    success: { chip: "bg-success/10 text-success",           ring: "ring-success/20",     dot: "bg-success" },
+    danger:  { chip: "bg-destructive/10 text-destructive",   ring: "ring-destructive/20", dot: "bg-destructive" },
+    amber:   { chip: "bg-amber-500/10 text-amber-500",       ring: "ring-amber-500/20",   dot: "bg-amber-500" },
   };
 
+  const nowLong = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+  const isCalm = totals.dueTodayCount === 0 && totals.overdueCount === 0;
+
   return (
-    <section className="space-y-4" aria-labelledby="hoje-title">
+    <section className="space-y-5" aria-labelledby="hoje-title">
       <a
         href="#hoje-cobrancas"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:text-xs focus:font-bold"
@@ -227,97 +230,114 @@ const Hoje = () => {
         Pular para cobranças prioritárias
       </a>
 
-      {/* Header premium — glass + gradient veil */}
-      <header
-        className="relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-card/90 via-card/70 to-card/50 backdrop-blur-xl px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between gap-3 shadow-[0_1px_0_hsl(var(--border)/0.5),0_18px_40px_-24px_hsl(0_0%_0%/0.55)]"
-      >
-        {/* aurora veil */}
-        <div className="pointer-events-none absolute inset-0 opacity-80" aria-hidden="true">
-          <div className="absolute -top-20 -left-16 w-72 h-72 rounded-full bg-primary/15 blur-3xl" />
-          <div className="absolute -bottom-24 right-0 w-72 h-72 rounded-full bg-success/10 blur-3xl" />
+      {/* ═══ Command Hero ═══
+          Header editorial: data + saudação à esquerda, status pill inline,
+          CTA primário à direita. Aurora sutil, sem excesso de vidro. */}
+      <header className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/70 backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-0 opacity-70" aria-hidden="true">
+          <div className="absolute -top-24 -left-16 w-80 h-80 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute -bottom-28 right-8 w-72 h-72 rounded-full bg-success/[0.06] blur-3xl" />
+          <div className="absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-border/60 to-transparent" />
         </div>
 
-        <div className="relative min-w-0 flex items-center gap-3 sm:gap-4">
-          <span className="hidden sm:flex w-11 h-11 rounded-2xl bg-primary/12 ring-1 ring-primary/25 items-center justify-center shadow-inner shrink-0">
-            <Sunrise size={18} className="text-primary" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground/80 font-bold flex items-center gap-1.5 truncate">
-              <Sunrise size={10} className="sm:hidden text-primary" aria-hidden="true" />
-              <span className="hidden sm:inline">{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}</span>
-              <span className="sm:hidden">{new Date().toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" })}</span>
-            </p>
-            <h1 id="hoje-title" className="text-xl sm:text-2xl font-extrabold text-foreground leading-tight truncate tracking-tight">
-              {greeting} <span aria-hidden="true" className="inline-block animate-[wave_1.6s_ease-in-out_1]">👋</span>
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5" aria-live="polite">
-              <span className={`w-1.5 h-1.5 rounded-full ${totals.dueTodayCount === 0 && totals.overdueCount === 0 ? "bg-success shadow-[0_0_10px_hsl(var(--success)/0.7)]" : "bg-amber-400 shadow-[0_0_10px_hsl(38_92%_50%/0.7)]"}`} />
-              {totals.dueTodayCount === 0 && totals.overdueCount === 0
-                ? "Sem cobranças pendentes hoje."
-                : <>
-                    <span className="font-semibold text-foreground">{totals.dueTodayCount}</span> hoje
-                    <span className="opacity-40">·</span>
-                    <span className="font-semibold text-destructive">{totals.overdueCount}</span> em atraso
-                  </>}
-            </p>
+        <div className="relative px-5 sm:px-7 py-5 sm:py-6 flex items-start sm:items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+          <div className="min-w-0 flex items-center gap-4">
+            <span className="hidden sm:flex w-12 h-12 rounded-2xl bg-primary/10 ring-1 ring-primary/20 items-center justify-center shrink-0">
+              <Sunrise size={20} className="text-primary" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-bold truncate">
+                {nowLong}
+              </p>
+              <h1 id="hoje-title" className="mt-0.5 text-2xl sm:text-[28px] font-extrabold text-foreground leading-none tracking-tight">
+                {greeting}<span aria-hidden="true" className="ml-2 inline-block">👋</span>
+              </h1>
+              <p className="mt-2 text-xs text-muted-foreground flex items-center gap-2 flex-wrap" aria-live="polite">
+                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${isCalm ? "bg-success/10 text-success ring-1 ring-success/20" : "bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isCalm ? "bg-success" : "bg-amber-500"}`} />
+                  {isCalm ? "Tudo em dia" : "Cobranças pendentes"}
+                </span>
+                {!isCalm && (
+                  <>
+                    <span className="tabular-nums">
+                      <span className="font-bold text-foreground">{totals.dueTodayCount}</span>
+                      <span className="ml-1 text-muted-foreground">hoje</span>
+                    </span>
+                    <span className="opacity-30">·</span>
+                    <span className="tabular-nums">
+                      <span className="font-bold text-destructive">{totals.overdueCount}</span>
+                      <span className="ml-1 text-muted-foreground">em atraso</span>
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
+
+          <button
+            onClick={() => navigate("/clientes/novo")}
+            className="shrink-0 h-11 px-5 rounded-2xl text-sm font-bold text-primary-foreground flex items-center gap-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-16px_hsl(var(--primary)/0.65)]"
+            style={{ background: "var(--gradient-button, linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary)/0.78)))" }}
+            aria-label="Novo cliente"
+          >
+            <Plus size={15} />
+            <span className="tracking-tight">Novo cliente</span>
+          </button>
         </div>
 
-        <button
-          onClick={() => navigate("/clientes/novo")}
-          className="relative shrink-0 px-3.5 sm:px-4 py-2.5 rounded-2xl text-xs font-bold text-primary-foreground flex items-center gap-1.5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-14px_hsl(var(--primary)/0.7)] active:translate-y-0"
-          style={{ background: "var(--gradient-button, linear-gradient(135deg,hsl(var(--primary)),hsl(var(--primary)/0.75)))" }}
-          aria-label="Novo cliente"
-        >
-          <Plus size={14} className="transition-transform group-hover:rotate-90" />
-          <span className="hidden sm:inline tracking-wide">Novo cliente</span>
-        </button>
+        {/* KPI ribbon integrado ao header */}
+        <div className="relative grid grid-cols-2 md:grid-cols-4 border-t border-border/60 divide-x divide-border/40">
+          {[
+            { label: "Vencendo hoje",    value: totals.dueToday,          sub: `${totals.dueTodayCount} parcelas`, tone: "primary" as const, Icon: Clock },
+            { label: "Em atraso",        value: totals.overdue,           sub: `${totals.overdueCount} parcelas`, tone: "danger" as const,  Icon: AlertCircle },
+            { label: "Lucro hoje",       value: data?.profitToday || 0,   sub: "registrado",                       tone: "success" as const, Icon: TrendingUp },
+            { label: "A receber no mês", value: data?.aReceberMonth || 0, sub: "pendente",                         tone: "amber" as const,   Icon: CalendarDays },
+          ].map((k, idx) => {
+            const t = toneMap[k.tone];
+            return (
+              <div key={k.label} className="group relative px-4 sm:px-5 py-4 transition-colors hover:bg-accent/20">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold truncate">{k.label}</p>
+                  <span className={`w-6 h-6 rounded-lg ring-1 ${t.ring} ${t.chip} flex items-center justify-center shrink-0`}>
+                    <k.Icon size={11} aria-hidden="true" />
+                  </span>
+                </div>
+                <p className="text-[13px] sm:text-[15px] text-muted-foreground/50 font-semibold tabular-nums leading-none">R$</p>
+                <p className="mt-0.5 text-xl sm:text-[26px] font-extrabold text-foreground leading-none tracking-tight tabular-nums truncate">
+                  {fmtBRL(k.value)}
+                </p>
+                <p className="mt-2 text-[11px] text-muted-foreground/80 truncate flex items-center gap-1.5">
+                  <span className={`w-1 h-1 rounded-full ${t.dot}`} />
+                  {k.sub}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </header>
 
-      {/* Ações rápidas — cartões com chip de ícone */}
+      {/* ═══ Atalhos ═══ Linha compacta abaixo do hero */}
       <nav aria-label="Ações rápidas" className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        {quickActions.map(a => (
-          <button
-            key={a.label}
-            onClick={() => navigate(a.to)}
-            className={`group relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-3 sm:px-3.5 py-3 sm:py-3.5 flex items-center gap-2.5 sm:gap-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-border ${a.glow} before:content-[''] before:absolute before:inset-0 before:opacity-70 before:transition-opacity before:duration-300 group-hover:before:opacity-100 ${toneVeil[a.tone]}`}
-          >
-            <span className={`relative shrink-0 w-9 h-9 rounded-xl ring-1 ${a.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
-              <a.Icon size={16} />
-            </span>
-            <span className="relative text-xs sm:text-[13px] font-bold text-foreground truncate tracking-tight">
-              {a.label}
-            </span>
-            <ArrowRight size={12} className="relative ml-auto text-muted-foreground/40 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
-          </button>
-        ))}
+        {quickActions.map(a => {
+          const t = toneMap[a.tone];
+          return (
+            <button
+              key={a.label}
+              onClick={() => navigate(a.to)}
+              className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur-md px-4 py-3 flex items-center gap-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card/80"
+            >
+              <span className={`shrink-0 w-9 h-9 rounded-xl ring-1 ${t.ring} ${t.chip} flex items-center justify-center`}>
+                <a.Icon size={16} />
+              </span>
+              <span className="flex-1 min-w-0 text-[13px] font-bold text-foreground truncate tracking-tight">
+                {a.label}
+              </span>
+              <ArrowRight size={13} className="text-muted-foreground/40 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+            </button>
+          );
+        })}
       </nav>
 
-
-      {/* KPIs premium: chip de ícone + gradient veil por tom */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3" role="list" aria-label="Indicadores">
-        {[
-          { label: "Vencendo hoje",    value: `R$ ${fmtBRL(totals.dueToday)}`,          sub: `${totals.dueTodayCount} parcelas`, color: "text-primary",     ring: "ring-primary/25",     chip: "bg-primary/12 text-primary",         veil: toneVeil.primary, Icon: Clock },
-          { label: "Em atraso",        value: `R$ ${fmtBRL(totals.overdue)}`,           sub: `${totals.overdueCount} parcelas`, color: "text-destructive", ring: "ring-destructive/25", chip: "bg-destructive/12 text-destructive", veil: toneVeil.danger,  Icon: AlertCircle },
-          { label: "Lucro hoje",       value: `R$ ${fmtBRL(data?.profitToday || 0)}`,   sub: "registrado",                       color: "text-success",     ring: "ring-success/25",     chip: "bg-success/12 text-success",         veil: toneVeil.success, Icon: TrendingUp },
-          { label: "A receber no mês", value: `R$ ${fmtBRL(data?.aReceberMonth || 0)}`, sub: "pendente",                         color: "text-amber-400",   ring: "ring-amber-500/25",   chip: "bg-amber-500/12 text-amber-400",     veil: toneVeil.amber,   Icon: CalendarDays },
-        ].map(k => (
-          <div
-            key={k.label}
-            role="listitem"
-            className={`group relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-md px-3 sm:px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-border before:content-[''] before:absolute before:inset-0 before:opacity-70 before:transition-opacity group-hover:before:opacity-100 ${k.veil}`}
-          >
-            <div className="relative flex items-center justify-between mb-1.5">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground/80 font-bold truncate">{k.label}</p>
-              <span className={`w-7 h-7 rounded-lg ring-1 ${k.ring} ${k.chip} flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110`}>
-                <k.Icon size={13} aria-hidden="true" />
-              </span>
-            </div>
-            <p className={`relative text-base sm:text-lg font-extrabold ${k.color} truncate tracking-tight tabular-nums`}>{k.value}</p>
-            <p className="relative text-[11px] text-muted-foreground truncate mt-0.5">{k.sub}</p>
-          </div>
-        ))}
-      </div>
 
       {/* Balanço Ativo × Passivo (aparece se houver investidores) */}
       <AtivoPassivoCard />
