@@ -11,7 +11,7 @@ type AccessState = "checking" | "allowed" | "denied";
  * Cache the subscription decision per user for a short period to avoid
  * hammering the DB on every navigation. Reset on logout via cache key.
  */
-const CACHE_KEY = (uid: string) => `__sub_status_${uid}`;
+const CACHE_KEY = (uid: string) => `__credmais_sub_status_v2_${uid}`;
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
 function readCache(uid: string): "allowed" | "denied" | null {
@@ -31,6 +31,15 @@ function writeCache(uid: string, v: "allowed" | "denied") {
   } catch {}
 }
 
+function clearAccessCache(uid?: string) {
+  try {
+    if (uid) sessionStorage.removeItem(CACHE_KEY(uid));
+    Object.keys(sessionStorage)
+      .filter((key) => key.startsWith("__sub_status_") || key.startsWith("__credmais_sub_status_"))
+      .forEach((key) => sessionStorage.removeItem(key));
+  } catch {}
+}
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
@@ -46,31 +55,32 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    // Cache hit?
+    const trialOk =
+      profile?.trial_ends_at && new Date(profile.trial_ends_at).getTime() > Date.now();
+    const profileSubOk =
+      (profile as any)?.subscription_expires_at &&
+      new Date((profile as any).subscription_expires_at).getTime() > Date.now();
+
+    // Profile data is authoritative. Do not let an old denied cache keep a newly
+    // activated customer locked out after Mercado Pago confirms the subscription.
+    if (trialOk || profileSubOk) {
+      clearAccessCache(user.id);
+      writeCache(user.id, "allowed");
+      setAccess("allowed");
+      return;
+    }
+
+    // Only cache positive access. Negative decisions become stale right after
+    // an admin/manual release or webhook payment confirmation.
     const cached = readCache(user.id);
-    if (cached) {
-      setAccess(cached);
+    if (cached === "allowed") {
+      setAccess("allowed");
       return;
     }
 
     let cancelled = false;
     (async () => {
-      // 1) Active trial on profile (legacy users)
-      const trialOk =
-        profile?.trial_ends_at && new Date(profile.trial_ends_at).getTime() > Date.now();
-      const profileSubOk =
-        (profile as any)?.subscription_expires_at &&
-        new Date((profile as any).subscription_expires_at).getTime() > Date.now();
-
-      if (trialOk || profileSubOk) {
-        if (!cancelled) {
-          writeCache(user.id, "allowed");
-          setAccess("allowed");
-        }
-        return;
-      }
-
-      // 2) Active subscription on `subscriptions` table (paid via Hubla)
+      // 2) Active subscription on `subscriptions` table (paid via Mercado Pago)
       const { data: sub } = await supabase
         .from("subscriptions")
         .select("status")
@@ -91,7 +101,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       const { data: url } = await supabase.rpc("get_signup_checkout_url");
       if (cancelled) return;
       if (typeof url === "string") setCheckoutUrl(url);
-      writeCache(user.id, "denied");
       setAccess("denied");
     })();
 
@@ -173,6 +182,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
             )}
             <button
               onClick={async () => {
+                clearAccessCache(user.id);
                 await supabase.auth.signOut();
                 window.location.href = "/login";
               }}
@@ -182,7 +192,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
             </button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            Já pagou? Aguarde alguns segundos — assim que o Hubla confirmar, seu acesso é liberado automaticamente.
+            Já pagou? Atualize a página em alguns segundos — assim que o Mercado Pago confirmar, seu acesso é liberado automaticamente.
           </p>
         </div>
       </div>
