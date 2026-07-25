@@ -1430,8 +1430,26 @@ const ClienteDetalhe = () => {
         </div>
       )}
 
-      {/* Section: Informações — Dados do cliente (logo abaixo da faixa/header) */}
-      <section id="sec-resumo" className="scroll-mt-24 space-y-5">
+      {/* Section: Informações — colapsável (Contato + Endereço + Estatísticas) */}
+      <section id="sec-resumo" className="scroll-mt-24">
+        <button
+          onClick={() => setShowInfo(v => !v)}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-border/60 bg-card/40 hover:bg-card/60 hover:border-border transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><User size={15} /></div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-foreground">Informações & Estatísticas</p>
+              <p className="text-[11px] text-muted-foreground">Contato, endereço e métricas do cliente</p>
+            </div>
+          </div>
+          <div className={`transition-transform ${showInfo ? "rotate-180" : ""}`}>
+            <ChevronDown size={16} className="text-muted-foreground" />
+          </div>
+        </button>
+        {showInfo && (
+        <div className="mt-4 space-y-5">
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Contato & Endereço (2/3) */}
           <section className="lg:col-span-2 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
