@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import ContractTemplate from "@/components/ContractTemplate";
-import AISimulatorInsights from "@/components/simulator/AISimulatorInsights";
+
 import LoanPreviewPanel from "@/components/loan/LoanPreviewPanel";
 import { calculateLoan, generateInstallmentSchedule, type LoanMode } from "@/lib/loanMath";
 import { getSignedUploadUrl } from "@/lib/storage";
@@ -1599,29 +1599,6 @@ const NovoCliente = () => {
           </details>
           )}
 
-          {/* AI Insights */}
-          {calc && calc.numParcelas > 0 && parseFloat(capital) > 0 && (
-            <AISimulatorInsights
-              payload={{
-                valor: parseFloat(capital),
-                taxa: parseFloat(taxaJuros) || (calc as any).derivedRate || 0,
-                parcelas: calc.numParcelas,
-                loanMode,
-                frequency,
-                dailyMode,
-                totalReceber: calc.totalAmount,
-                jurosTotal: calc.totalInterest,
-                valorParcela: calc.installmentAmount,
-                numParcelas: calc.numParcelas,
-              }}
-              onApplyScenario={(s) => {
-                setTaxaJuros(String(s.taxa));
-                setNumInstallments(String(s.parcelas));
-                setValueMode("rate");
-                toast({ title: "✓ Cenário aplicado", description: s.name });
-              }}
-            />
-          )}
           
         </div>
       )}

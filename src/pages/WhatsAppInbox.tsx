@@ -81,9 +81,6 @@ export default function WhatsAppInbox() {
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduleText, setScheduleText] = useState("");
   const [metricsOpen, setMetricsOpen] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
-  const [aiSummary, setAiSummary] = useState<{ summary: string; key_points: string[]; next_action: string } | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [hourlyStats, setHourlyStats] = useState<{ hour: number; count: number }[]>([]);
   const [metrics, setMetrics] = useState({
     total: 0, today: 0, needsHuman: 0, botReplies7d: 0, humanReplies7d: 0,
@@ -384,27 +381,6 @@ export default function WhatsAppInbox() {
     } finally { setSending(false); }
   };
 
-  // === IA ===
-  const aiCall = async (mode: "suggest" | "summarize") => {
-    if (!selected) return;
-    setAiLoading(true);
-    try {
-      const { data: sess } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("whatsapp-ai-assist", {
-        body: { conversation_id: selected.id, mode },
-        headers: { Authorization: `Bearer ${sess.session?.access_token}` },
-      });
-      if (res.error) throw res.error;
-      if (mode === "suggest") setAiSuggestions(res.data?.suggestions || []);
-      if (mode === "summarize") setAiSummary({
-        summary: res.data?.summary || "",
-        key_points: res.data?.key_points || [],
-        next_action: res.data?.next_action || "",
-      });
-    } catch (e: any) {
-      toast({ title: "Erro IA", description: e?.message, variant: "destructive" });
-    } finally { setAiLoading(false); }
-  };
 
   // === Export ===
   const exportConversation = () => {
@@ -704,38 +680,6 @@ export default function WhatsAppInbox() {
                 )}
               </div>
 
-              {/* AI Summary banner */}
-              {aiSummary && (
-                <div className="mx-3 mt-2 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs space-y-1 relative">
-                  <button onClick={() => setAiSummary(null)} className="absolute top-1 right-1 opacity-60 hover:opacity-100">
-                    <X className="h-3 w-3" />
-                  </button>
-                  <p className="font-semibold flex items-center gap-1"><Wand2 className="h-3 w-3" />Resumo IA</p>
-                  <p>{aiSummary.summary}</p>
-                  {aiSummary.key_points.length > 0 && (
-                    <ul className="list-disc list-inside opacity-80">
-                      {aiSummary.key_points.map((k, i) => <li key={i}>{k}</li>)}
-                    </ul>
-                  )}
-                  {aiSummary.next_action && <p className="italic opacity-80">→ {aiSummary.next_action}</p>}
-                </div>
-              )}
-
-              {/* AI Suggestions */}
-              {aiSuggestions && aiSuggestions.length > 0 && (
-                <div className="mx-3 mt-2 p-2 rounded-lg bg-primary/5 border border-primary/20 space-y-1">
-                  <p className="text-[10px] font-semibold uppercase opacity-70 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />Sugestões IA
-                    <button onClick={() => setAiSuggestions(null)} className="ml-auto opacity-60 hover:opacity-100"><X className="h-3 w-3" /></button>
-                  </p>
-                  {aiSuggestions.map((s, i) => (
-                    <button key={i} onClick={() => { setDraft(s); setAiSuggestions(null); }}
-                      className="text-xs text-left w-full p-2 rounded hover:bg-primary/10 border border-transparent hover:border-primary/30 transition">
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
 
               {/* Quick actions */}
               <div className="px-3 pt-2 flex gap-1.5 flex-wrap border-t border-border">
@@ -746,15 +690,6 @@ export default function WhatsAppInbox() {
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
                   onClick={() => quickAction("send_receipt_request", "Pedido enviado")}>
                   <FileText className="h-3 w-3" />Comprovante
-                </Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                  onClick={() => aiCall("suggest")} disabled={aiLoading}>
-                  {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                  Sugerir
-                </Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                  onClick={() => aiCall("summarize")} disabled={aiLoading}>
-                  <Wand2 className="h-3 w-3" />Resumir
                 </Button>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
                   onClick={() => setScheduleOpen(true)}>

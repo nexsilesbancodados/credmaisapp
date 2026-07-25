@@ -15,7 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { PredictiveAnalytics } from "@/components/analises/PredictiveAnalytics";
+
 import AnaliseNarrative from "@/components/dashboard/AnaliseNarrative";
 import { fetchAll } from "@/lib/fetchAll";
 
@@ -593,19 +593,6 @@ const Analises = () => {
       </div>
 
       <Tabs defaultValue="classic" className="w-full">
-        <TabsList className="bg-muted/50 p-1 mb-6">
-          <TabsTrigger value="classic" className="flex items-center gap-2">
-            <FileText size={14} /> Estatísticas
-          </TabsTrigger>
-          <TabsTrigger value="predictive" className="flex items-center gap-2">
-            <Brain size={14} /> Inteligência Preditiva (IA)
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="predictive">
-          <PredictiveAnalytics />
-        </TabsContent>
-
         <TabsContent value="classic" className="space-y-8">
           {/* ─── Período ─── */}
           <div className="glass-card rounded-2xl p-4">
