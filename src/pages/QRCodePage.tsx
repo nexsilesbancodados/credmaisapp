@@ -1,29 +1,89 @@
-import { useState } from "react";
-import { QrCode, Copy, Check, Download, Link2, ExternalLink } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  QrCode,
+  Copy,
+  Check,
+  Download,
+  Link2,
+  ExternalLink,
+  Share2,
+  MessageCircle,
+  Mail,
+  Sparkles,
+  ArrowUpRight,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { toast } from "sonner";
+
+type Preset = {
+  key: string;
+  label: string;
+  desc: string;
+  icon: typeof ExternalLink;
+  path: string;
+  accent: string; // tailwind gradient tokens
+  tag: string;
+};
 
 const QRCodePage = () => {
   const [inputUrl, setInputUrl] = useState("");
-  const [qrUrl, setQrUrl] = useState("");
   const [activeUrl, setActiveUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [size, setSize] = useState<256 | 400 | 600>(400);
+  const [dark, setDark] = useState(true);
 
-  const baseUrl = window.location.origin;
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
-  const presets = [
-    { label: "Portal do Cliente", desc: "Acesso do cliente às parcelas", icon: ExternalLink, url: `${baseUrl}/portal-cliente` },
-    { label: "Cobrador Externo", desc: "Painel do cobrador externo", icon: Link2, url: `${baseUrl}/cobrador-externo` },
+  const presets: Preset[] = [
+    {
+      key: "cliente",
+      label: "Portal do Cliente",
+      desc: "Login por CPF, extrato e pagamento PIX",
+      icon: Users,
+      path: "/portal-cliente",
+      accent: "from-primary/30 via-primary/10 to-transparent",
+      tag: "Cliente",
+    },
+    {
+      key: "investidor",
+      label: "Portal do Investidor",
+      desc: "Aportes, rendimentos e retiradas",
+      icon: Wallet,
+      path: "/portal-investidor",
+      accent: "from-emerald-500/25 via-emerald-500/5 to-transparent",
+      tag: "Investidor",
+    },
+    {
+      key: "cobrador",
+      label: "Cobrador Externo",
+      desc: "Painel operacional do cobrador",
+      icon: Link2,
+      path: "/cobrador-externo",
+      accent: "from-amber-500/25 via-amber-500/5 to-transparent",
+      tag: "Operacional",
+    },
   ];
 
-  const generateQR = (url: string) => {
-    if (!url) return;
-    setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}&bgcolor=1a1a1a&color=ffffff`);
+  const qrUrl = useMemo(() => {
+    if (!activeUrl) return "";
+    const bg = dark ? "0f1115" : "ffffff";
+    const fg = dark ? "ffffff" : "0f1115";
+    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=12&qzone=2&data=${encodeURIComponent(
+      activeUrl,
+    )}&bgcolor=${bg}&color=${fg}`;
+  }, [activeUrl, size, dark]);
+
+  const setUrl = (url: string) => {
     setActiveUrl(url);
     setInputUrl(url);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(activeUrl);
+  const handleCopy = async () => {
+    if (!activeUrl) return;
+    await navigator.clipboard.writeText(activeUrl);
     setCopied(true);
+    toast.success("Link copiado");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -35,123 +95,337 @@ const QRCodePage = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "qrcode.png";
+      a.download = `qrcode-${size}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      toast.success("QR Code baixado");
     } catch {
       window.open(qrUrl, "_blank");
     }
   };
 
+  const shareWhatsApp = () => {
+    if (!activeUrl) return;
+    const msg = encodeURIComponent(`Acesse: ${activeUrl}`);
+    window.open(`https://wa.me/?text=${msg}`, "_blank");
+  };
+
+  const shareEmail = () => {
+    if (!activeUrl) return;
+    const subject = encodeURIComponent("Link de acesso");
+    const body = encodeURIComponent(`Acesse pelo link: ${activeUrl}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  const shareNative = async () => {
+    if (!activeUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Acesso ao Portal", url: activeUrl });
+      } catch {
+        /* user cancelled */
+      }
+    } else {
+      handleCopy();
+    }
+  };
+
+  const activePreset = presets.find((p) => `${baseUrl}${p.path}` === activeUrl);
+
   return (
-    <div className="max-w-xl mx-auto space-y-6 pb-8">
-      <div className="page-hero animate-fade-in">
-        <div className="page-hero-content flex items-center gap-3">
-          <div className="page-hero-icon">
-            <QrCode size={22} />
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-primary/15 via-card to-card p-6 sm:p-8 animate-fade-in">
+        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-10 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
+              <QrCode size={26} className="text-primary-foreground" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <Sparkles size={11} className="text-primary" />
+                QR Studio
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mt-1.5">
+                Acesso rápido aos portais
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Gere, compartilhe e imprima QR Codes de qualquer link
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-shimmer">Portais</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Acesse e compartilhe os portais do sistema</p>
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            {presets.length} portais disponíveis
           </div>
         </div>
       </div>
 
-      {/* Presets */}
-      <div className="space-y-3">
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Links Rápidos</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {presets.map((p) => {
-            const Icon = p.icon;
-            const isActive = activeUrl === p.url;
-            return (
-              <button
-                key={p.label}
-                onClick={() => generateQR(p.url)}
-                className={`group rounded-2xl border p-4 text-left transition-colors duration-200 ${
-                  isActive
-                    ? "border-primary/40 bg-primary/10"
-                    : "border-border bg-card hover:border-primary/20 hover:bg-card/80"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    isActive ? "bg-primary/20" : "bg-muted/50"
-                  }`}>
-                    <Icon size={16} className={isActive ? "text-primary" : "text-muted-foreground"} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{p.label}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{p.desc}</p>
+      <div className="grid lg:grid-cols-5 gap-6">
+        {/* Left column: presets + custom */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Presets */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Links Rápidos
+              </p>
+              <p className="text-[11px] text-muted-foreground">Clique para gerar</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {presets.map((p) => {
+                const Icon = p.icon;
+                const fullUrl = `${baseUrl}${p.path}`;
+                const isActive = activeUrl === fullUrl;
+                return (
+                  <button
+                    key={p.key}
+                    onClick={() => setUrl(fullUrl)}
+                    className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 ${
+                      isActive
+                        ? "border-primary/50 bg-primary/5 shadow-lg shadow-primary/10"
+                        : "border-border bg-card hover:border-primary/30 hover:-translate-y-0.5"
+                    }`}
+                  >
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${p.accent} opacity-60 pointer-events-none`}
+                    />
+                    <div className="relative">
+                      <div className="flex items-start justify-between gap-2">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${
+                            isActive
+                              ? "bg-primary/20 text-primary"
+                              : "bg-muted/60 text-muted-foreground"
+                          }`}
+                        >
+                          <Icon size={18} />
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-background/60 border border-border/50 text-muted-foreground">
+                          {p.tag}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-foreground mt-3">{p.label}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                        {p.desc}
+                      </p>
+                      <div className="flex items-center gap-1 mt-3 text-[10px] text-primary/80 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                        Gerar QR <ArrowUpRight size={11} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Custom URL */}
+          <section className="space-y-3">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              URL Personalizada
+            </p>
+            <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-1 px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border/50 focus-within:border-primary/40 focus-within:bg-muted/60 transition-colors">
+                  <Link2 size={15} className="text-muted-foreground shrink-0" />
+                  <input
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && inputUrl && setUrl(inputUrl)}
+                    placeholder="https://exemplo.com/pagina"
+                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={() => inputUrl && setUrl(inputUrl)}
+                  disabled={!inputUrl}
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-primary-foreground shrink-0 disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}
+                >
+                  Gerar
+                </button>
+              </div>
+
+              {/* Options */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/50">
+                  {([256, 400, 600] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSize(s)}
+                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-colors ${
+                        size === s
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {s}px
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/50">
+                  <button
+                    onClick={() => setDark(true)}
+                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${
+                      dark
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Escuro
+                  </button>
+                  <button
+                    onClick={() => setDark(false)}
+                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${
+                      !dark
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Claro
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right column: QR result */}
+        <div className="lg:col-span-2">
+          <div className="lg:sticky lg:top-6 rounded-3xl border border-border bg-card overflow-hidden">
+            {qrUrl ? (
+              <>
+                {/* QR preview */}
+                <div
+                  className={`flex justify-center p-8 ${
+                    dark ? "bg-[#0f1115]" : "bg-white"
+                  } transition-colors`}
+                >
+                  <div className="relative">
+                    <div className="absolute -inset-4 rounded-3xl bg-primary/10 blur-2xl pointer-events-none" />
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white p-2">
+                      <img
+                        src={qrUrl}
+                        alt="QR Code"
+                        width={240}
+                        height={240}
+                        className="block"
+                      />
+                    </div>
                   </div>
                 </div>
-              </button>
-            );
-          })}
+
+                {/* Info */}
+                <div className="p-5 space-y-4 border-t border-border/50">
+                  {activePreset && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">Destino:</span>
+                      <span className="font-bold text-foreground">
+                        {activePreset.label}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 bg-muted/30 rounded-xl px-3 py-2.5 border border-border/40">
+                    <Link2 size={14} className="text-muted-foreground shrink-0" />
+                    <p className="text-xs text-foreground truncate flex-1 font-mono">
+                      {activeUrl}
+                    </p>
+                    <button
+                      onClick={handleCopy}
+                      className="p-1.5 rounded-lg hover:bg-accent transition-colors shrink-0"
+                      title="Copiar URL"
+                    >
+                      {copied ? (
+                        <Check size={14} className="text-emerald-500" />
+                      ) : (
+                        <Copy size={14} className="text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-bold text-primary-foreground transition-all hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5"
+                    style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}
+                  >
+                    <Download size={16} />
+                    Baixar PNG
+                  </button>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={shareWhatsApp}
+                      className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl border border-border bg-background hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-colors group"
+                    >
+                      <MessageCircle
+                        size={16}
+                        className="text-muted-foreground group-hover:text-emerald-500"
+                      />
+                      <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-foreground">
+                        WhatsApp
+                      </span>
+                    </button>
+                    <button
+                      onClick={shareEmail}
+                      className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl border border-border bg-background hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+                    >
+                      <Mail
+                        size={16}
+                        className="text-muted-foreground group-hover:text-primary"
+                      />
+                      <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-foreground">
+                        E-mail
+                      </span>
+                    </button>
+                    <button
+                      onClick={shareNative}
+                      className="flex flex-col items-center gap-1.5 py-2.5 rounded-xl border border-border bg-background hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+                    >
+                      <Share2
+                        size={16}
+                        className="text-muted-foreground group-hover:text-primary"
+                      />
+                      <span className="text-[10px] font-semibold text-muted-foreground group-hover:text-foreground">
+                        Compartilhar
+                      </span>
+                    </button>
+                  </div>
+
+                  <a
+                    href={activeUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors pt-1"
+                  >
+                    <ExternalLink size={12} />
+                    Abrir link em nova aba
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center p-10 min-h-[420px]">
+                <div className="relative mb-5">
+                  <div className="absolute inset-0 rounded-3xl bg-primary/20 blur-2xl" />
+                  <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
+                    <QrCode size={36} className="text-primary/70" />
+                  </div>
+                </div>
+                <p className="text-sm font-bold text-foreground">
+                  Nenhum QR gerado ainda
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+                  Selecione um portal ao lado ou cole uma URL personalizada
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Custom URL */}
-      <div className="space-y-3">
-        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">URL Personalizada</p>
-        <div className="flex gap-2">
-          <input
-            value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && generateQR(inputUrl)}
-            placeholder="https://exemplo.com"
-            className="flex-1 px-4 py-2.5 rounded-xl bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/30 transition-colors"
-          />
-          <button
-            onClick={() => generateQR(inputUrl)}
-            disabled={!inputUrl}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground shrink-0 disabled:opacity-40 transition-opacity"
-            style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}
-          >
-            Gerar
-          </button>
-        </div>
-      </div>
-
-      {/* QR Result */}
-      {qrUrl && (
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
-          {/* QR Image */}
-          <div className="flex justify-center p-8 bg-muted/20">
-            <div className="rounded-2xl overflow-hidden border-2 border-border/50 shadow-lg">
-              <img src={qrUrl} alt="QR Code" width={220} height={220} className="block" />
-            </div>
-          </div>
-
-          {/* Info footer */}
-          <div className="p-4 border-t border-border/50 space-y-3">
-            {/* URL display with copy */}
-            <div className="flex items-center gap-2 bg-muted/30 rounded-xl px-3 py-2">
-              <Link2 size={14} className="text-muted-foreground shrink-0" />
-              <p className="text-xs text-muted-foreground truncate flex-1">{activeUrl}</p>
-              <button
-                onClick={handleCopy}
-                className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors shrink-0"
-                title="Copiar URL"
-              >
-                {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-              </button>
-            </div>
-
-            {/* Download */}
-            <button
-              onClick={handleDownload}
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-              style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}
-            >
-              <Download size={16} />
-              Baixar QR Code
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
