@@ -1060,7 +1060,7 @@ div[style*="Edit with Lovable"],
       radial-gradient(800px 500px at 50% 120%, hsl(217 91% 70% / 0.12), transparent 60%),
       linear-gradient(180deg, hsl(215 40% 6%) 0%, hsl(215 40% 4%) 100%);
     color: hsl(215 20% 96%);
-    overflow: hidden;
+    overflow-x: hidden;
   }
   .portal-shell::before {
     content: "";
