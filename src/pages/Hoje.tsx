@@ -206,8 +206,6 @@ const Hoje = () => {
   const quickActions = [
     { label: "Novo cliente",         Icon: UserPlus,   to: "/clientes/novo", tone: "primary" },
     { label: "Registrar pagamento",  Icon: DollarSign, to: "/cobrancas",     tone: "success" },
-    { label: "Lançar gasto",         Icon: Wallet,     to: "/gastos",        tone: "danger"  },
-    { label: "Lançar lucro",         Icon: TrendingUp, to: "/lucros",        tone: "amber"   },
   ] as const;
 
   const toneMap: Record<string, { chip: string; ring: string; dot: string }> = {
