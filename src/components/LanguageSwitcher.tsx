@@ -15,9 +15,10 @@ export const LanguageSwitcher = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2" aria-label={t("common.language")}>
+        <Button variant="ghost" size="sm" className="gap-1.5 px-2" aria-label={t("common.language")}>
           <Globe className="w-4 h-4" />
-          <span className="text-xs font-medium">{current.flag}</span>
+          <span className="hidden sm:inline text-xs font-medium">{current.flag}</span>
+          <span className="sm:hidden text-[10px] font-bold uppercase">{current.code}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
