@@ -417,6 +417,12 @@ async function escalateToHuman(supabase: any, convoId: string, reason: string) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Rate limit por IP (60 msgs/min, capacidade 30). Evolution costuma chamar de
+  // 1-2 IPs — se estourar é abuso, não uso legítimo.
+  const rl = rateLimitGuard(req, "wa", 30, 1, corsHeaders);
+  if (rl) return rl;
+
+
   // SEGURANÇA (C2): o Evolution não assina o payload, então exigimos um segredo
   // compartilhado. Configure o webhook do Evolution com `?secret=<valor>` na URL
   // (ou header x-webhook-secret) e defina EVOLUTION_WEBHOOK_SECRET nos secrets.
