@@ -7,11 +7,10 @@ import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import { toast } from "sonner";
 import {
   Sunrise, AlertCircle, CheckCircle2, ListTodo, Receipt,
-  TrendingUp, ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
-  UserPlus, FileText, Wallet, Cake, CalendarDays, Flame, History, DollarSign
+  ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
+  UserPlus, Cake, DollarSign
 } from "lucide-react";
 import SmartAlerts from "@/components/SmartAlerts";
-import AtivoPassivoCard from "@/components/dashboard/AtivoPassivoCard";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
 import { fetchAll } from "@/lib/fetchAll";
 
@@ -207,8 +206,6 @@ const Hoje = () => {
   const quickActions = [
     { label: "Novo cliente",         Icon: UserPlus,   to: "/clientes/novo", tone: "primary" },
     { label: "Registrar pagamento",  Icon: DollarSign, to: "/cobrancas",     tone: "success" },
-    { label: "Lançar gasto",         Icon: Wallet,     to: "/gastos",        tone: "danger"  },
-    { label: "Lançar lucro",         Icon: TrendingUp, to: "/lucros",        tone: "amber"   },
   ] as const;
 
   const toneMap: Record<string, { chip: string; ring: string; dot: string }> = {
@@ -285,14 +282,12 @@ const Hoje = () => {
           </button>
         </div>
 
-        {/* KPI ribbon integrado ao header */}
-        <div className="relative grid grid-cols-2 md:grid-cols-4 border-t border-border/60 divide-x divide-border/40">
+        {/* KPI ribbon: só o essencial do "hoje" */}
+        <div className="relative grid grid-cols-2 border-t border-border/60 divide-x divide-border/40">
           {[
             { label: "Vencendo hoje",    value: totals.dueToday,          sub: `${totals.dueTodayCount} parcelas`, tone: "primary" as const, Icon: Clock },
             { label: "Em atraso",        value: totals.overdue,           sub: `${totals.overdueCount} parcelas`, tone: "danger" as const,  Icon: AlertCircle },
-            { label: "Lucro hoje",       value: data?.profitToday || 0,   sub: "registrado",                       tone: "success" as const, Icon: TrendingUp },
-            { label: "A receber no mês", value: data?.aReceberMonth || 0, sub: "pendente",                         tone: "amber" as const,   Icon: CalendarDays },
-          ].map((k, idx) => {
+          ].map((k) => {
             const t = toneMap[k.tone];
             return (
               <div key={k.label} className="group relative px-4 sm:px-5 py-4 transition-colors hover:bg-accent/20">
@@ -317,7 +312,7 @@ const Hoje = () => {
       </header>
 
       {/* ═══ Atalhos ═══ Linha compacta abaixo do hero */}
-      <nav aria-label="Ações rápidas" className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+      <nav aria-label="Ações rápidas" className="grid grid-cols-2 gap-2 sm:gap-3">
         {quickActions.map(a => {
           const t = toneMap[a.tone];
           return (
@@ -338,9 +333,6 @@ const Hoje = () => {
         })}
       </nav>
 
-
-      {/* Balanço Ativo × Passivo (aparece se houver investidores) */}
-      <AtivoPassivoCard />
 
 
       {/* Primeiro nível: Cobranças + painel lateral */}
@@ -469,72 +461,15 @@ const Hoje = () => {
         </aside>
       </div>
 
-      {/* Segundo nível: 4 painéis novos */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-        {/* Top 5 devedores */}
-        <section className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden">
-          <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              <Flame size={12} className="text-destructive" /> Top devedores
-            </h2>
-          </div>
-          <ul className="divide-y divide-border/20 max-h-72 overflow-y-auto">
-            {(data?.topDebtors || []).length === 0 && (
-              <li className="px-3 py-5 text-xs text-muted-foreground text-center list-none">Sem atrasos 🎉</li>
-            )}
-            {(data?.topDebtors || []).map((d, idx) => (
-              <li key={d.id} className="px-3 py-2 flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-destructive/15 text-destructive text-xs font-bold flex items-center justify-center shrink-0">{idx+1}</span>
-                <button onClick={() => navigate(`/clientes/${d.id}`)} className="flex-1 min-w-0 text-left">
-                  <p className="text-xs font-semibold text-foreground truncate">{d.name}</p>
-                  <p className="text-xs text-muted-foreground">{d.count} parcelas · R$ {fmtBRL(d.total)}</p>
-                </button>
-                <button
-                  onClick={() => sendWhats(d.whatsapp || d.phone, d.name, `Olá ${d.name}, identificamos parcelas em atraso totalizando R$ ${fmtBRL(d.total)}. Podemos regularizar?`)}
-                  className="min-w-8 min-h-8 p-1.5 rounded-lg bg-success/10 text-success hover:bg-success/20"
-                >
-                  <MessageSquare size={11} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Agenda 7 dias */}
-        <section className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden">
-          <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              <CalendarDays size={12} className="text-primary" /> Agenda 7 dias
-            </h2>
-            <button onClick={() => navigate("/cobrancas")} className="text-xs text-primary hover:underline">Ver</button>
-          </div>
-          <ul className="divide-y divide-border/20 max-h-72 overflow-y-auto">
-            {(data?.agenda || []).length === 0 && (
-              <li className="px-3 py-5 text-xs text-muted-foreground text-center list-none">Sem vencimentos</li>
-            )}
-            {(data?.agenda || []).map(d => (
-              <li key={d.date} className="px-3 py-2 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-foreground capitalize">{fmtDayLabel(d.date)}</p>
-                  <p className="text-xs text-muted-foreground">{d.items.length} parcela{d.items.length !== 1 ? "s" : ""}</p>
-                </div>
-                <p className="text-xs font-bold text-primary shrink-0">R$ {fmtBRL(d.total)}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* Aniversariantes */}
+      {/* Aniversariantes — só aparece se houver alguém hoje */}
+      {(data?.birthdays || []).length > 0 && (
         <section className="rounded-2xl border border-pink-500/20 bg-pink-500/5 overflow-hidden">
           <div className="px-3 py-2 border-b border-pink-500/20 flex items-center justify-between">
             <h2 className="text-sm font-bold text-pink-400 flex items-center gap-1.5">
-              <Cake size={12} /> Aniversariantes
+              <Cake size={12} /> Aniversariantes de hoje
             </h2>
           </div>
-          <ul className="divide-y divide-pink-500/10 max-h-72 overflow-y-auto">
-            {(data?.birthdays || []).length === 0 && (
-              <li className="px-3 py-5 text-xs text-muted-foreground text-center list-none">Ninguém faz aniversário hoje</li>
-            )}
+          <ul className="divide-y divide-pink-500/10">
             {(data?.birthdays || []).map((c: any) => (
               <li key={c.id} className="px-3 py-2 flex items-center gap-2">
                 <span className="text-base" aria-hidden>🎂</span>
@@ -552,42 +487,7 @@ const Hoje = () => {
             ))}
           </ul>
         </section>
-
-        {/* Resumo financeiro + últimos pagamentos */}
-        <section className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-border/30 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-              <History size={12} className="text-success" /> Resumo do mês
-            </h2>
-            <button onClick={() => navigate("/financeiro")} className="text-xs text-primary hover:underline">Ver</button>
-          </div>
-          <div className="px-3 py-2 grid grid-cols-2 gap-2 border-b border-border/20">
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Lucro</p>
-              <p className="text-sm font-bold text-success">R$ {fmtBRL(data?.profitMonth || 0)}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wider text-muted-foreground font-bold">A receber</p>
-              <p className="text-sm font-bold text-amber-400">R$ {fmtBRL(data?.aReceberMonth || 0)}</p>
-            </div>
-          </div>
-          <ul className="divide-y divide-border/20 flex-1 overflow-y-auto">
-            <li className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground font-bold list-none">Últimos pagamentos</li>
-            {(data?.paidRecent || []).length === 0 && (
-              <li className="px-3 py-3 text-xs text-muted-foreground text-center list-none">Nenhum recebimento</li>
-            )}
-            {(data?.paidRecent || []).map((p: any) => (
-              <li key={p.id} className="px-3 py-1.5 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground truncate">{p.clients?.name || "Cliente"}</p>
-                  <p className="text-xs text-muted-foreground">{fmtTime(p.paid_at)}</p>
-                </div>
-                <p className="text-xs font-bold text-success shrink-0">+ R$ {fmtBRL(Number(p.paid_amount || 0))}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
+      )}
     </section>
   );
 };
