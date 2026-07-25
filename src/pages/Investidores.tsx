@@ -446,7 +446,7 @@ export default function Investidores() {
   );
 }
 
-function KpiCard({ icon: Icon, label, value, tone }: { icon: any; label: string; value: string; tone: string }) {
+function KpiCard({ icon: Icon, label, value, tone, hint }: { icon: any; label: string; value: string; tone: string; hint?: string }) {
   const tones: Record<string, string> = {
     primary: "from-primary/20 to-primary/5 text-primary",
     emerald: "from-emerald-500/20 to-emerald-500/5 text-emerald-300",
@@ -459,6 +459,7 @@ function KpiCard({ icon: Icon, label, value, tone }: { icon: any; label: string;
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
       <p className="mt-2 font-mono text-2xl font-bold text-foreground">{value}</p>
+      {hint && <p className="mt-1 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
 }
