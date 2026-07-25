@@ -51,6 +51,13 @@ const ClienteDetalhe = () => {
   const [activeTab, setActiveTab] = useState<"contratos" | "parcelas">("contratos");
   const [docsOpen, setDocsOpen] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
+  const toggleContract = (cid: string) => setExpandedContracts(prev => {
+    const n = new Set(prev);
+    n.has(cid) ? n.delete(cid) : n.add(cid);
+    return n;
+  });
 
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "contract" | "payment" | "profit" | "note" | "contact">("all");
