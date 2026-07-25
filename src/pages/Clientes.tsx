@@ -353,14 +353,14 @@ const Clientes = () => {
               <p className="text-muted-foreground text-sm mt-0.5">Gerencie seus clientes e contratos.</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleBulkExport} className="btn-ghost" title="Exportar lista atual / selecionados" aria-label="Exportar lista atual / selecionados">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            <button onClick={handleBulkExport} className="btn-ghost flex-1 sm:flex-none justify-center" title="Exportar lista atual / selecionados" aria-label="Exportar lista atual / selecionados">
               <Download size={15} /> Exportar
             </button>
-            <button onClick={() => setImportOpen(true)} className="btn-ghost">
+            <button onClick={() => setImportOpen(true)} className="btn-ghost flex-1 sm:flex-none justify-center">
               <Upload size={15} /> Importar CSV
             </button>
-            <button onClick={() => navigate("/clientes/novo")} className="btn-premium">
+            <button onClick={() => navigate("/clientes/novo")} className="btn-premium flex-1 sm:flex-none justify-center">
               <Plus size={16} /> Novo Cliente
             </button>
           </div>
