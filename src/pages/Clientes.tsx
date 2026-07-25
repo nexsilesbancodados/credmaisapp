@@ -205,7 +205,11 @@ const Clientes = () => {
     e.stopPropagation();
     if (!(await confirm("Excluir este cliente e todos os seus dados?"))) return;
     const { error } = await supabase.rpc("delete_client_cascade", { _client_id: id });
-    if (error) { toast({ ...friendlyError(error), variant: "destructive" }); return; }
+    if (error) {
+      console.error("[delete_client_cascade]", error);
+      toast({ title: "Não foi possível excluir", description: (error as any)?.message || "Erro desconhecido", variant: "destructive" });
+      return;
+    }
     toast({ title: "Cliente excluído!" });
     qc.invalidateQueries({ queryKey: ["clients", user?.id] });
   }, [confirm, toast, qc, user?.id]);
