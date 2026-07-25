@@ -7,11 +7,10 @@ import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import { toast } from "sonner";
 import {
   Sunrise, AlertCircle, CheckCircle2, ListTodo, Receipt,
-  TrendingUp, ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
-  UserPlus, FileText, Wallet, Cake, CalendarDays, Flame, History, DollarSign
+  ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
+  UserPlus, Cake, DollarSign
 } from "lucide-react";
 import SmartAlerts from "@/components/SmartAlerts";
-import AtivoPassivoCard from "@/components/dashboard/AtivoPassivoCard";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
 import { fetchAll } from "@/lib/fetchAll";
 
