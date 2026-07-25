@@ -1621,10 +1621,10 @@ const ClienteDetalhe = () => {
             </div>
           </div>
         );
-      })()}
+      })()}</section>
 
-      {/* Tab: Score & Risco */}
-      {activeTab === "score" && (() => {
+      {/* Section: Score & Risco */}
+      <section id="sec-score" className="scroll-mt-24">{(() => {
         const score = client.credit_score || 0;
         const scoreMax = 1000;
         const scorePct = Math.min(100, (score / scoreMax) * 100);
