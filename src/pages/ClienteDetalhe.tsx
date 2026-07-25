@@ -1629,29 +1629,37 @@ const ClienteDetalhe = () => {
               : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/25", dot: "bg-amber-400" };
             const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
             const barColor = isPaid ? "bg-emerald-500" : overdue > 0 ? "bg-destructive" : "bg-primary";
+            const isExpanded = expandedContracts.has(c.id);
             return (
-            <div key={c.id} className="group relative overflow-hidden bg-card border border-border/60 rounded-2xl hover:border-primary/40 hover:shadow-[0_8px_24px_-16px_hsl(var(--primary)/0.4)] transition-all">
+            <div key={c.id} className={`group relative overflow-hidden bg-card border rounded-2xl transition-all ${isExpanded ? "border-primary/40 shadow-[0_12px_32px_-20px_hsl(var(--primary)/0.5)]" : "border-border/60 hover:border-primary/30"}`}>
               {/* Faixa lateral de status */}
-              <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor}`} />
+              <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${barColor}`} />
 
-              <div className="p-4 pl-5">
-                {/* Linha 1: valor + status + lucro */}
+              {/* Header clicável — abre/recolhe parcelas */}
+              <button
+                type="button"
+                onClick={() => toggleContract(c.id)}
+                className="w-full text-left p-4 pl-5 hover:bg-accent/20 transition-colors"
+              >
+                {/* Linha superior: valor + status + lucro */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <p className="text-xl font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xl font-bold text-foreground tracking-tight tabular-nums leading-none">R$ {fmt(Number(c.capital))}</p>
                       <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                         {status.label}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      <span className="text-foreground/80 font-semibold tabular-nums">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
-                      <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
-                      <span className="mx-1.5 opacity-40">·</span>{formatBR(c.start_date)}
-                    </p>
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/40 text-foreground/80 font-semibold tabular-nums">{c.num_installments}× R$ {fmt(Number(c.installment_amount))}</span>
+                      <span className="opacity-40">·</span>
+                      <span>{FREQ[c.frequency] || c.frequency}</span>
+                      <span className="opacity-40">·</span>
+                      <span className="tabular-nums">{formatBR(c.start_date)}</span>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
+                  <div className="text-right shrink-0">
                     <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Lucro</p>
                     <p className="text-base font-bold text-primary tabular-nums leading-tight">+R$ {fmt(Number(c.total_interest))}</p>
                   </div>
@@ -1660,60 +1668,64 @@ const ClienteDetalhe = () => {
                 {/* Progresso */}
                 {total > 0 && (
                   <div className="mt-3 flex items-center gap-3">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                    <div className="flex-1 h-1 rounded-full bg-muted/50 overflow-hidden">
                       <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0 w-8 text-right">{pct}%</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0">
+                      {paid}/{total} · {pct}%
+                    </span>
                   </div>
                 )}
+              </button>
 
-                {/* Ações — primárias visíveis, secundárias sob "Mais" */}
-                <div className="mt-3 pt-3 border-t border-border/40 flex items-center gap-1.5 flex-wrap">
-                  {c.status === "active" && !isPaid && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setRenegotiating(c); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-semibold transition-colors"
-                    >
-                      <Repeat size={12} /> Renegociar
-                    </button>
-                  )}
+              {/* Barra de ações */}
+              <div className="px-4 pl-5 pb-3 flex items-center gap-1 flex-wrap">
+                {c.status === "active" && !isPaid && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-semibold transition-colors"
+                    onClick={(e) => { e.stopPropagation(); setRenegotiating(c); }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-amber-500/10 text-amber-400 text-[11px] font-semibold transition-colors"
+                    title="Renegociar contrato"
                   >
-                    <MessageSquare size={12} /> Enviar
+                    <Repeat size={12} /> Renegociar
+                  </button>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/10 text-emerald-500 text-[11px] font-semibold transition-colors"
+                  title="Enviar detalhes por WhatsApp"
+                >
+                  <MessageSquare size={12} /> Enviar
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-colors"
+                  title="Exportar PDF"
+                >
+                  <Download size={12} /> PDF
+                </button>
+
+                <div className="ml-auto flex items-center gap-0.5">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
+                    className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                    title="Editar empréstimo"
+                  >
+                    <Edit size={13} />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
+                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    title="Excluir empréstimo"
                   >
-                    <Download size={12} /> PDF
+                    <Trash2 size={13} />
                   </button>
-
-                  <div className="ml-auto flex items-center gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
-                      className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                      title="Editar empréstimo"
-                    >
-                      <Edit size={13} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
-                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                      title="Excluir empréstimo"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleContract(c.id); }}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-colors"
-                      title={expandedContracts.has(c.id) ? "Recolher parcelas" : "Ver parcelas"}
-                    >
-                      {expandedContracts.has(c.id) ? "Recolher" : `Ver ${total} parcelas`}
-                      <ChevronDown size={12} className={`transition-transform ${expandedContracts.has(c.id) ? "rotate-180" : ""}`} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleContract(c.id); }}
+                    className="ml-1 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-colors"
+                  >
+                    {isExpanded ? "Recolher" : `${total} parcelas`}
+                    <ChevronDown size={12} className={`transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
               </div>
 
