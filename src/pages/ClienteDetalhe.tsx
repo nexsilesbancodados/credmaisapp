@@ -26,6 +26,7 @@ import {
   Calendar, Receipt, Activity, Search, X, Percent, Wallet, Printer, Camera,
   Wrench, Repeat, PhoneCall, StickyNote,
   Info, UploadCloud, File as FileIcon, ImageIcon, ShieldCheck, Sparkles, ChevronRight, MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { formatBR } from "@/lib/dateUtils";
@@ -51,6 +52,13 @@ const ClienteDetalhe = () => {
   const [activeTab, setActiveTab] = useState<"contratos" | "parcelas">("contratos");
   const [docsOpen, setDocsOpen] = useState(false);
   const [histOpen, setHistOpen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
+  const toggleContract = (cid: string) => setExpandedContracts(prev => {
+    const n = new Set(prev);
+    n.has(cid) ? n.delete(cid) : n.add(cid);
+    return n;
+  });
 
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "contract" | "payment" | "profit" | "note" | "contact">("all");
@@ -1423,8 +1431,26 @@ const ClienteDetalhe = () => {
         </div>
       )}
 
-      {/* Section: Informações — Dados do cliente (logo abaixo da faixa/header) */}
-      <section id="sec-resumo" className="scroll-mt-24 space-y-5">
+      {/* Section: Informações — colapsável (Contato + Endereço + Estatísticas) */}
+      <section id="sec-resumo" className="scroll-mt-24">
+        <button
+          onClick={() => setShowInfo(v => !v)}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-border/60 bg-card/40 hover:bg-card/60 hover:border-border transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><User size={15} /></div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-foreground">Informações & Estatísticas</p>
+              <p className="text-[11px] text-muted-foreground">Contato, endereço e métricas do cliente</p>
+            </div>
+          </div>
+          <div className={`transition-transform ${showInfo ? "rotate-180" : ""}`}>
+            <ChevronDown size={16} className="text-muted-foreground" />
+          </div>
+        </button>
+        {showInfo && (
+        <div className="mt-4 space-y-5">
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Contato & Endereço (2/3) */}
           <section className="lg:col-span-2 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
@@ -1497,7 +1523,10 @@ const ClienteDetalhe = () => {
             </div>
           </section>
         </div>
+        </div>
+        )}
       </section>
+
 
 
       {/* Ações rápidas: Documentos e Histórico */}
@@ -1676,69 +1705,41 @@ const ClienteDetalhe = () => {
                     >
                       <Trash2 size={13} />
                     </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleContract(c.id); }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-colors"
+                      title={expandedContracts.has(c.id) ? "Recolher parcelas" : "Ver parcelas"}
+                    >
+                      {expandedContracts.has(c.id) ? "Recolher" : `Ver ${total} parcelas`}
+                      <ChevronDown size={12} className={`transition-transform ${expandedContracts.has(c.id) ? "rotate-180" : ""}`} />
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-            );
-          })}
-        </div>
-      )}</section>
 
-
-      {/* Section: Parcelas */}
-
-      <section id="sec-parcelas" className="scroll-mt-24">{(
-
-        <div className="space-y-6">
-          {installments.length === 0 ? (
-            <EmptyState icon={Receipt} title="Nenhuma parcela" description="As parcelas aparecerão aqui quando o contrato for criado." compact />
-          ) : Object.entries(groupedInstallments).map(([cid, insts], gIdx) => {
-            const contract = contracts.find((c: any) => c.id === cid);
-            return (
-              <div key={cid} className="rounded-2xl border border-border/60 bg-card/40 p-3 space-y-2">
-                <div className="flex items-center justify-between px-1 mb-1 gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                      <FileText size={13} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Contrato {gIdx + 1} <span className="opacity-40 font-mono normal-case tracking-normal">#{String(cid).slice(0, 6)}</span></p>
-                      {contract && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          R$ {fmt(Number(contract.capital))} · {formatBR(contract.start_date)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] py-0 h-5 shrink-0 font-semibold">
-                    {insts.filter((i: any) => i.status === "paid").length}/{insts.length} pagas
-                  </Badge>
-                </div>
-                <div className="space-y-2">
-                  {insts.map((inst: any) => {
+              {/* Parcelas inline (expandable) */}
+              {expandedContracts.has(c.id) && (
+                <div className="border-t border-border/40 bg-background/30 p-3 space-y-2">
+                  {cInsts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Nenhuma parcela</p>
+                  ) : cInsts.map((inst: any) => {
                     const isOverdue = inst.status === "overdue";
                     const isPaid = inst.status === "paid";
                     const partial = !isPaid && Number(inst.paid_amount || 0) > 0;
-                    const contractFull = contracts.find((c: any) => c.id === inst.contract_id);
-                    const lateFeePct = Number(contractFull?.late_fee_percent || 0);
-                    const dailyPct = Number(contractFull?.daily_interest_percent || 0);
+                    const lateFeePct = Number(c.late_fee_percent || 0);
+                    const dailyPct = Number(c.daily_interest_percent || 0);
                     const base = Number(inst.amount || 0);
                     const dueMs = new Date(inst.due_date).getTime();
                     const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - dueMs) / 86400000)) : 0;
                     const multaVal = isOverdue ? base * (lateFeePct / 100) : 0;
                     const jurosVal = isOverdue ? base * (dailyPct / 100) * daysOverdue : 0;
                     const feeLive = computeLateFee({
-                      amount: base,
-                      due_date: inst.due_date,
-                      status: inst.status,
-                      late_fee: inst.late_fee,
-                      late_fee_percent: lateFeePct,
-                      daily_interest_percent: dailyPct,
+                      amount: base, due_date: inst.due_date, status: inst.status, late_fee: inst.late_fee,
+                      late_fee_percent: lateFeePct, daily_interest_percent: dailyPct,
                     });
                     const totalDue = base + feeLive;
                     return (
-                      <div key={inst.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${isOverdue ? "bg-destructive/[0.04] border-destructive/20 hover:border-destructive/30" : isPaid ? "bg-success/[0.04] border-success/15" : "bg-card border-border/60 hover:border-border"}`}>
+                      <div key={inst.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors ${isOverdue ? "bg-destructive/[0.04] border-destructive/20" : isPaid ? "bg-success/[0.04] border-success/15" : "bg-card border-border/60"}`}>
                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isOverdue ? "bg-destructive/10 text-destructive ring-1 ring-destructive/20" : isPaid ? "bg-success/10 text-success ring-1 ring-success/20" : "bg-muted text-muted-foreground"}`}>
                           {inst.installment_number}
                         </div>
@@ -1747,10 +1748,8 @@ const ClienteDetalhe = () => {
                             <p className="text-sm font-bold text-foreground tabular-nums">R$ {fmt(base)}</p>
                             {isOverdue && feeLive > 0 && (
                               <>
-                                <span className="text-[10px] font-medium text-destructive/80 tabular-nums">
-                                  + R$ {fmt(feeLive)}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive tabular-nums ml-auto sm:ml-0">
+                                <span className="text-[10px] font-medium text-destructive/80 tabular-nums">+ R$ {fmt(feeLive)}</span>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive tabular-nums">
                                   <span className="opacity-50">=</span> R$ {fmt(totalDue)}
                                 </span>
                               </>
@@ -1758,97 +1757,38 @@ const ClienteDetalhe = () => {
                           </div>
                           <p className="text-[10px] text-muted-foreground mt-0.5">
                             {formatBR(inst.due_date)}
-                            {isOverdue && <span className="text-destructive/70 font-medium"> · {daysOverdue} dia(s) em atraso</span>}
+                            {isOverdue && <span className="text-destructive/70 font-medium"> · {daysOverdue}d atraso</span>}
                             {inst.paid_at && ` · Pago ${formatBR(inst.paid_at)}`}
                             {partial && ` · Parcial R$ ${fmt(Number(inst.paid_amount))}`}
-                            {inst.payment_method && ` · ${String(inst.payment_method).toUpperCase()}`}
                           </p>
-                          {inst.receipt_url && (
-                            <a href={inst.receipt_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline inline-flex items-center gap-1 mt-0.5">
-                              <Receipt size={10} /> Ver comprovante
-                            </a>
-                          )}
                         </div>
                         <div className="flex items-center gap-0.5 shrink-0">
                           {isOverdue && (
                             <Popover>
                               <PopoverTrigger asChild>
-                                <button
-                                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                                  title="Ver cálculo da multa e juros" aria-label="Ver cálculo da multa e juros"
-                                >
-                                  <Info size={14} />
-                                </button>
+                                <button className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors" title="Cálculo"><Info size={14} /></button>
                               </PopoverTrigger>
                               <PopoverContent align="end" className="w-80 p-0 overflow-hidden">
                                 <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3">
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-destructive">
-                                    Cálculo de atraso · Parcela #{inst.installment_number}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    Vencimento {formatBR(inst.due_date)} · {daysOverdue} dia(s) atrás
-                                  </p>
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-destructive">Cálculo · Parcela #{inst.installment_number}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{formatBR(inst.due_date)} · {daysOverdue}d atrás</p>
                                 </div>
                                 <div className="p-4 space-y-3 text-xs">
-                                  <div className="flex items-center justify-between text-muted-foreground">
-                                    <span>Valor da parcela</span>
-                                    <span className="font-mono font-semibold text-foreground">R$ {fmt(base)}</span>
+                                  <div className="flex items-center justify-between text-muted-foreground"><span>Valor</span><span className="font-mono font-semibold text-foreground">R$ {fmt(base)}</span></div>
+                                  <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground">Multa</p>
+                                    {lateFeePct > 0 ? <p className="font-mono text-[11px] text-muted-foreground">R$ {fmt(base)} × {lateFeePct}% = <span className="text-destructive font-bold">R$ {fmt(multaVal)}</span></p> : <p className="text-[11px] text-muted-foreground italic">Sem multa</p>}
                                   </div>
-
-                                  <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-2">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground">Multa (aplicada 1x)</p>
-                                    {lateFeePct > 0 ? (
-                                      <>
-                                        <p className="font-mono text-[11px] text-muted-foreground">
-                                          R$ {fmt(base)} × {lateFeePct.toLocaleString("pt-BR")}% = <span className="text-destructive font-bold">R$ {fmt(multaVal)}</span>
-                                        </p>
-                                      </>
-                                    ) : (
-                                      <p className="text-[11px] text-muted-foreground italic">Sem multa configurada no contrato</p>
-                                    )}
+                                  <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground">Juros diários</p>
+                                    {dailyPct > 0 ? <p className="font-mono text-[11px] text-muted-foreground">R$ {fmt(base)} × {dailyPct}% × {daysOverdue}d = <span className="text-destructive font-bold">R$ {fmt(jurosVal)}</span></p> : <p className="text-[11px] text-muted-foreground italic">Sem juros</p>}
                                   </div>
-
-                                  <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-2">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground">Juros diários acumulados</p>
-                                    {dailyPct > 0 ? (
-                                      <p className="font-mono text-[11px] text-muted-foreground leading-relaxed">
-                                        R$ {fmt(base)} × {dailyPct.toLocaleString("pt-BR")}% × {daysOverdue} dia(s) =<br />
-                                        <span className="text-destructive font-bold">R$ {fmt(jurosVal)}</span>
-                                      </p>
-                                    ) : (
-                                      <p className="text-[11px] text-muted-foreground italic">Sem juros diários configurados no contrato</p>
-                                    )}
-                                  </div>
-
-                                  <div className="border-t border-border pt-3 space-y-1.5">
-                                    <div className="flex items-center justify-between text-muted-foreground">
-                                      <span>Multa + Juros</span>
-                                      <span className="font-mono font-semibold text-destructive">R$ {fmt(feeLive)}</span>
-                                    </div>
-                                    {Number(inst.late_fee || 0) > 0 && Math.abs(Number(inst.late_fee) - feeLive) > 0.01 && (
-                                      <p className="text-[10px] text-muted-foreground italic">
-                                        Valor persistido pelo sistema: R$ {fmt(Number(inst.late_fee))}
-                                      </p>
-                                    )}
-                                    <div className="flex items-center justify-between pt-1">
-                                      <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Total a pagar</span>
-                                      <span className="font-mono text-sm font-bold text-destructive">R$ {fmt(totalDue)}</span>
-                                    </div>
-                                  </div>
-
-                                  {(lateFeePct <= 0 && dailyPct <= 0) && (
-                                    <div className="flex items-start gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 p-2">
-                                      <AlertTriangle size={12} className="text-amber-500 shrink-0 mt-0.5" />
-                                      <p className="text-[10px] text-amber-700 dark:text-amber-300 leading-snug">
-                                        Este contrato não tem multa/juros configurados. Configure em "Editar contrato" para aplicar automaticamente.
-                                      </p>
-                                    </div>
-                                  )}
+                                  <div className="border-t border-border pt-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase text-foreground">Total</span><span className="font-mono text-sm font-bold text-destructive">R$ {fmt(totalDue)}</span></div>
                                 </div>
                               </PopoverContent>
                             </Popover>
                           )}
-                          <button onClick={() => openEditInst(inst)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Editar valor/vencimento"><Edit size={14} /></button>
+                          <button onClick={() => openEditInst(inst)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Editar"><Edit size={14} /></button>
                           {isPaid ? (
                             <button onClick={() => reversePayment(inst.id)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Estornar"><RotateCcw size={14} /></button>
                           ) : (
@@ -1863,11 +1803,15 @@ const ClienteDetalhe = () => {
                     );
                   })}
                 </div>
-              </div>
+              )}
+            </div>
             );
           })}
         </div>
       )}</section>
+
+
+
 
       {/* Modal: Histórico (timeline unificada) */}
       <Dialog open={histOpen} onOpenChange={setHistOpen}>
