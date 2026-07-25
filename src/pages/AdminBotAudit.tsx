@@ -222,6 +222,42 @@ export default function AdminBotAudit() {
 
         <Card>
           <CardHeader className="pb-3">
+            <CardTitle className="text-base">Conversas ativas (FSM) — {fsm.length}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-32 w-full" />
+            ) : fsm.length === 0 ? (
+              <div className="text-sm text-muted-foreground text-center py-6">Nenhuma conversa em estado ativo.</div>
+            ) : (
+              <div className="divide-y divide-border/60 max-h-[360px] overflow-y-auto">
+                {fsm.map((f) => {
+                  const stateTone: "red" | "amber" | "emerald" | "slate" =
+                    f.agent_state === "INTENT_HUMANO" ? "red" :
+                    f.agent_state === "INTENT_PAGAR" ? "amber" :
+                    f.agent_state === "INTENT_PROMESSA" ? "emerald" : "slate";
+                  return (
+                    <div key={f.id} className="py-2.5 flex items-center gap-3 text-sm">
+                      <Badge variant="outline" className={toneCls[stateTone] + " whitespace-nowrap font-mono text-xs"}>
+                        {f.agent_state}
+                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{f.clients?.name || "—"}</div>
+                        <div className="text-xs text-muted-foreground font-mono">{f.phone}</div>
+                      </div>
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {f.agent_state_updated_at ? new Date(f.agent_state_updated_at).toLocaleString("pt-BR") : "—"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Últimas ações do bot ({actions.length})</CardTitle>
           </CardHeader>
           <CardContent>
