@@ -36,6 +36,8 @@ import ClientToolsPanel, { type ToolGroup } from "@/components/clients/ClientToo
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { computeLateFee } from "@/lib/lateFee";
 import { friendlyError } from "@/lib/friendlyError";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
 
 
 const ClienteDetalhe = () => {
@@ -46,7 +48,9 @@ const ClienteDetalhe = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"documentos" | "contratos" | "parcelas" | "historico">("documentos");
+  const [activeTab, setActiveTab] = useState<"contratos" | "parcelas" | "historico">("contratos");
+  const [docsOpen, setDocsOpen] = useState(false);
+
   const [historyFilter, setHistoryFilter] = useState<"all" | "contract" | "payment" | "profit" | "note" | "contact">("all");
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<any>({});
@@ -1047,11 +1051,11 @@ const ClienteDetalhe = () => {
   const scoreClr = (client.credit_score || 0) >= 700 ? "text-success" : (client.credit_score || 0) >= 400 ? "text-warning" : "text-destructive";
 
   const tabs = [
-    { key: "documentos" as const, label: "Documentos", Icon: FileIcon },
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
     { key: "parcelas" as const, label: "Parcelas", Icon: Receipt },
     { key: "historico" as const, label: "Histórico", Icon: Clock },
   ];
+
 
 
 
@@ -1494,42 +1498,50 @@ const ClienteDetalhe = () => {
       </section>
 
 
-      {/* Barra sticky de navegação por seções */}
+      {/* Barra sticky de navegação por seções + gatilho de Documentos (modal) */}
 
-      <div className="sticky top-2 z-20 flex gap-1 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
-        {tabs.map(tab => (
-          <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
-            <tab.Icon size={14} /> {tab.label}
-          </button>
-        ))}
+      <div className="sticky top-2 z-20 flex items-center gap-2 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
+        <div className="flex-1 flex gap-1">
+          {tabs.map(tab => (
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
+              <tab.Icon size={14} /> {tab.label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setDocsOpen(true)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+        >
+          <FileIcon size={14} />
+          <span className="hidden sm:inline">Documentos</span>
+          {clientDocs.length > 0 && (
+            <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{clientDocs.length}</span>
+          )}
+        </button>
       </div>
 
-      {/* Section: Documentos & Anexos (expande apenas ao clicar na aba) */}
-      <section id="sec-documentos" className="scroll-mt-24 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
-        <button
-          onClick={() => setActiveTab(activeTab === "documentos" ? "contratos" : "documentos")}
-          className="w-full flex items-center justify-between"
-          aria-expanded={activeTab === "documentos"}
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
-            <h3 className="text-sm font-bold text-foreground">Documentos & Anexos</h3>
-            {clientDocs.length > 0 && <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{clientDocs.length}</span>}
-          </div>
-          <ChevronRight size={16} className={`text-muted-foreground transition-transform ${activeTab === "documentos" ? "rotate-90" : ""}`} />
-        </button>
+      {/* Modal de Documentos & Anexos */}
+      <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
+              Documentos & Anexos
+              {clientDocs.length > 0 && <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{clientDocs.length}</span>}
+            </DialogTitle>
+          </DialogHeader>
 
-        {activeTab === "documentos" && (
-          <div className="mt-4 space-y-3">
-            <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
-              <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar arquivo"}
+          <div className="space-y-4">
+            <label className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20 text-xs font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
+              <UploadCloud size={14} /> {docUploading ? "Enviando..." : "Anexar arquivo"}
               <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
             </label>
+
             {clientDocs.length === 0 ? (
               <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto pr-1">
                 {clientDocs.map((d: any) => {
                   const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
                   return (
@@ -1550,8 +1562,9 @@ const ClienteDetalhe = () => {
               </div>
             )}
           </div>
-        )}
-      </section>
+        </DialogContent>
+      </Dialog>
+
 
 
 
