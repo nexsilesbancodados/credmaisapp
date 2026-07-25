@@ -526,12 +526,14 @@ const ClienteDetalhe = () => {
       const totalAmount = instAmt * n;
       const totalInterest = totalAmount - cap;
 
+      const freqValue = f.frequency === "daily" ? `daily_${f.daily_mode || "mon-fri"}` : f.frequency;
+
       const { error } = await supabase.from("contracts").update({
         capital: cap,
         interest_rate: rate,
         num_installments: n,
         installment_amount: instAmt,
-        frequency: f.frequency,
+        frequency: freqValue,
         start_date: new Date(f.start_date + "T12:00:00").toISOString(),
         late_fee_percent: parseFloat(f.late_fee_percent),
         daily_interest_percent: parseFloat(f.daily_interest_percent),
@@ -554,7 +556,7 @@ const ClienteDetalhe = () => {
           .neq("status", "paid");
 
         if (remaining > 0) {
-          const dueDates = generateDueDates(f.start_date, f.frequency, n).slice(paidCount);
+          const dueDates = generateDueDates(f.start_date, freqValue, n).slice(paidCount);
           const newInst = dueDates.map((dd, i) => ({
             user_id: user.id,
             contract_id: editContract.id,
