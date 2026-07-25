@@ -212,8 +212,25 @@
     button, a[role="button"], [role="button"] {
       min-height: 40px;
     }
+    /* Remove tap highlight cinza do iOS/Android para look nativo */
+    a, button, [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Melhora scroll momentum em iOS */
+    html, body {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+    /* Evita zoom automático em inputs no iOS quando fontsize<16px */
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+    /* Tabelas/listas horizontais: scroll snap */
+    .snap-x { scroll-snap-type: x mandatory; }
+    .snap-x > * { scroll-snap-align: start; }
   }
 }
+
 
 @layer utilities {
   .gold-glow {
@@ -510,6 +527,14 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Hide scrollbars in horizontal-scroll strips */
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
 
   /* Page transition — disabled for instant feel */
   .page-enter {}

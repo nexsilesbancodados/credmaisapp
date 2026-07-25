@@ -141,7 +141,7 @@ const MobileBottomNav = () => {
             className="fixed inset-0 bg-background/70 backdrop-blur-sm z-40 animate-fade-in"
             onClick={() => setShowMore(false)}
           />
-          <div className="fixed bottom-[4.5rem] left-0 right-0 z-50 px-3 pb-2 animate-slide-up">
+          <div className="fixed left-0 right-0 z-50 px-3 pb-2 animate-slide-up" style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}>
             <div className="glass-strong rounded-2xl border border-border/40 p-4 max-h-[70vh] overflow-y-auto shadow-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-foreground">Menu Completo</h3>
@@ -207,7 +207,7 @@ const MobileBottomNav = () => {
           onClick={() => setShowFab(false)}
         />
       )}
-      <div className="fixed bottom-20 right-4 z-50 flex flex-col items-end gap-2.5">
+      <div className="fixed right-4 z-50 flex flex-col items-end gap-2.5" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
         {showFab && fabActions.map((a, i) => (
           <button
             key={a.label}
@@ -229,8 +229,11 @@ const MobileBottomNav = () => {
       </div>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/40 safe-area-bottom">
-        <div className="flex items-center justify-around px-2 py-1">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/40"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-stretch justify-around px-1.5 pt-1 pb-1">
           {mainTabs.map((tab) => {
             const active =
               tab.path === "__more__"
@@ -249,26 +252,26 @@ const MobileBottomNav = () => {
                   }
                 }}
                 className={`
-                  relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl
-                  transition-all duration-200 min-w-[3.5rem] active:scale-95
+                  relative flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl
+                  transition-all duration-200 active:scale-95
                   ${active ? "text-primary" : mobileIconColor[tab.path] || "text-muted-foreground"}
                 `}
               >
                 {/* Indicador ativo */}
                 {active && (
-                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.5)] animate-scale-in" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.5)] animate-scale-in" />
                 )}
 
                 <div
                   className={`
                     p-1.5 rounded-xl transition-all duration-200
-                    ${active ? "bg-primary/15" : ""}
+                    ${active ? "bg-primary/15 scale-105" : ""}
                   `}
                 >
                   <tab.icon size={22} strokeWidth={active ? 2.5 : 2} />
                 </div>
                 <span
-                  className={`text-[10px] font-semibold ${
+                  className={`text-[10px] font-semibold leading-none ${
                     active ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
@@ -279,6 +282,7 @@ const MobileBottomNav = () => {
           })}
         </div>
       </nav>
+
     </>
   );
 };

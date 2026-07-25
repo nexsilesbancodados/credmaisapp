@@ -70,18 +70,26 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
   const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-border/40 bg-gradient-to-b from-card/80 via-card/60 to-card/40 backdrop-blur-2xl flex items-center justify-between px-3 lg:px-6 gap-3 shadow-[0_1px_0_hsl(var(--border)/0.4),0_8px_24px_-12px_hsl(0_0%_0%/0.4)]">
+    <header
+      className="sticky top-0 z-40 border-b border-border/40 bg-gradient-to-b from-card/85 via-card/65 to-card/40 backdrop-blur-2xl shadow-[0_1px_0_hsl(var(--border)/0.4),0_8px_24px_-12px_hsl(0_0%_0%/0.4)]"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
+      <div className="h-14 lg:h-16 flex items-center justify-between px-3 lg:px-6 gap-2 lg:gap-3">
       {isMobile ? (
-        <button onClick={() => navigate("/perfil")} className="flex items-center gap-2 micro-bounce min-w-0 max-w-[60%]">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 shrink-0">
+        <button
+          onClick={() => navigate("/perfil")}
+          className="flex items-center gap-2 min-w-0 max-w-[45%] active:scale-95 transition-transform"
+        >
+          <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-primary/25 to-primary/5 flex items-center justify-center ring-1 ring-primary/25 shrink-0 shadow-sm">
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+              <img src={profile.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
             ) : (
               <User size={16} className="text-primary" />
             )}
+            <span className="absolute -bottom-0 -right-0 w-2.5 h-2.5 rounded-full bg-success border-2 border-background" />
           </div>
           <div className="text-left min-w-0">
-            <p className="text-[10px] text-muted-foreground font-medium leading-none">Olá,</p>
+            <p className="text-[10px] text-muted-foreground font-medium leading-none tracking-wide uppercase">Olá</p>
             <p className="text-[13px] font-bold text-foreground leading-tight truncate">{profile?.name?.split(" ")[0] || "Usuário"}</p>
           </div>
         </button>
@@ -96,6 +104,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
           <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-md bg-background/60 font-mono text-muted-foreground/60 border border-border/40">⌘K</kbd>
         </button>
       )}
+
 
 
       <div className="flex-1" />
@@ -219,7 +228,45 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         {!isMobile && <UserMenu profile={profile} theme={theme} toggleTheme={toggleTheme} onSignOut={handleSignOut} navigate={navigate} isAdmin={!!profile?.is_admin} />}
 
       </div>
+      </div>
+
+      {/* Mobile: compact financial strip */}
+      {isMobile && (
+        <div className="flex items-center gap-1.5 px-3 pb-2 -mt-1 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => navigate("/carteira")}
+            className="flex items-center gap-1.5 pl-1.5 pr-3 h-8 rounded-full bg-primary/10 border border-primary/20 shrink-0 active:scale-95 transition-transform"
+          >
+            <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+              <Wallet size={11} className="text-primary" />
+            </span>
+            <span className="text-[11.5px] font-bold text-primary tabular-nums">R$ {fmt(financials?.carteira ?? 0)}</span>
+          </button>
+          <button
+            onClick={() => navigate("/lucros")}
+            className="flex items-center gap-1.5 pl-1.5 pr-3 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0 active:scale-95 transition-transform"
+          >
+            <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <TrendingUp size={11} className="text-emerald-400" />
+            </span>
+            <span className="text-[11.5px] font-bold text-emerald-400 tabular-nums">R$ {fmt(financials?.lucro ?? 0)}</span>
+          </button>
+          {(financials?.overdue ?? 0) > 0 && (
+            <button
+              onClick={() => navigate("/cobrancas?tab=aging")}
+              className="flex items-center gap-1.5 pl-1.5 pr-3 h-8 rounded-full bg-destructive/10 border border-destructive/25 shrink-0 active:scale-95 transition-transform"
+            >
+              <span className="relative w-5 h-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                <AlertTriangle size={11} className="text-destructive" />
+                <span className="absolute inset-0 rounded-full bg-destructive/30 animate-ping opacity-60" />
+              </span>
+              <span className="text-[11.5px] font-bold text-destructive tabular-nums">{financials?.overdue} em atraso</span>
+            </button>
+          )}
+        </div>
+      )}
     </header>
+
   );
 };
 
