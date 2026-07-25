@@ -1032,10 +1032,33 @@ const Cobrancas = () => {
               : dueInfo.tone === "warn" ? "ring-amber-500/50 bg-amber-500/15 text-amber-500"
               : dueInfo.tone === "ok" ? "ring-success/40 bg-success/15 text-success"
               : "ring-border bg-muted/40 text-muted-foreground";
+            // Extra metrics
+            const maxDaysLate = groupSelectable.reduce((max: number, it: any) => {
+              const d = Math.floor((Date.now() - new Date(it.due_date + "T00:00:00").getTime()) / 86400000);
+              return d > max ? d : max;
+            }, 0);
+            const avgTicket = agg && totalActiveInst > 0 ? (agg.grossExpected / totalActiveInst) : 0;
+            const feePct = (group.total > 0 && group.totalFees > 0) ? Math.round((group.totalFees / group.total) * 100) : 0;
+
+            const accentGrad =
+              dueInfo.tone === "danger" ? "from-destructive via-destructive/70 to-amber-500"
+              : dueInfo.tone === "warn" ? "from-amber-500 via-amber-400 to-amber-300"
+              : dueInfo.tone === "ok" ? "from-success via-success/70 to-primary"
+              : "from-primary via-primary/60 to-primary/30";
+            const cardTint =
+              dueInfo.tone === "danger" ? "bg-gradient-to-br from-destructive/[0.04] via-card to-card"
+              : dueInfo.tone === "warn" ? "bg-gradient-to-br from-amber-500/[0.04] via-card to-card"
+              : "bg-card/60";
+            const copyPhone = async () => {
+              try { await navigator.clipboard.writeText(phoneDigits || rawPhone); toast({ title: "Telefone copiado" }); } catch {}
+            };
+
             return (
-              <div key={group.client_id} className={`group rounded-2xl border bg-card/60 hover:bg-card transition-all overflow-hidden ${dueInfo.tone === "danger" ? "border-destructive/25 shadow-[0_0_0_1px_hsl(var(--destructive)/0.06)]" : "border-border"}`}>
+              <div key={group.client_id} className={`group relative rounded-2xl border ${cardTint} hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 transition-all overflow-hidden ${dueInfo.tone === "danger" ? "border-destructive/25" : "border-border"}`}>
+                {/* Top gradient accent strip */}
+                <div className={`h-1 w-full bg-gradient-to-r ${accentGrad}`} />
                 {showHeader && (
-                  <div className="p-4 flex flex-col gap-3">
+                  <div className="p-4 flex flex-col gap-3.5">
                     {/* Top row: avatar + name + status + quick chips + select */}
                     <div className="flex items-start gap-3">
                       <button
@@ -1052,10 +1075,11 @@ const Cobrancas = () => {
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${group.client_id}`); }}
-                        className={`shrink-0 w-11 h-11 rounded-full ring-2 ${avatarRing} flex items-center justify-center text-sm font-bold focus-ring transition-transform hover:scale-105`}
+                        className={`relative shrink-0 w-12 h-12 rounded-full ring-2 ${avatarRing} flex items-center justify-center text-sm font-bold focus-ring transition-transform hover:scale-105`}
                         title="Abrir ficha do cliente"
                       >
                         {initials || "?"}
+                        <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-card ${dueInfo.tone === "danger" ? "bg-destructive" : dueInfo.tone === "warn" ? "bg-amber-500" : dueInfo.tone === "ok" ? "bg-success" : "bg-muted-foreground"}`} />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.client_id); }}
@@ -1063,14 +1087,19 @@ const Cobrancas = () => {
                         title={isCollapsed ? "Mostrar parcelas" : "Ocultar parcelas"}
                       >
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-bold text-foreground truncate max-w-[240px]">{group.client_name}</p>
+                          <p className="text-[15px] font-bold text-foreground truncate max-w-[260px] tracking-tight">{group.client_name}</p>
                           <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${toneClass}`}>
                             {dueInfo.text}
                           </span>
+                          {maxDaysLate > 0 && (
+                            <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive/10 text-destructive border border-destructive/25">
+                              <Flame size={10} /> {maxDaysLate}d atraso
+                            </span>
+                          )}
                         </div>
-                        <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
+                        <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
                           {phoneMasked && (
-                            <span className="inline-flex items-center gap-1"><Phone size={11} /> {phoneMasked}</span>
+                            <span className="inline-flex items-center gap-1"><Phone size={11} /> <span className="tabular-nums">{phoneMasked}</span></span>
                           )}
                           {nextDueLabel && (
                             <span className="inline-flex items-center gap-1"><CalendarDays size={11} /> próx: <span className="font-semibold text-foreground">{nextDueLabel}</span></span>
@@ -1079,81 +1108,90 @@ const Cobrancas = () => {
                             <MessageSquare size={11} />
                             {daysSinceContact === null ? "nunca cobrado" : daysSinceContact === 0 ? "cobrado hoje" : `há ${daysSinceContact}d`}
                           </span>
+                          <span className="inline-flex items-center gap-1"><Layers size={11} /> {unpaidCount} em aberto</span>
                         </div>
                       </button>
                       <div className="hidden sm:flex shrink-0 flex-col items-end gap-0.5">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total</span>
-                        <span className="text-lg font-black text-foreground tabular-nums leading-none">R$ {fmt(group.totalWithFees || group.total)}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total devido</span>
+                        <span className={`text-xl font-black tabular-nums leading-none ${dueInfo.tone === "danger" ? "text-destructive" : "text-foreground"}`}>R$ {fmt(group.totalWithFees || group.total)}</span>
                         {group.totalFees > 0 && (
-                          <span className="text-[10px] text-destructive font-semibold">+R$ {fmt(group.totalFees)} multa</span>
+                          <span className="text-[10px] text-destructive font-semibold inline-flex items-center gap-1">
+                            <TrendingUp size={10} /> +R$ {fmt(group.totalFees)} ({feePct}% multa)
+                          </span>
                         )}
                       </div>
                     </div>
 
                     {/* Mobile total */}
                     <div className="sm:hidden flex items-baseline gap-2 flex-wrap">
-                      <span className="text-xl font-black text-foreground tabular-nums">R$ {fmt(group.totalWithFees || group.total)}</span>
+                      <span className={`text-xl font-black tabular-nums ${dueInfo.tone === "danger" ? "text-destructive" : "text-foreground"}`}>R$ {fmt(group.totalWithFees || group.total)}</span>
                       {group.totalFees > 0 && (
                         <span className="text-[11px] text-destructive font-semibold">+R$ {fmt(group.totalFees)} multa</span>
                       )}
-                      <span className="text-[11px] text-muted-foreground">· {unpaidCount} em aberto</span>
                     </div>
 
-                    {/* KPIs */}
+                    {/* KPIs - richer with icons */}
                     {agg && (() => {
                       const profit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
                       return (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
-                            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Emprestado</p>
-                            <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">R$ {fmt(agg.loaned)}</p>
+                          <div className="rounded-xl border border-border/60 bg-background/50 backdrop-blur px-3 py-2.5 hover:border-primary/30 transition-colors">
+                            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold inline-flex items-center gap-1"><Wallet size={10} /> Emprestado</p>
+                            <p className="text-sm font-bold text-foreground tabular-nums mt-1">R$ {fmt(agg.loaned)}</p>
+                            {avgTicket > 0 && <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">ticket R$ {fmt(avgTicket)}</p>}
                           </div>
-                          <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
-                            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Parcelas</p>
-                            <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">
+                          <div className="rounded-xl border border-border/60 bg-background/50 backdrop-blur px-3 py-2.5 hover:border-primary/30 transition-colors">
+                            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold inline-flex items-center gap-1"><Layers size={10} /> Parcelas</p>
+                            <p className="text-sm font-bold tabular-nums mt-1">
                               <span className="text-success">{paidCount}</span>
                               <span className="text-muted-foreground">/{totalActiveInst}</span>
                             </p>
+                            <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">{progressPct}% concluído</p>
                           </div>
-                          <div className="rounded-xl border border-success/30 bg-success/10 px-2.5 py-2">
-                            <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold">Lucro</p>
-                            <p className="text-sm font-bold text-success tabular-nums mt-0.5">R$ {fmt(profit)}</p>
+                          <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/10 to-success/[0.02] px-3 py-2.5">
+                            <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold inline-flex items-center gap-1"><TrendingUp size={10} /> Lucro</p>
+                            <p className="text-sm font-bold text-success tabular-nums mt-1">R$ {fmt(profit)}</p>
+                            {agg.loaned > 0 && <p className="text-[9px] text-success/70 mt-0.5 tabular-nums">{Math.round((profit / agg.loaned) * 100)}% ROI</p>}
                           </div>
                           {agg.overdueCount > 0 ? (
-                            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-2">
-                              <p className="text-[9px] uppercase tracking-wide text-destructive/90 font-semibold">{agg.overdueCount} atrasada{agg.overdueCount === 1 ? "" : "s"}</p>
-                              <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">R$ {fmt(agg.overdueAmount)}</p>
+                            <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/10 to-destructive/[0.02] px-3 py-2.5">
+                              <p className="text-[9px] uppercase tracking-wide text-destructive/90 font-semibold inline-flex items-center gap-1"><AlertTriangle size={10} /> {agg.overdueCount} atrasada{agg.overdueCount === 1 ? "" : "s"}</p>
+                              <p className="text-sm font-bold text-foreground tabular-nums mt-1">R$ {fmt(agg.overdueAmount)}</p>
                               <p className="text-[10px] font-semibold text-destructive tabular-nums">c/ multa R$ {fmt(agg.overdueAmount + agg.overdueFees)}</p>
                             </div>
                           ) : (
-                            <div className="rounded-xl border border-success/30 bg-success/10 px-2.5 py-2">
-                              <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold">Situação</p>
-                              <p className="text-sm font-bold text-success mt-0.5">Em dia</p>
+                            <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/10 to-success/[0.02] px-3 py-2.5">
+                              <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold inline-flex items-center gap-1"><CheckCircle size={10} /> Situação</p>
+                              <p className="text-sm font-bold text-success mt-1">Em dia</p>
+                              <p className="text-[9px] text-success/70 mt-0.5">nenhum atraso</p>
                             </div>
                           )}
                         </div>
                       );
                     })()}
 
-                    {/* Progress bar: paid vs total */}
+                    {/* Progress bar with milestones */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span className="font-semibold">Progresso do contrato</span>
+                        <span className="font-semibold inline-flex items-center gap-1"><Percent size={10} /> Progresso do contrato</span>
                         <span className="tabular-nums font-semibold text-foreground">{paidCount}/{totalActiveInst} · {progressPct}%</span>
                       </div>
-                      <div className="h-2 rounded-full bg-muted/40 overflow-hidden">
+                      <div className="relative h-2 rounded-full bg-muted/40 overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${progressPct >= 80 ? "bg-success" : progressPct >= 40 ? "bg-primary" : "bg-amber-500"}`}
+                          className={`h-full rounded-full transition-all bg-gradient-to-r ${progressPct >= 80 ? "from-success to-success/70" : progressPct >= 40 ? "from-primary to-primary/70" : "from-amber-500 to-amber-400"}`}
                           style={{ width: `${Math.max(2, progressPct)}%` }}
                         />
+                        {[25, 50, 75].map((m) => (
+                          <span key={m} className="absolute top-0 h-full w-px bg-background/60" style={{ left: `${m}%` }} />
+                        ))}
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div className="grid grid-cols-4 gap-2 pt-0.5">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleWhatsAppGroup(group); }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-success text-success-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all focus-ring shadow-sm"
+                        className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-br from-success to-success/85 text-success-foreground text-sm font-semibold hover:shadow-md hover:shadow-success/30 active:scale-[0.98] transition-all focus-ring"
                         title="Cobrar via WhatsApp"
                       >
                         <MessageSquare size={15} /> Cobrar
@@ -1164,21 +1202,29 @@ const Cobrancas = () => {
                           if (unpaidCount === 1 && firstUnpaid) setConfirmPayId(firstUnpaid.id);
                           else toggleGroupCollapse(group.client_id);
                         }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all focus-ring shadow-sm"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary/85 text-primary-foreground text-sm font-semibold hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] transition-all focus-ring"
                         title={unpaidCount === 1 ? "Marcar como paga" : "Ver parcelas"}
                       >
                         <Check size={15} /> {unpaidCount === 1 ? "Pagar" : "Parcelas"}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); copyPhone(); }}
+                        className="hidden sm:flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-accent hover:bg-accent/70 text-foreground text-sm font-semibold active:scale-[0.98] transition-all focus-ring"
+                        title="Copiar telefone"
+                      >
+                        <Copy size={14} /> Telefone
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${group.client_id}`); }}
                         className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-accent hover:bg-accent/70 text-foreground text-sm font-semibold active:scale-[0.98] transition-all focus-ring"
                         title="Abrir cliente"
                       >
-                        <Receipt size={15} /> Cliente
+                        <ExternalLink size={14} /> Ficha
                       </button>
                     </div>
                   </div>
                 )}
+
 
                 {(!showHeader || !isCollapsed) && (
                   <div className={showHeader ? "border-t border-border bg-background/40 px-2 py-2 space-y-1.5" : ""}>
