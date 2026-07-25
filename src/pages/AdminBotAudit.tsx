@@ -58,7 +58,7 @@ export default function AdminBotAudit() {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: a }, { data: b }] = await Promise.all([
+    const [{ data: a }, { data: b }, { data: c }] = await Promise.all([
       supabase
         .from("audit_logs")
         .select("*")
@@ -70,9 +70,17 @@ export default function AdminBotAudit() {
         .select("*")
         .order("created_at", { ascending: false })
         .limit(200),
+      supabase
+        .from("whatsapp_conversations")
+        .select("id, phone, agent_state, agent_state_updated_at, clients(name)")
+        .not("agent_state", "is", null)
+        .neq("agent_state", "UNKNOWN")
+        .order("agent_state_updated_at", { ascending: false })
+        .limit(50),
     ]);
     setAudits((a || []) as AuditRow[]);
     setActions((b || []) as BotAction[]);
+    setFsm((c || []) as any);
     setLoading(false);
   };
 
