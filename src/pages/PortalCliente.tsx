@@ -11,6 +11,7 @@ import { computeLateFee } from "@/lib/lateFee";
 import { generatePortalStatementPdf } from "@/utils/portalPdf";
 import { isPortalLoginBlocked, recordPortalLoginAttempt, performFullPortalLogout } from "@/lib/portalSession";
 import { isValidCPF, onlyDigits } from "@/lib/cpfCnpj";
+import eagleBg from "@/assets/portal-eagle-bg.jpg";
 
 type PortalInstallment = {
   id: string;
