@@ -25,7 +25,7 @@ import {
   MessageSquare, Star, Ban, RotateCcw, Download, TrendingUp,
   Calendar, Receipt, Activity, Search, X, Percent, Wallet, Printer, Camera,
   Wrench, Repeat, PhoneCall, StickyNote,
-  Info, UploadCloud, File as FileIcon, ImageIcon, ShieldCheck, Sparkles,
+  Info, UploadCloud, File as FileIcon, ImageIcon, ShieldCheck, Sparkles, ChevronRight,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { formatBR } from "@/lib/dateUtils";
@@ -1491,46 +1491,8 @@ const ClienteDetalhe = () => {
             </div>
           </section>
         </div>
-
-        {/* Documentos & Anexos (full width) */}
-        <section id="sec-documentos" className="scroll-mt-24 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
-
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
-              <h3 className="text-sm font-bold text-foreground">Documentos & Anexos</h3>
-              {clientDocs.length > 0 && <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{clientDocs.length}</span>}
-            </div>
-            <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
-              <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar arquivo"}
-              <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
-            </label>
-          </div>
-          {clientDocs.length === 0 ? (
-            <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {clientDocs.map((d: any) => {
-                const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
-                return (
-                  <div key={d.name} className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background/40 hover:border-primary/40 transition-colors">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"}`}>
-                      {isImg ? <ImageIcon size={14} /> : <FileIcon size={14} />}
-                    </div>
-                    <button onClick={() => signedUrl(d.name)} className="flex-1 min-w-0 text-left">
-                      <p className="text-[11px] text-foreground font-semibold truncate">{d.name.replace(/^\d+-/, "")}</p>
-                      <p className="text-[9px] text-muted-foreground">{d.metadata?.size ? `${Math.round(d.metadata.size / 1024)} KB` : ""}</p>
-                    </button>
-                    <button onClick={() => deleteDoc(d.name)} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-destructive transition-opacity" title="Remover">
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
       </section>
+
 
       {/* Barra sticky de navegação por seções */}
 
@@ -1542,6 +1504,56 @@ const ClienteDetalhe = () => {
           </button>
         ))}
       </div>
+
+      {/* Section: Documentos & Anexos (expande apenas ao clicar na aba) */}
+      <section id="sec-documentos" className="scroll-mt-24 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+        <button
+          onClick={() => setActiveTab(activeTab === "documentos" ? "contratos" : "documentos")}
+          className="w-full flex items-center justify-between"
+          aria-expanded={activeTab === "documentos"}
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
+            <h3 className="text-sm font-bold text-foreground">Documentos & Anexos</h3>
+            {clientDocs.length > 0 && <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{clientDocs.length}</span>}
+          </div>
+          <ChevronRight size={16} className={`text-muted-foreground transition-transform ${activeTab === "documentos" ? "rotate-90" : ""}`} />
+        </button>
+
+        {activeTab === "documentos" && (
+          <div className="mt-4 space-y-3">
+            <label className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
+              <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar arquivo"}
+              <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
+            </label>
+            {clientDocs.length === 0 ? (
+              <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {clientDocs.map((d: any) => {
+                  const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
+                  return (
+                    <div key={d.name} className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background/40 hover:border-primary/40 transition-colors">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"}`}>
+                        {isImg ? <ImageIcon size={14} /> : <FileIcon size={14} />}
+                      </div>
+                      <button onClick={() => signedUrl(d.name)} className="flex-1 min-w-0 text-left">
+                        <p className="text-[11px] text-foreground font-semibold truncate">{d.name.replace(/^\d+-/, "")}</p>
+                        <p className="text-[9px] text-muted-foreground">{d.metadata?.size ? `${Math.round(d.metadata.size / 1024)} KB` : ""}</p>
+                      </button>
+                      <button onClick={() => deleteDoc(d.name)} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-destructive transition-opacity" title="Remover">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+
 
 
       {/* Section: Contratos */}
