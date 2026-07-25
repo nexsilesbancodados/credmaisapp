@@ -727,18 +727,34 @@ const Cobrancas = () => {
 
   return (
     <div className="space-y-5 pb-24">
-      {/* Hero enxuto */}
-      <div className="page-hero animate-fade-in">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
-              <Receipt size={20} className="text-primary" />
+      {/* HERO Premium */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-destructive/10 via-card to-card p-6 md:p-8 animate-fade-in">
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-destructive/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-destructive/20 border border-destructive/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--destructive)/0.25)]">
+              <Receipt size={26} className="text-destructive" />
             </div>
             <div>
-              <h1 className="text-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">Cobranças</h1>
-              <p className="text-muted-foreground text-xs mt-0.5">Foque no que precisa ser resolvido hoje</p>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Cobranças</p>
+              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+                Total a Receber
+              </h1>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-4xl md:text-5xl font-bold text-destructive tracking-tight tabular-nums">
+                  R$ {fmt(stats.totalOverdue + dueTodayStats.total)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex items-center gap-1"><AlertTriangle size={12} className="text-destructive" /> {stats.overdue} atrasada(s)</span>
+                <span className="text-border">•</span>
+                <span className="flex items-center gap-1"><CalendarDays size={12} className="text-primary" /> {dueTodayStats.count} vence(m) hoje</span>
+              </p>
             </div>
           </div>
+
           <div className="flex flex-wrap gap-2">
             {stats.overdue > 0 && selected.size === 0 && (
               <button onClick={() => handleBulk("whatsapp")} className="btn-premium" style={{ background: "linear-gradient(135deg, hsl(var(--success)), hsl(152 65% 55%))" }}>
@@ -747,7 +763,7 @@ const Cobrancas = () => {
             )}
             <button
               onClick={() => { setCobrarAteDate(todayISO); setCobrarAteSelected(new Set()); setCobrarAteOpen(true); }}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-card border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring"
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card/70 backdrop-blur border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring"
               title="Selecionar parcelas até uma data"
             >
               <CalendarIcon size={13} className="text-primary" /> Cobrar até…
@@ -803,7 +819,7 @@ const Cobrancas = () => {
       )}
 
 
-      {/* Stats cards — 3 KPIs essenciais */}
+      {/* KPIs enriquecidos — clicáveis (foco) */}
       {(() => {
         const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
         const cobradoIds = new Set<string>();
@@ -813,27 +829,53 @@ const Cobrancas = () => {
             if (a.channel === "whatsapp" || a.channel === "email") cobradoIds.add(a.client_id);
           }
         }
+        const totalRec = stats.totalOverdue + dueTodayStats.total || 1;
+        const overduePct = Math.round((stats.totalOverdue / totalRec) * 100);
         const kpis = [
-          { label: "Vence hoje", value: dueTodayStats.count, sub: `R$ ${fmt(dueTodayStats.total)}`, icon: CalendarDays, color: "text-primary", bg: "bg-primary/8", border: dueTodayStats.count > 0 ? "border-primary/20" : "border-border", active: period === "today" && filter === "all" && !focoDia, onClick: () => applyFocus("hoje") },
-          { label: "Atrasadas", value: stats.overdue, sub: `R$ ${fmt(stats.totalOverdue)}`, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/8", border: stats.overdue > 0 ? "border-destructive/20 danger-glow" : "border-border", active: filter === "overdue", onClick: () => applyFocus("atrasadas") },
-          { label: "Cobrado hoje", value: cobradoIds.size, sub: `${cobradoIds.size} cliente${cobradoIds.size === 1 ? "" : "s"}`, icon: CheckCircle, color: "text-success", bg: "bg-success/8", border: "border-border", active: false, onClick: () => {} },
+          {
+            label: "Vence hoje", value: dueTodayStats.count, amount: dueTodayStats.total,
+            hint: `${dueTodayStats.count} parcela${dueTodayStats.count === 1 ? "" : "s"}`,
+            icon: CalendarDays, color: "text-primary", bg: "bg-primary/10", ring: "border-primary/20",
+            active: period === "today" && filter === "all" && !focoDia,
+            onClick: () => applyFocus("hoje"),
+          },
+          {
+            label: "Atrasadas", value: stats.overdue, amount: stats.totalOverdue,
+            hint: `${overduePct}% do total a receber`,
+            icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", ring: stats.overdue > 0 ? "border-destructive/30" : "border-border",
+            active: filter === "overdue",
+            onClick: () => applyFocus("atrasadas"),
+            urgent: stats.overdue > 0,
+          },
+          {
+            label: "Cobrado hoje", value: cobradoIds.size, amount: null,
+            hint: `${cobradoIds.size} cliente${cobradoIds.size === 1 ? "" : "s"} contactado${cobradoIds.size === 1 ? "" : "s"}`,
+            icon: CheckCircle, color: "text-success", bg: "bg-success/10", ring: "border-border",
+            active: false,
+            onClick: () => {},
+          },
         ];
         return (
-          <div className="grid grid-cols-3 gap-3 stagger-fade-in">
-            {kpis.map((s) => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger-fade-in">
+            {kpis.map((s, idx) => (
               <button
                 key={s.label}
                 onClick={s.onClick}
-                className={`rounded-2xl border bg-card p-4 card-shine text-left transition-all focus-ring ${s.active ? "border-primary/30 ring-1 ring-primary/20" : s.border}`}
+                style={{ animationDelay: `${idx * 60}ms` }}
+                className={`relative overflow-hidden rounded-2xl border bg-card p-5 card-shine text-left transition-all focus-ring group ${s.active ? "border-primary/40 ring-2 ring-primary/20 shadow-lg shadow-primary/10" : s.ring} hover:border-primary/30`}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-7 h-7 rounded-lg ${s.bg} flex items-center justify-center`}>
-                    <s.icon size={14} className={s.color} />
+                {s.urgent && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-destructive via-destructive/70 to-transparent" />}
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
+                    <s.icon size={18} className={s.color} />
                   </div>
+                  <span className={`text-3xl font-bold tabular-nums ${s.color}`}>{s.value}</span>
                 </div>
-                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{s.label}</p>
-                {s.sub && <p className="text-xs text-muted-foreground mt-0.5">{s.sub}</p>}
+                {s.amount != null && (
+                  <p className="text-lg font-bold text-foreground mt-0.5 tabular-nums">R$ {fmt(s.amount)}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground mt-0.5">{s.hint}</p>
               </button>
             ))}
           </div>
