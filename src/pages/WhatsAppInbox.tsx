@@ -424,25 +424,55 @@ export default function WhatsAppInbox() {
 
   const maxHourly = Math.max(1, ...hourlyStats.map(h => h.count));
 
+  const totalUnread = conversations.reduce((s, c) => s + (c.unread_count || 0), 0);
+
   return (
-    <div className="space-y-3">
-      {/* Métricas resumidas */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <MetricCard label="Conversas" value={metrics.total} />
-        <MetricCard label="Ativas hoje" value={metrics.today} />
-        <MetricCard label="Precisam de você" value={metrics.needsHuman} accent="warning" />
-        <MetricCard label="Bot (7d)" value={metrics.botReplies7d} accent="primary" />
-        <MetricCard label="Humano (7d)" value={metrics.humanReplies7d} />
-        <Card className="p-3 flex flex-col justify-between cursor-pointer hover:bg-muted/40 transition" onClick={loadAdvancedMetrics}>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Avançado</p>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Ver gráfico</p>
-            <BarChart3 className="h-5 w-5 text-primary" />
+    <div className="space-y-4">
+      {/* HERO Premium */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-emerald-500/10 via-card to-card p-5 md:p-6 animate-fade-in">
+        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-16 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_30px_rgb(16_185_129/0.25)]">
+              <MessageCircle size={26} className="text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">WhatsApp</p>
+              <h1 className="text-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">Central de Conversas</h1>
+              <p className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex items-center gap-1"><MessageCircle size={11} className="text-emerald-500" /> {metrics.total} ativas</span>
+                {totalUnread > 0 && <><span className="text-border">•</span><span className="text-primary font-semibold">{totalUnread} não lida{totalUnread === 1 ? "" : "s"}</span></>}
+                {metrics.needsHuman > 0 && <><span className="text-border">•</span><span className="text-destructive font-semibold flex items-center gap-1"><AlertTriangle size={11} /> {metrics.needsHuman} precisa(m) de você</span></>}
+              </p>
+            </div>
           </div>
-        </Card>
+
+          {/* Mini KPIs inline */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Hoje", value: metrics.today, color: "text-foreground", bg: "bg-card/70" },
+              { label: "Bot 7d", value: metrics.botReplies7d, color: "text-primary", bg: "bg-primary/10" },
+              { label: "Humano 7d", value: metrics.humanReplies7d, color: "text-foreground", bg: "bg-card/70" },
+              { label: "Alerta", value: metrics.needsHuman, color: metrics.needsHuman > 0 ? "text-destructive" : "text-muted-foreground", bg: metrics.needsHuman > 0 ? "bg-destructive/10" : "bg-card/70" },
+            ].map((k) => (
+              <div key={k.label} className={`rounded-xl border border-border/60 ${k.bg} backdrop-blur px-3 py-2 min-w-[76px]`}>
+                <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">{k.label}</p>
+                <p className={`text-xl font-bold tabular-nums ${k.color}`}>{k.value}</p>
+              </div>
+            ))}
+            <button
+              onClick={loadAdvancedMetrics}
+              className="col-span-2 sm:col-span-4 flex items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-card/70 backdrop-blur px-3 py-1.5 text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors"
+            >
+              <BarChart3 size={12} /> Análise horária (7d)
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="h-[calc(100vh-14rem)] grid grid-cols-[340px_1fr] gap-3">
+      <div className="h-[calc(100vh-16rem)] grid grid-cols-[340px_1fr] gap-3">
         {/* Lista de conversas */}
         <Card className="flex flex-col overflow-hidden">
           <div className="p-3 border-b border-border space-y-2">

@@ -269,28 +269,32 @@ const WhatsAppConfig = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-8 animate-fade-in">
-      <div className="page-hero">
-        <div className="page-hero-content flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="page-hero-icon bg-emerald-500/10 text-emerald-500">
-              <MessageCircle size={22} />
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-emerald-500/10 via-card to-card p-6">
+        <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-16 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_30px_rgb(16_185_129/0.25)]">
+              <MessageCircle size={24} className="text-emerald-500" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-shimmer">Integração WhatsApp</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Conecte sua conta via Evolution API</p>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Integração</p>
+              <h1 className="text-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">WhatsApp Business</h1>
+              <p className="text-xs text-muted-foreground mt-1">Conecte sua conta via Evolution API e ative o agente SDR.</p>
             </div>
           </div>
-          <Badge 
-            variant="outline" 
-            className={`capitalize ${
-              status === "connected" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
-              status === "connecting" ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : 
-              "bg-muted text-muted-foreground"
+          <Badge
+            variant="outline"
+            className={`capitalize px-3 py-1.5 text-xs ${
+              status === "connected" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30" :
+              status === "connecting" ? "bg-amber-500/10 text-amber-500 border-amber-500/30" :
+              "bg-muted text-muted-foreground border-border"
             }`}
           >
             <div className={`w-1.5 h-1.5 rounded-full mr-2 ${
-              status === "connected" ? "bg-emerald-500 animate-pulse" : 
-              status === "connecting" ? "bg-amber-500 animate-pulse" : 
+              status === "connected" ? "bg-emerald-500 animate-pulse" :
+              status === "connecting" ? "bg-amber-500 animate-pulse" :
               "bg-muted-foreground"
             }`} />
             {status === "connected" ? "Conectado" : status === "connecting" ? "Conectando..." : "Desconectado"}
