@@ -1704,14 +1704,111 @@ const ClienteDetalhe = () => {
                     >
                       <Trash2 size={13} />
                     </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleContract(c.id); }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-colors"
+                      title={expandedContracts.has(c.id) ? "Recolher parcelas" : "Ver parcelas"}
+                    >
+                      {expandedContracts.has(c.id) ? "Recolher" : `Ver ${total} parcelas`}
+                      <ChevronDown size={12} className={`transition-transform ${expandedContracts.has(c.id) ? "rotate-180" : ""}`} />
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {/* Parcelas inline (expandable) */}
+              {expandedContracts.has(c.id) && (
+                <div className="border-t border-border/40 bg-background/30 p-3 space-y-2">
+                  {cInsts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Nenhuma parcela</p>
+                  ) : cInsts.map((inst: any) => {
+                    const isOverdue = inst.status === "overdue";
+                    const isPaid = inst.status === "paid";
+                    const partial = !isPaid && Number(inst.paid_amount || 0) > 0;
+                    const lateFeePct = Number(c.late_fee_percent || 0);
+                    const dailyPct = Number(c.daily_interest_percent || 0);
+                    const base = Number(inst.amount || 0);
+                    const dueMs = new Date(inst.due_date).getTime();
+                    const daysOverdue = isOverdue ? Math.max(0, Math.floor((Date.now() - dueMs) / 86400000)) : 0;
+                    const multaVal = isOverdue ? base * (lateFeePct / 100) : 0;
+                    const jurosVal = isOverdue ? base * (dailyPct / 100) * daysOverdue : 0;
+                    const feeLive = computeLateFee({
+                      amount: base, due_date: inst.due_date, status: inst.status, late_fee: inst.late_fee,
+                      late_fee_percent: lateFeePct, daily_interest_percent: dailyPct,
+                    });
+                    const totalDue = base + feeLive;
+                    return (
+                      <div key={inst.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-colors ${isOverdue ? "bg-destructive/[0.04] border-destructive/20" : isPaid ? "bg-success/[0.04] border-success/15" : "bg-card border-border/60"}`}>
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isOverdue ? "bg-destructive/10 text-destructive ring-1 ring-destructive/20" : isPaid ? "bg-success/10 text-success ring-1 ring-success/20" : "bg-muted text-muted-foreground"}`}>
+                          {inst.installment_number}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-foreground tabular-nums">R$ {fmt(base)}</p>
+                            {isOverdue && feeLive > 0 && (
+                              <>
+                                <span className="text-[10px] font-medium text-destructive/80 tabular-nums">+ R$ {fmt(feeLive)}</span>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive tabular-nums">
+                                  <span className="opacity-50">=</span> R$ {fmt(totalDue)}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {formatBR(inst.due_date)}
+                            {isOverdue && <span className="text-destructive/70 font-medium"> · {daysOverdue}d atraso</span>}
+                            {inst.paid_at && ` · Pago ${formatBR(inst.paid_at)}`}
+                            {partial && ` · Parcial R$ ${fmt(Number(inst.paid_amount))}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {isOverdue && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors" title="Cálculo"><Info size={14} /></button>
+                              </PopoverTrigger>
+                              <PopoverContent align="end" className="w-80 p-0 overflow-hidden">
+                                <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3">
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-destructive">Cálculo · Parcela #{inst.installment_number}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{formatBR(inst.due_date)} · {daysOverdue}d atrás</p>
+                                </div>
+                                <div className="p-4 space-y-3 text-xs">
+                                  <div className="flex items-center justify-between text-muted-foreground"><span>Valor</span><span className="font-mono font-semibold text-foreground">R$ {fmt(base)}</span></div>
+                                  <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground">Multa</p>
+                                    {lateFeePct > 0 ? <p className="font-mono text-[11px] text-muted-foreground">R$ {fmt(base)} × {lateFeePct}% = <span className="text-destructive font-bold">R$ {fmt(multaVal)}</span></p> : <p className="text-[11px] text-muted-foreground italic">Sem multa</p>}
+                                  </div>
+                                  <div className="rounded-lg bg-muted/40 border border-border p-3 space-y-1">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-foreground">Juros diários</p>
+                                    {dailyPct > 0 ? <p className="font-mono text-[11px] text-muted-foreground">R$ {fmt(base)} × {dailyPct}% × {daysOverdue}d = <span className="text-destructive font-bold">R$ {fmt(jurosVal)}</span></p> : <p className="text-[11px] text-muted-foreground italic">Sem juros</p>}
+                                  </div>
+                                  <div className="border-t border-border pt-2 flex items-center justify-between"><span className="text-[10px] font-bold uppercase text-foreground">Total</span><span className="font-mono text-sm font-bold text-destructive">R$ {fmt(totalDue)}</span></div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                          <button onClick={() => openEditInst(inst)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Editar"><Edit size={14} /></button>
+                          {isPaid ? (
+                            <button onClick={() => reversePayment(inst.id)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Estornar"><RotateCcw size={14} /></button>
+                          ) : (
+                            <>
+                              <button onClick={() => sendBilling(inst)} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Cobrar"><Send size={14} /></button>
+                              <button onClick={() => { setPartialPayModal(inst); setPartialAmount(""); setPayMethod("pix"); setPayReceiptFile(null); }} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground" title="Parcial"><Percent size={14} /></button>
+                              <button onClick={() => { setPartialPayModal(inst); setPartialAmount(String(inst.amount)); setPayMethod("pix"); setPayReceiptFile(null); }} className="px-2.5 py-1.5 rounded-lg text-[10px] font-semibold bg-success/10 text-success hover:bg-success/20 transition-colors">Pagar</button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             );
           })}
         </div>
       )}</section>
+
 
 
       {/* Section: Parcelas */}
