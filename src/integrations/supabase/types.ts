@@ -2068,6 +2068,9 @@ export type Database = {
       }
       whatsapp_conversations: {
         Row: {
+          agent_state: string
+          agent_state_data: Json
+          agent_state_updated_at: string | null
           blocked: boolean
           bot_paused: boolean
           bot_status: string
@@ -2093,6 +2096,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent_state?: string
+          agent_state_data?: Json
+          agent_state_updated_at?: string | null
           blocked?: boolean
           bot_paused?: boolean
           bot_status?: string
@@ -2118,6 +2124,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent_state?: string
+          agent_state_data?: Json
+          agent_state_updated_at?: string | null
           blocked?: boolean
           bot_paused?: boolean
           bot_status?: string

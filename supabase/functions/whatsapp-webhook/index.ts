@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkSharedSecret } from "../_shared/guard.ts";
+import { guard as rateLimitGuard } from "../_shared/rate_limit.ts";
 import { parseMemory, mergeMemory, serializeMemory, pushIntent, summarizeIntents, lastApproach, type IntentEntry } from "../_shared/memory.ts";
 import {
   extractJsonObject,
@@ -416,6 +417,12 @@ async function escalateToHuman(supabase: any, convoId: string, reason: string) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Rate limit por IP (60 msgs/min, capacidade 30). Evolution costuma chamar de
+  // 1-2 IPs — se estourar é abuso, não uso legítimo.
+  const rl = rateLimitGuard(req, "wa", 30, 1, corsHeaders);
+  if (rl) return rl;
+
 
   // SEGURANÇA (C2): o Evolution não assina o payload, então exigimos um segredo
   // compartilhado. Configure o webhook do Evolution com `?secret=<valor>` na URL

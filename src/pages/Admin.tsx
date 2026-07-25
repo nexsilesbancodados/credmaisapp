@@ -289,9 +289,14 @@ const Admin = () => {
               </p>
             </div>
           </div>
-          <button onClick={exportCSV} className="btn-ghost">
-            <Download size={14} /> Exportar CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <a href="/admin/bot-audit" className="btn-ghost">
+              <Activity size={14} /> Bot Audit
+            </a>
+            <button onClick={exportCSV} className="btn-ghost">
+              <Download size={14} /> Exportar CSV
+            </button>
+          </div>
         </div>
       </div>
 

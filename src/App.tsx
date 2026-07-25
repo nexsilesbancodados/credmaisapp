@@ -46,6 +46,7 @@ const PuxadaDados = lazy(() => import("./pages/PuxadaDados"));
 const Sobre = lazy(() => import("./pages/Sobre"));
 const Perfil = lazy(() => import("./pages/Perfil"));
 const Admin = lazy(() => import("./pages/Admin"));
+const AdminBotAudit = lazy(() => import("./pages/AdminBotAudit"));
 const Relatorios = lazy(() => import("./pages/Relatorios"));
 const Historico = lazy(() => import("./pages/Historico"));
 const HistoricoFinanceiro = lazy(() => import("./pages/HistoricoFinanceiro"));
@@ -168,6 +169,7 @@ const App = () => (
                     <Route path="/sobre" element={<Sobre />} />
                     <Route path="/perfil" element={<ErrorBoundary><Perfil /></ErrorBoundary>} />
                     <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
+                    <Route path="/admin/bot-audit" element={<ErrorBoundary><AdminBotAudit /></ErrorBoundary>} />
                     <Route path="/relatorios" element={<ErrorBoundary><Relatorios /></ErrorBoundary>} />
                     <Route path="/historico" element={<ErrorBoundary><Historico /></ErrorBoundary>} />
                     <Route path="/historico-financeiro" element={<ErrorBoundary><HistoricoFinanceiro /></ErrorBoundary>} />
