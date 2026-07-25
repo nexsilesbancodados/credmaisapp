@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { guard as rateLimit } from "../_shared/rate_limit.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -12,6 +13,9 @@ const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response("method not allowed", { status: 405, headers: corsHeaders });
+  const rl = rateLimit(req, "portal-receipt", 10, 10 / 60, corsHeaders);
+  if (rl) return rl;
+
 
   try {
     const body = await req.json();
