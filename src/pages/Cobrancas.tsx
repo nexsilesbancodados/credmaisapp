@@ -58,7 +58,7 @@ const humanDueLabel = (items: any[]): { text: string; tone: "danger" | "warn" | 
 };
 
 type StatusFilter = "all" | "pending" | "overdue" | "paid";
-type PeriodFilter = "all" | "today" | "7d" | "30d" | "future";
+type PeriodFilter = "all" | "today" | "tomorrow" | "7d" | "30d" | "future";
 type SortKey = "due_asc" | "due_desc" | "amount_desc" | "amount_asc" | "overdue_days";
 
 const useDebounced = <T,>(value: T, ms = 180) => {
