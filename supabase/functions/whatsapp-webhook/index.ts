@@ -15,6 +15,7 @@ import {
   detectClientTone,
 } from "../_shared/bot_utils.ts";
 import { findFaqMatch, FAQ_COUNT } from "../_shared/faq_knowledge.ts";
+import { identifyClient, loadClientInstallments, auditDecision, todayInSP, samePhoneBR } from "../_shared/agent_core.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -482,35 +483,48 @@ serve(async (req) => {
 
     const userId = settings.user_id;
 
-    // CLIENT LOOKUP
+    // CLIENT LOOKUP (agent_core v2 — estrito + desambiguação por CPF)
     let client: any = null;
     const CLIENT_FIELDS = "id, name, phone, whatsapp, cpf_cnpj, status, credit_score, bot_memory, birth_date, email, address";
     const { data: convoExisting } = await supabase.from("whatsapp_conversations").select("id, client_id, bot_paused, blocked").eq("user_id", userId).eq("phone", senderPhone).maybeSingle();
+    let preboundClient: any = null;
     if (convoExisting?.client_id) {
-      const { data: c, error: clientByConversationError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
-      if (clientByConversationError) console.warn("[client_lookup] conversa vinculada falhou:", clientByConversationError.message);
-      if (c) client = c;
+      const { data: c } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
+      if (c) {
+        // Confirma que o telefone AINDA bate com esse cliente — evita vínculo "podre"
+        if (samePhoneBR(senderPhone, c.whatsapp || "") || samePhoneBR(senderPhone, c.phone || "")) {
+          preboundClient = c;
+        } else {
+          console.warn("[client_lookup] conversation.client_id não bate mais com o telefone; ignorando vínculo antigo");
+        }
+      }
     }
-    if (!client) {
-      // Normaliza: remove código do país 55 (Brasil) se vier prefixado
-      const normalizedIn = senderPhone.replace(/^55/, "");
-      const tail8 = normalizedIn.slice(-8);
-      const tail9 = normalizedIn.slice(-9);
-      const tail10 = normalizedIn.slice(-10);
-      const tail11 = normalizedIn.slice(-11);
-      const { data: clients, error: clientsByPhoneError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
-      if (clientsByPhoneError) console.warn("[client_lookup] busca por telefone falhou:", clientsByPhoneError.message);
-      client = clients?.find(c => {
-        const cRaw = ((c.whatsapp || "") + " " + (c.phone || "")).replace(/\D/g, "");
-        if (!cRaw) return false;
-        return (
-          cRaw.endsWith(tail11) ||
-          cRaw.endsWith(tail10) ||
-          cRaw.endsWith(tail9) ||
-          cRaw.endsWith(tail8)
-        );
-      });
+    const ident = await identifyClient(supabase, { userId, senderPhone, incomingText, preboundClient });
+    let ambiguousCandidates: any[] = [];
+    if (ident.status === "unique") {
+      client = ident.client;
+      // Se veio de match por telefone/CPF e a conversa não estava vinculada, vincula agora
+      if (!preboundClient && convoExisting?.id) {
+        await supabase.from("whatsapp_conversations").update({ client_id: client.id }).eq("id", convoExisting.id).then(() => {}, () => {});
+      }
+    } else if (ident.status === "ambiguous") {
+      ambiguousCandidates = ident.candidates;
+      client = null;
+    } else {
+      client = null;
     }
+    await auditDecision(supabase, {
+      userId,
+      conversationId: convoExisting?.id ?? null,
+      clientId: client?.id ?? null,
+      intent: `identify_${ident.status}`,
+      outcome: "ok",
+      details: {
+        sender_phone: senderPhone,
+        match_type: ident.status === "unique" ? (ident as any).matchType : null,
+        candidate_count: ident.status === "ambiguous" ? ambiguousCandidates.length : (ident.status === "unique" ? 1 : 0),
+      },
+    });
 
     const { data: profile } = await supabase.from("profiles").select("name, pix_key, pix_key_type").eq("id", userId).single();
 
@@ -566,6 +580,21 @@ serve(async (req) => {
 
     if (convoExisting?.bot_paused) return new Response(JSON.stringify({ status: "paused" }), { headers: corsHeaders });
     if (apiUrl && apiKey) sendPresence(apiUrl, apiKey, instanceName, senderJid, "composing").catch(() => {});
+
+    // AMBÍGUO: mesmo número em vários cadastros → pedir CPF antes de qualquer dado.
+    if (!client && ambiguousCandidates.length > 1) {
+      const empresa = settings.company_name || profile?.name || "nossa equipe";
+      await botSay(
+        `Olá! 👋 Aqui é da *${empresa}*.\n\nEncontrei *${ambiguousCandidates.length} cadastros* com este número. ` +
+        `Pra eu te atender com segurança, me envia seu *CPF* (só os 11 números).`,
+      );
+      await auditDecision(supabase, {
+        userId, conversationId: convoId, clientId: null,
+        intent: "asked_cpf_disambiguation", outcome: "blocked",
+        details: { candidate_ids: ambiguousCandidates.map((c: any) => c.id) },
+      });
+      return new Response(JSON.stringify({ status: "ambiguous_ask_cpf" }), { headers: corsHeaders });
+    }
 
     if (!client) {
       // ─── SDR: Agente completo de qualificação de lead ────────────
@@ -809,16 +838,11 @@ serve(async (req) => {
       const now = Date.now();
       const nowBrDay = new Date(now - 3 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-      // Helper: parcelas em aberto do cliente
+      // Helper: parcelas em aberto do cliente (agent_core: só com saldo > 0)
       const loadOpenInstallments = async () => {
-        const { data } = await supabase
-          .from("contract_installments")
-          .select("id, amount, due_date, status, late_fee, installment_number, paid_amount, contract_id")
-          .eq("client_id", client.id)
-          .in("status", ["pending", "overdue"])
-          .order("due_date", { ascending: true })
-          .limit(30);
-        return data || [];
+        const bucket = await loadClientInstallments(supabase, client.id, nowBrDay);
+        // Devolve pending/overdue ordenadas por vencimento (compatível com o resto do fluxo)
+        return [...bucket.overdue, ...bucket.dueToday, ...bucket.future].slice(0, 30);
       };
       const loadContractStats = async () => {
         const { data: all } = await supabase
@@ -1207,20 +1231,12 @@ serve(async (req) => {
         //  - parcelas em atraso / vence hoje
         //  - promessa de pagamento em aberto
         //  - última intenção registrada na memória
-        const { data: openInst } = await supabase
-          .from("contract_installments")
-          .select("id, amount, due_date, status, late_fee, installment_number")
-          .eq("client_id", client.id)
-          .in("status", ["pending", "overdue"])
-          .order("due_date", { ascending: true })
-          .limit(20);
-
-        const nowBr = new Date(Date.now() - 3 * 60 * 60 * 1000);
-        const todayStr = nowBr.toISOString().split("T")[0];
-        const overdueQ = (openInst || []).filter((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) < todayStr);
-        const dueTodayQ = (openInst || []).filter((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) === todayStr);
-        const totOver = overdueQ.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
-        const totToday = dueTodayQ.reduce((s: number, i: any) => s + Number(i.amount), 0);
+        const todayStr = todayInSP();
+        const bucket = await loadClientInstallments(supabase, client.id, todayStr);
+        const overdueQ = bucket.overdue;
+        const dueTodayQ = bucket.dueToday;
+        const totOver = bucket.totalOverdue;
+        const totToday = bucket.totalDueToday;
 
         const memObj = parseMemory(client.bot_memory);
         const openPromise = (memObj.promessas || []).find((p: any) => p && typeof p === "object" && p.data && p.data >= todayStr);
@@ -1323,7 +1339,7 @@ serve(async (req) => {
       { data: messageTemplates },
     ] = await Promise.all([
       supabase.from("contracts").select("id, capital, total_amount, start_date, status, loan_mode, frequency, interest_rate, num_installments").eq("client_id", client.id).eq("status", "active"),
-      supabase.from("contract_installments").select("id, amount, due_date, status, late_fee, installment_number, contract_id").eq("client_id", client.id).in("status", ["pending", "overdue"]).order("due_date", { ascending: true }),
+      supabase.from("contract_installments").select("id, amount, paid_amount, due_date, status, late_fee, installment_number, contract_id").eq("client_id", client.id).neq("status", "paid").order("due_date", { ascending: true }),
       supabase.from("audit_logs").select("action, created_at, details").eq("entity_id", client.id).eq("entity_type", "whatsapp_bot").order("created_at", { ascending: false }).limit(10),
       supabase.from("contract_installments").select("id").eq("client_id", client.id).eq("status", "paid"),
       supabase.from("contract_installments").select("amount, paid_amount, paid_at, installment_number, payment_method").eq("client_id", client.id).eq("status", "paid").order("paid_at", { ascending: false }).limit(5),
@@ -1343,21 +1359,27 @@ serve(async (req) => {
       return Math.round((db.getTime() - da.getTime()) / 86400000);
     };
 
-    const overdue = (installments || []).filter(i => {
+    // Só considera parcelas com SALDO real (amount - paid_amount > 0) — protege contra
+    // status desatualizado (ex: parcela quitada mas ainda marcada como 'overdue').
+    const openWithBalance = (installments || []).filter(i => {
+      const paid = Number(i.paid_amount) || 0;
+      return (Number(i.amount) || 0) - paid > 0.005;
+    });
+    const overdue = openWithBalance.filter(i => {
       const dueDate = typeof i.due_date === 'string' ? i.due_date.split('T')[0] : i.due_date;
       return dueDate < todayStr;
     });
-    const dueToday = (installments || []).filter(i => {
+    const dueToday = openWithBalance.filter(i => {
       const dueDate = typeof i.due_date === 'string' ? i.due_date.split('T')[0] : i.due_date;
       return dueDate === todayStr;
     });
-    const upcoming = (installments || []).filter(i => {
+    const upcoming = openWithBalance.filter(i => {
       const dueDate = typeof i.due_date === 'string' ? i.due_date.split('T')[0] : i.due_date;
       return dueDate > todayStr;
     }).slice(0, 3);
 
-    const totalOverdue = overdue.reduce((s, i) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
-    const totalDueToday = dueToday.reduce((s, i) => s + Number(i.amount), 0);
+    const totalOverdue = overdue.reduce((s, i) => s + (Number(i.amount) - (Number(i.paid_amount) || 0)) + (Number(i.late_fee) || 0), 0);
+    const totalDueToday = dueToday.reduce((s, i) => s + (Number(i.amount) - (Number(i.paid_amount) || 0)), 0);
 
     // Renovação (pagar só juros) — usa cálculo estável (capital × taxa)
     const rolloverOptions = (activeContracts || []).map(c => {
