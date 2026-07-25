@@ -2050,6 +2050,60 @@ Ex6 — "queria mais 3 mil emprestado":
 
     await supabase.from("audit_logs").insert({ user_id: userId, entity_type: "whatsapp_bot", action: "replied", entity_id: client.id, details: { intent: result.intent, thought: result.thought, reply: result.reply } });
 
+    // ─── Persistência do FSM (estado do agente entre turnos) ─────────────
+    if (convoId) {
+      try {
+        const { data: convoRow } = await supabase
+          .from("whatsapp_conversations")
+          .select("agent_state, agent_state_data, agent_state_updated_at")
+          .eq("id", convoId)
+          .maybeSingle();
+        const current = normalizeSnapshot(convoRow as any);
+        // Deriva próximo estado a partir do resultado da IA
+        let nextState: AgentState = "CONFIRMED";
+        const patch: Record<string, unknown> = {
+          client_id: client.id,
+          overdue_total: Number(totalOverdue || 0),
+          last_intent: result.intent || null,
+        };
+        if (result.needs_human) {
+          nextState = "INTENT_HUMANO";
+          patch.human_reason = (result as any).human_reason || preEscalate || "bot_decision";
+        } else if (result.is_promise && result.promise_date) {
+          nextState = "INTENT_PROMESSA";
+          patch.promise_date = result.promise_date;
+          patch.promise_amount = Number((result as any).promise_amount || 0);
+        } else if (result.intent === "pagamento" && Number(totalOverdue || 0) > 0) {
+          nextState = "INTENT_PAGAR";
+        } else if (result.intent === "comprovante") {
+          nextState = "INTENT_COMPROVANTE";
+        } else if (result.intent === "contestacao") {
+          nextState = "INTENT_CONTESTAR";
+        }
+        // Se o estado atual não permite transição direta, primeiro sobe para CONFIRMED
+        let staged = current;
+        if (current.state === "UNKNOWN" || current.state === "IDENTIFYING") {
+          const toConfirmed = transition(current, "CONFIRMED", { client_id: client.id });
+          if (!toConfirmed.error) staged = toConfirmed.next;
+        }
+        const tr = transition(staged, nextState, patch);
+        if (!tr.error) {
+          await saveSnapshot(supabase, convoId, tr.next);
+        } else {
+          // Registra transição inválida para observabilidade
+          await supabase.from("audit_logs").insert({
+            user_id: userId,
+            entity_type: "whatsapp_bot",
+            action: "fsm_transition_blocked",
+            entity_id: client.id,
+            details: { from: staged.state, to: nextState, reason: tr.error },
+          });
+        }
+      } catch (e) {
+        console.warn("[fsm] persist falhou:", (e as Error).message);
+      }
+    }
+
     // ─── Validação avançada de comprovante ─────────────────────────────────
     // Camadas: evidência mínima, sanidade do valor, competência da data, anti-reuso (hash), fraude textual.
     let mediaHash: string | null = null;
