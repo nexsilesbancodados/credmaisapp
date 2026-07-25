@@ -1100,36 +1100,50 @@ const ClienteDetalhe = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-24" style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-      {/* ===== Editorial Dossier Hero ===== */}
-      <header className="relative rounded-[24px] border border-border/50 bg-card/40 overflow-hidden backdrop-blur-xl shadow-xl shadow-primary/5">
-        {/* Cover banner */}
-        <div className="relative h-32 md:h-36 overflow-hidden">
-          <div className="absolute inset-0" style={{ background: "radial-gradient(120% 140% at 15% 0%, hsl(var(--primary)/0.35) 0%, transparent 55%), linear-gradient(135deg, hsl(var(--primary)/0.20), hsl(var(--background)) 75%)" }} />
-          <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }} />
-          <div className="absolute -top-16 -right-10 w-64 h-64 rounded-full bg-primary/15 blur-3xl" />
-          <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-primary/10 blur-3xl" />
+      {/* ===== Banner Navy + Ações Rápidas + KPIs (padrão CRM) ===== */}
+      <header className="space-y-5">
+        {/* Banner escuro com ondas */}
+        <div className="relative overflow-hidden rounded-[24px] border border-border/40 shadow-2xl shadow-primary/10"
+             style={{ background: "linear-gradient(120deg, hsl(222 47% 11%) 0%, hsl(217 60% 18%) 60%, hsl(214 80% 28%) 100%)" }}>
+          {/* Ondas decorativas à direita */}
+          <svg className="pointer-events-none absolute inset-y-0 right-0 h-full w-[55%] opacity-70" viewBox="0 0 600 220" fill="none" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="waveGrad" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0" stopColor="hsl(210 100% 70%)" stopOpacity="0" />
+                <stop offset="1" stopColor="hsl(210 100% 75%)" stopOpacity="0.55" />
+              </linearGradient>
+            </defs>
+            {[0, 14, 28, 42, 56, 70].map((off, i) => (
+              <path key={i}
+                d={`M0 ${90 + off} Q 150 ${40 + off}, 300 ${90 + off} T 600 ${90 + off}`}
+                stroke="url(#waveGrad)" strokeWidth="1.2" fill="none" opacity={0.9 - i * 0.12} />
+            ))}
+          </svg>
+          <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
 
-          {/* Top bar over cover */}
-          <div className="relative z-10 flex items-center justify-between p-4">
-            <button onClick={() => navigate("/clientes")} className="p-2 rounded-full bg-background/40 backdrop-blur-md border border-white/10 text-foreground/90 hover:bg-background/60 transition-colors" aria-label="Voltar">
+          {/* Voltar / Cliente desde */}
+          <div className="relative z-10 flex items-center justify-between px-5 md:px-7 pt-4">
+            <button onClick={() => navigate("/clientes")} className="p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white/90 hover:bg-white/20 transition-colors" aria-label="Voltar">
               <ArrowLeft size={16} />
             </button>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/40 backdrop-blur-md border border-white/10 text-[9px] font-bold tracking-[0.25em] text-foreground/80 uppercase">
-              <Sparkles size={10} className="text-primary" /> Cliente desde {clientSince}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-white/90">
+              <Calendar size={12} className="opacity-80" />
+              <span className="opacity-75">Cliente desde</span>
+              <span className="font-bold">{clientSince.toLowerCase()}</span>
             </div>
           </div>
-        </div>
 
-        {/* Body */}
-        <div className="relative px-5 md:px-8 pb-6 pt-0">
-          {/* Avatar floating */}
-          <div className="flex flex-col md:flex-row md:items-end md:gap-6 -mt-16 md:-mt-14">
-            <div className="relative group shrink-0 mx-auto md:mx-0">
-              <div className="w-28 h-28 md:w-32 md:h-32 rounded-3xl bg-gradient-to-br from-primary/40 via-primary/20 to-amber-500/10 flex items-center justify-center text-4xl md:text-5xl font-bold text-primary overflow-hidden ring-4 ring-card shadow-2xl shadow-primary/30" style={{ fontFamily: "'Sora', 'Space Grotesk', sans-serif" }}>
+          {/* Conteúdo principal do banner */}
+          <div className="relative z-10 px-5 md:px-7 pt-5 pb-7 flex flex-col md:flex-row md:items-center gap-5">
+            {/* Avatar circular */}
+            <div className="relative shrink-0 mx-auto md:mx-0">
+              <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-white/15 backdrop-blur-md ring-4 ring-white/20 flex items-center justify-center overflow-hidden text-white text-4xl md:text-5xl font-extrabold"
+                   style={{ fontFamily: "'Sora','Space Grotesk',sans-serif" }}>
                 {client.avatar_url ? <img src={client.avatar_url} alt="" className="w-full h-full object-cover" /> : client.name?.charAt(0)?.toUpperCase()}
               </div>
-              <label className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg ring-2 ring-card" style={{ background: "var(--gradient-button)" }} title="Trocar foto">
-                <Camera size={14} className="text-primary-foreground" />
+              <label className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg ring-2 ring-[hsl(222_47%_11%)]"
+                     style={{ background: "var(--gradient-button)" }} title="Trocar foto">
+                <Camera size={12} className="text-primary-foreground" />
                 <input type="file" accept="image/*" onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file || !id) return;
@@ -1148,51 +1162,61 @@ const ClienteDetalhe = () => {
               </label>
             </div>
 
-            {/* Name + chips */}
-            <div className="min-w-0 flex-1 mt-4 md:mt-0 md:pb-2 text-center md:text-left">
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight leading-[1.05]" style={{ fontFamily: "'Sora', 'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}>
+            {/* Nome + chips */}
+            <div className="min-w-0 flex-1 text-center md:text-left">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-white/50 font-bold">Bem-vindo(a),</p>
+              <h1 className="mt-0.5 text-3xl md:text-[36px] font-extrabold text-white leading-[1.05] tracking-tight truncate"
+                  style={{ fontFamily: "'Sora','Space Grotesk',sans-serif", letterSpacing: "-0.02em" }}>
                 {client.name}
               </h1>
-              <div className="flex flex-wrap justify-center md:justify-start items-center gap-1.5 mt-2.5">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${client.status === "Ativo" ? "bg-success/10 text-success border-success/30" : "bg-muted text-muted-foreground border-border"}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${client.status === "Ativo" ? "bg-success" : "bg-muted-foreground"}`} />
+              <p className="text-xs text-white/60 mt-1">Ficha do cliente</p>
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-1.5 mt-3">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${client.status === "Ativo" ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40" : "bg-white/10 text-white/70 ring-1 ring-white/20"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${client.status === "Ativo" ? "bg-emerald-400" : "bg-white/50"}`} />
                   {client.status}
                 </span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${riskTone}`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ring-1 ${(client.credit_score || 0) >= 750 ? "bg-emerald-500/20 text-emerald-300 ring-emerald-400/40" : (client.credit_score || 0) >= 600 ? "bg-amber-500/20 text-amber-200 ring-amber-400/40" : "bg-rose-500/20 text-rose-300 ring-rose-400/40"}`}>
                   <ShieldCheck size={11} /> {riskLabel}
                 </span>
                 {client.cpf_cnpj && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold text-muted-foreground border border-border/60 bg-background/40 font-mono">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold text-white/80 ring-1 ring-white/20 bg-white/5 font-mono">
                     {client.cpf_cnpj}
                   </span>
                 )}
                 {kpis.activeContracts.length > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-sky-200 bg-sky-500/20 ring-1 ring-sky-400/40">
                     <FileText size={11} /> {kpis.activeContracts.length} ativo{kpis.activeContracts.length > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* App-style action rail */}
-          <div className="mt-6 grid grid-cols-5 gap-2 md:flex md:justify-start md:gap-2">
+        {/* Ações rápidas */}
+        <div>
+          <p className="text-sm font-bold text-foreground mb-3" style={{ fontFamily: "'Sora','Space Grotesk',sans-serif" }}>Ações rápidas</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
             {[
-              { Icon: MessageSquare, label: "WhatsApp", tint: "text-emerald-300 bg-emerald-500/10 ring-emerald-400/30 hover:bg-emerald-500/20", onClick: () => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); }, disabled: !getPhone() },
-              { Icon: Phone, label: "Ligar", tint: "text-sky-300 bg-sky-500/10 ring-sky-400/30 hover:bg-sky-500/20", onClick: () => { const p = client.phone; if (p) window.open(`tel:${p.replace(/\D/g, "")}`, "_self"); }, disabled: !client.phone },
-              { Icon: Mail, label: "E-mail", tint: "text-amber-300 bg-amber-500/10 ring-amber-400/30 hover:bg-amber-500/20", onClick: () => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); }, disabled: !client.email },
-              { Icon: Send, label: "Portal", tint: "text-primary bg-primary/10 ring-primary/30 hover:bg-primary/20", onClick: sendPortalLink },
-              { Icon: Plus, label: "Empréstimo", tint: "text-primary-foreground ring-primary/40 hover:brightness-110", onClick: () => setNewLoanMode(true), primary: true },
+              { Icon: MessageSquare, label: "WhatsApp",   sub: "Enviar mensagem", tint: "bg-emerald-500 text-white",   onClick: () => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); }, disabled: !getPhone() },
+              { Icon: Phone,         label: "Ligar",      sub: "Fazer ligação",   tint: "bg-sky-500 text-white",       onClick: () => { const p = client.phone; if (p) window.open(`tel:${p.replace(/\D/g, "")}`, "_self"); }, disabled: !client.phone },
+              { Icon: Mail,          label: "E-mail",     sub: "Enviar e-mail",   tint: "bg-violet-500 text-white",    onClick: () => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); }, disabled: !client.email },
+              { Icon: Send,          label: "Portal",     sub: "Acessar portal",  tint: "bg-amber-500 text-white",     onClick: sendPortalLink },
+              { Icon: Plus,          label: "Empréstimo", sub: "Novo empréstimo", tint: "bg-primary text-primary-foreground", onClick: () => setNewLoanMode(true) },
             ].map((a) => (
               <button
                 key={a.label}
                 onClick={a.onClick}
                 disabled={a.disabled}
-                className={`group flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-2xl ring-1 transition-all hover:-translate-y-0.5 disabled:opacity-40 disabled:pointer-events-none md:min-w-[86px] ${a.tint}`}
-                style={a.primary ? { background: "var(--gradient-button)" } : undefined}
+                className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-border/60 bg-card/70 hover:bg-card hover:border-border hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:pointer-events-none text-left"
               >
-                <a.Icon size={17} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{a.label}</span>
+                <span className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${a.tint}`}>
+                  <a.Icon size={16} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[11px] font-bold uppercase tracking-wider text-foreground leading-none">{a.label}</span>
+                  <span className="block text-[10px] text-muted-foreground truncate mt-0.5">{a.sub}</span>
+                </span>
               </button>
             ))}
             <ClientToolsPanel
@@ -1200,38 +1224,52 @@ const ClienteDetalhe = () => {
               onOpenChange={setShowMoreActions}
               groups={toolGroups}
               trigger={
-                <button className="group flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-2xl ring-1 ring-border bg-card/60 text-foreground hover:bg-accent transition-all hover:-translate-y-0.5 md:min-w-[86px]">
-                  <Wrench size={17} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Mais</span>
+                <button className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-border/60 bg-card/70 hover:bg-card hover:border-border hover:-translate-y-0.5 transition-all text-left">
+                  <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-slate-500 text-white">
+                    <Wrench size={16} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[11px] font-bold uppercase tracking-wider text-foreground leading-none">Mais</span>
+                    <span className="block text-[10px] text-muted-foreground truncate mt-0.5">Outras ações</span>
+                  </span>
                 </button>
               }
             />
-            <button onClick={startEdit} className="group flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-2xl ring-1 ring-border bg-card/60 text-foreground hover:bg-accent transition-all hover:-translate-y-0.5 md:min-w-[86px] col-span-5 md:col-span-1" title="Editar dados">
-              <Edit size={17} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Editar</span>
+            <button onClick={startEdit} className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-border/60 bg-card/70 hover:bg-card hover:border-border hover:-translate-y-0.5 transition-all text-left" title="Editar dados">
+              <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-rose-500 text-white">
+                <Edit size={16} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-foreground leading-none">Editar</span>
+                <span className="block text-[10px] text-muted-foreground truncate mt-0.5">Editar cliente</span>
+              </span>
             </button>
           </div>
+        </div>
 
-          {/* KPI strip */}
-          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2.5">
-            {[
-              { label: "Capital Ativo", value: `R$ ${fmt(kpis.totalCapital)}`, sub: `${kpis.activeContracts.length} contrato(s)`, Icon: Wallet, tint: "text-foreground", ring: "ring-border/60" },
-              { label: "Recebido", value: `R$ ${fmt(kpis.totalPaid)}`, sub: `${kpis.ltvPct}% do total`, Icon: CheckCircle, tint: "text-emerald-300", ring: "ring-emerald-400/20" },
-              { label: "Lucro", value: `R$ ${fmt(kpis.totalProfit)}`, sub: `Ticket R$ ${fmt(kpis.ticketMedio)}`, Icon: TrendingUp, tint: "text-amber-300", ring: "ring-amber-400/20" },
-              { label: "Próx. Vencto.", value: kpis.nextDueInst ? formatBR(kpis.nextDueInst.due_date) : "—", sub: kpis.nextDueInst ? `R$ ${fmt(Number(kpis.nextDueInst.amount))}` : "Sem pendências", Icon: Calendar, tint: kpis.overdueInst.length > 0 ? "text-rose-400" : "text-sky-300", ring: kpis.overdueInst.length > 0 ? "ring-rose-400/20" : "ring-sky-400/20" },
-            ].map(k => (
-              <div key={k.label} className={`rounded-2xl bg-background/40 backdrop-blur-sm ring-1 ${k.ring} p-3.5 hover:-translate-y-0.5 transition-transform`}>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">{k.label}</p>
-                  <k.Icon size={13} className={k.tint} />
-                </div>
-                <p className={`text-lg md:text-xl font-bold tracking-tight ${k.tint}`} style={{ fontFamily: "'Sora', 'Space Grotesk', sans-serif" }}>{k.value}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.sub}</p>
+        {/* KPI strip com ícone circular */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Capital ativo",  value: `R$ ${fmt(kpis.totalCapital)}`, sub: `${kpis.activeContracts.length} contrato(s)`, Icon: Wallet,      chip: "bg-primary text-primary-foreground" },
+            { label: "Recebido",       value: `R$ ${fmt(kpis.totalPaid)}`,    sub: `${kpis.ltvPct}% do total`,                    Icon: CheckCircle, chip: "bg-emerald-500 text-white" },
+            { label: "Lucro",          value: `R$ ${fmt(kpis.totalProfit)}`,  sub: `Ticket médio: R$ ${fmt(kpis.ticketMedio)}`,   Icon: TrendingUp,  chip: "bg-amber-500 text-white" },
+            { label: "Próx. vencimento", value: kpis.nextDueInst ? formatBR(kpis.nextDueInst.due_date) : "—", sub: kpis.nextDueInst ? `R$ ${fmt(Number(kpis.nextDueInst.amount))}` : "Sem pendências", Icon: Calendar, chip: kpis.overdueInst.length > 0 ? "bg-rose-500 text-white" : "bg-sky-500 text-white" },
+          ].map(k => (
+            <div key={k.label} className="rounded-2xl border border-border/60 bg-card/70 backdrop-blur-sm p-4 flex items-center gap-3 hover:-translate-y-0.5 hover:border-border transition-all">
+              <span className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-md ${k.chip}`}>
+                <k.Icon size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground truncate">{k.label}</p>
+                <p className="text-lg md:text-[22px] font-extrabold text-foreground leading-tight tracking-tight tabular-nums truncate"
+                   style={{ fontFamily: "'Sora','Space Grotesk',sans-serif" }}>{k.value}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{k.sub}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </header>
+
 
 
       {/* ===== MODALS ===== */}
