@@ -499,7 +499,10 @@ const Cobrancas = () => {
         const d = parseLocalDate(inst.due_date);
         if (!d) return false;
         if (period === "today") {
-          const same = d.toDateString() === now.toDateString();
+          const same = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+          if (!same) return false;
+        } else if (period === "tomorrow") {
+          const same = d.getFullYear() === tomorrow.getFullYear() && d.getMonth() === tomorrow.getMonth() && d.getDate() === tomorrow.getDate();
           if (!same) return false;
         } else if (period === "7d") {
           if (d < now || d >= in7) return false;
