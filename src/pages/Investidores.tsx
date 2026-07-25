@@ -140,175 +140,290 @@ export default function Investidores() {
     return <InvestidorPerfil investorId={expandedId} onBack={() => { setExpandedId(null); void load(); }} />;
   }
 
+  // Enriched list: filter + sort + search
+  const enriched = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = investors.map((inv) => ({ inv, s: perInvestor(inv.id) }))
+      .filter(({ inv, s }) => {
+        if (filter === "active" && s.count === 0) return false;
+        if (filter === "overdue" && s.overdueCount === 0) return false;
+        if (filter === "paid" && !(s.count === 0 && s.allCount > 0)) return false;
+        if (!q) return true;
+        return (inv.name || "").toLowerCase().includes(q) ||
+          (inv.cpf_cnpj || "").toLowerCase().includes(q) ||
+          (inv.email || "").toLowerCase().includes(q) ||
+          (inv.whatsapp || inv.phone || "").toLowerCase().includes(q);
+      });
+    rows.sort((a, b) => {
+      if (sortBy === "name") return a.inv.name.localeCompare(b.inv.name);
+      if (sortBy === "prox") {
+        const pa = a.s.prox || "9999-99-99"; const pb = b.s.prox || "9999-99-99";
+        return pa.localeCompare(pb);
+      }
+      return b.s.total - a.s.total;
+    });
+    // overdue always first
+    rows.sort((a, b) => (b.s.overdueCount > 0 ? 1 : 0) - (a.s.overdueCount > 0 ? 1 : 0));
+    return rows;
+  }, [investors, loans, search, filter, sortBy]);
+
+  const overdueCount = enriched.filter(({ s }) => s.overdueCount > 0).length;
+
   return (
     <>
       <div className="space-y-6 p-4 md:p-6">
 
-
+        {/* Header */}
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-3 font-heading text-3xl font-bold text-foreground">
-              <Landmark className="h-8 w-8 text-primary" /> Carteira de Investidores
+            <h1 className="flex items-center gap-3 font-heading text-3xl font-bold text-foreground tracking-tight">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 ring-1 ring-primary/30">
+                <Landmark className="h-6 w-6 text-primary" />
+              </span>
+              Carteira de Investidores
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Gerencie o capital captado de investidores e envie o portal exclusivo para acompanhamento.
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Capital captado, contratos ativos e portal exclusivo de cada investidor.
             </p>
           </div>
-          <Button size="lg" onClick={() => setNewOpen(true)} className="gap-2">
+          <Button size="lg" onClick={() => setNewOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4" /> Novo investidor
           </Button>
         </header>
 
+        {/* KPIs */}
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <KpiCard icon={Wallet} label="Investidores ativos" value={String(totals.contagem)} tone="primary" />
-          <KpiCard icon={DollarSign} label="Capital captado" value={brl(totals.captado)} tone="emerald" />
-          <KpiCard icon={TrendingUp} label="Total a pagar" value={brl(totals.devido)} tone="amber" />
-          <KpiCard icon={CheckCircle2} label="Já pago" value={brl(totals.pago)} tone="violet" />
+          <KpiCard icon={Users} label="Investidores ativos" value={String(totals.contagem)} tone="primary" hint={`${investors.length} no total`} />
+          <KpiCard icon={Wallet} label="Capital captado" value={brl(totals.captado)} tone="emerald" hint="em contratos ativos" />
+          <KpiCard icon={TrendingUp} label="Total a pagar" value={brl(totals.devido)} tone="amber" hint={overdueCount ? `${overdueCount} c/ atraso` : "todos em dia"} />
+          <KpiCard icon={CheckCircle2} label="Já pago" value={brl(totals.pago)} tone="violet" hint="acumulado" />
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-          {/* Lista */}
-          <div className="glass-card rounded-2xl p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Investidores</h2>
-              <Badge variant="secondary">{investors.length}</Badge>
+        {/* Toolbar */}
+        <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/50 p-3 backdrop-blur md:flex-row md:items-center md:justify-between">
+          <div className="relative flex-1 md:max-w-sm">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome, documento, e-mail…"
+              className="pl-9"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {([
+              { k: "all", label: "Todos", n: investors.length },
+              { k: "active", label: "Com saldo", n: investors.filter(i => perInvestor(i.id).count > 0).length },
+              { k: "overdue", label: "Atrasados", n: overdueCount },
+              { k: "paid", label: "Quitados", n: investors.filter(i => { const s = perInvestor(i.id); return s.count === 0 && s.allCount > 0; }).length },
+            ] as const).map((f) => (
+              <button
+                key={f.k}
+                onClick={() => setFilter(f.k)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                  filter === f.k
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border bg-background/40 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                }`}
+              >
+                {f.label}
+                <span className={`rounded-full px-1.5 text-[10px] font-bold ${filter === f.k ? "bg-primary-foreground/20" : "bg-muted/60"}`}>{f.n}</span>
+              </button>
+            ))}
+            <div className="ml-1 flex items-center gap-1 rounded-full border border-border bg-background/40 px-2 py-1 text-xs">
+              <ArrowUpDown size={12} className="text-muted-foreground" />
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="bg-transparent text-xs font-medium outline-none">
+                <option value="total">Maior saldo</option>
+                <option value="prox">Próximo vencimento</option>
+                <option value="name">Nome (A→Z)</option>
+              </select>
             </div>
-            {loading ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
-            ) : investors.length === 0 ? (
-              <div className="py-10 text-center">
-                <Landmark className="mx-auto h-10 w-10 text-muted-foreground/40" />
-                <p className="mt-3 text-sm text-muted-foreground">Nenhum investidor cadastrado.</p>
-                <Button className="mt-4" onClick={() => setNewOpen(true)}><Plus className="mr-1 h-4 w-4" /> Cadastrar primeiro</Button>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {investors.map((inv) => {
-                  const p = perInvestor(inv.id);
-                  const active = selectedId === inv.id;
-                  return (
-                    <li key={inv.id}>
+          </div>
+        </div>
+
+        {/* Cards grid */}
+        {loading ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-56 animate-pulse rounded-2xl border border-border/50 bg-card/40" />
+            ))}
+          </div>
+        ) : investors.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 py-16 text-center">
+            <Landmark className="mx-auto h-12 w-12 text-muted-foreground/40" />
+            <p className="mt-3 text-sm text-muted-foreground">Nenhum investidor cadastrado ainda.</p>
+            <Button className="mt-4" onClick={() => setNewOpen(true)}><Plus className="mr-1 h-4 w-4" /> Cadastrar o primeiro</Button>
+          </div>
+        ) : enriched.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border/60 py-12 text-center text-sm text-muted-foreground">
+            Nenhum investidor corresponde aos filtros.
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {enriched.map(({ inv, s }) => {
+              const initials = (inv.name || "?").split(/\s+/).map(x => x[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+              const accentGrad =
+                s.state === "overdue" ? "from-destructive via-destructive/60 to-amber-500" :
+                s.state === "warn" ? "from-amber-500 via-amber-400 to-amber-300" :
+                s.state === "paid" ? "from-success via-success/70 to-primary" :
+                "from-primary via-primary/70 to-primary/30";
+              const ringCls =
+                s.state === "overdue" ? "ring-destructive/40 bg-destructive/10 text-destructive" :
+                s.state === "warn" ? "ring-amber-500/40 bg-amber-500/10 text-amber-500" :
+                s.state === "paid" ? "ring-success/40 bg-success/10 text-success" :
+                "ring-primary/30 bg-primary/10 text-primary";
+              const dot =
+                s.state === "overdue" ? "bg-destructive" :
+                s.state === "warn" ? "bg-amber-500" :
+                s.state === "paid" ? "bg-success" : "bg-primary";
+              const proxLabel = s.prox
+                ? (s.proxDays! < 0 ? `${Math.abs(s.proxDays!)}d atraso` :
+                   s.proxDays === 0 ? "vence hoje" :
+                   s.proxDays! <= 7 ? `em ${s.proxDays}d` : fmtDate(s.prox))
+                : "—";
+
+              return (
+                <article
+                  key={inv.id}
+                  className={`group relative overflow-hidden rounded-2xl border bg-card/60 backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 ${
+                    s.state === "overdue" ? "border-destructive/25" : "border-border/70"
+                  }`}
+                >
+                  <div className={`h-1 w-full bg-gradient-to-r ${accentGrad}`} />
+                  <div className="p-4 space-y-3.5">
+                    {/* Head */}
+                    <div className="flex items-start gap-3">
                       <button
                         onClick={() => setExpandedId(inv.id)}
-
-                        className={`w-full rounded-xl border p-3 text-left transition ${
-                          active ? "border-primary bg-primary/10" : "border-white/5 hover:bg-white/5"
-                        }`}
+                        className={`relative shrink-0 h-12 w-12 rounded-full ring-2 ${ringCls} flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-105 focus-ring`}
+                        title="Abrir perfil"
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-foreground">{inv.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {p.count} contrato(s) • Próx: {fmtDate(p.prox)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-mono text-sm font-bold text-foreground">{brl(p.total)}</p>
-                            <p className="text-[10px] uppercase text-muted-foreground">a pagar</p>
-                          </div>
+                        {initials || "?"}
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${dot}`} />
+                      </button>
+                      <button
+                        onClick={() => setExpandedId(inv.id)}
+                        className="min-w-0 flex-1 text-left focus-ring rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="truncate text-[15px] font-bold text-foreground tracking-tight max-w-[220px]">{inv.name}</p>
+                          {s.overdueCount > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-destructive/25 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
+                              <AlertTriangle size={10} /> {s.overdueCount} atras.
+                            </span>
+                          )}
+                          {s.state === "paid" && (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success">
+                              <CheckCircle2 size={10} /> quitado
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
+                          {inv.cpf_cnpj && <span className="tabular-nums">{inv.cpf_cnpj}</span>}
+                          {(inv.whatsapp || inv.phone) && <span>· {inv.whatsapp || inv.phone}</span>}
                         </div>
                       </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+                      <div className="hidden sm:flex shrink-0 flex-col items-end">
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Saldo</span>
+                        <span className={`text-lg font-black tabular-nums leading-none ${s.state === "overdue" ? "text-destructive" : "text-foreground"}`}>
+                          {brl(s.saldo)}
+                        </span>
+                      </div>
+                    </div>
 
-          {/* Detalhe */}
-          <div className="glass-card rounded-2xl p-5">
-            {!selected ? (
-              <div className="flex h-full min-h-[400px] flex-col items-center justify-center text-center">
-                <Landmark className="h-12 w-12 text-muted-foreground/30" />
-                <p className="mt-4 text-sm text-muted-foreground">Selecione um investidor para ver os detalhes.</p>
-              </div>
-            ) : (
-              <>
-                <header className="flex flex-wrap items-start justify-between gap-3 border-b border-white/5 pb-4">
-                  <div>
-                    <h2 className="font-heading text-2xl font-bold text-foreground">{selected.name}</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {selected.cpf_cnpj || "Sem documento"} • {selected.whatsapp || selected.phone || "Sem contato"}
-                    </p>
-                    {selected.email && <p className="text-xs text-muted-foreground">{selected.email}</p>}
+                    {/* KPIs */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
+                        <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Capital</p>
+                        <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{brl(s.capital)}</p>
+                      </div>
+                      <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
+                        <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Total</p>
+                        <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{brl(s.total)}</p>
+                        <p className="text-[9px] text-success/80 tabular-nums">pago {brl(s.paid)}</p>
+                      </div>
+                      <div className={`rounded-xl border px-2.5 py-2 ${
+                        s.state === "overdue" ? "border-destructive/30 bg-destructive/10" :
+                        s.state === "warn" ? "border-amber-500/30 bg-amber-500/10" :
+                        "border-border/60 bg-background/40"
+                      }`}>
+                        <p className={`text-[9px] uppercase tracking-wide font-semibold ${
+                          s.state === "overdue" ? "text-destructive/90" : s.state === "warn" ? "text-amber-500/90" : "text-muted-foreground"
+                        }`}>
+                          <CalendarDays size={9} className="inline mr-0.5" /> Próx.
+                        </p>
+                        <p className={`text-sm font-bold tabular-nums mt-0.5 ${
+                          s.state === "overdue" ? "text-destructive" : s.state === "warn" ? "text-amber-500" : "text-foreground"
+                        }`}>{proxLabel}</p>
+                        <p className="text-[9px] text-muted-foreground tabular-nums">{s.count} contrato{s.count === 1 ? "" : "s"}</p>
+                      </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span className="font-semibold">Progresso</span>
+                        <span className="tabular-nums font-semibold text-foreground">{s.pct}%</span>
+                      </div>
+                      <div className="relative h-2 overflow-hidden rounded-full bg-muted/40">
+                        <div
+                          className={`h-full rounded-full bg-gradient-to-r ${
+                            s.pct >= 80 ? "from-success to-success/70" : s.pct >= 40 ? "from-primary to-primary/70" : "from-amber-500 to-amber-400"
+                          }`}
+                          style={{ width: `${Math.max(2, s.pct)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                      <button
+                        onClick={() => setExpandedId(inv.id)}
+                        className="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/85 px-3 py-2 text-xs font-semibold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] focus-ring"
+                      >
+                        <ExternalLink size={13} /> Abrir perfil
+                      </button>
+                      <button
+                        onClick={() => copyPortal(inv.access_token)}
+                        title="Copiar link do portal"
+                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-border bg-accent/40 px-2 py-2 text-xs font-semibold text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
+                      >
+                        <Copy size={13} />
+                      </button>
+                      <button
+                        onClick={() => window.open(`/investidor/${inv.access_token}`, "_blank")}
+                        title="Abrir portal"
+                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-border bg-accent/40 px-2 py-2 text-xs font-semibold text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
+                      >
+                        <ExternalLink size={13} />
+                      </button>
+                    </div>
+
+                    {/* Secondary actions */}
+                    <div className="flex items-center justify-between pt-1 text-[11px]">
+                      <button
+                        onClick={() => { setSelectedId(inv.id); setNewLoanOpen(true); }}
+                        className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                      >
+                        <Plus size={12} /> Novo empréstimo
+                      </button>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <button onClick={() => regenerateToken(inv.id)} className="inline-flex items-center gap-1 hover:text-foreground" title="Gerar novo link">
+                          <RefreshCw size={11} />
+                        </button>
+                        <button onClick={() => deleteInvestor(inv.id)} className="inline-flex items-center gap-1 hover:text-destructive" title="Excluir">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => setExpandedId(selected.id)} className="gap-1.5">
-                      <ExternalLink className="h-3.5 w-3.5" /> Abrir perfil
-                    </Button>
-                    <Button variant="secondary" size="sm" onClick={() => copyPortal(selected.access_token)} className="gap-1.5">
-                      <Copy className="h-3.5 w-3.5" /> Copiar link
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => window.open(`/investidor/${selected.access_token}`, "_blank")} className="gap-1.5">
-                      <ExternalLink className="h-3.5 w-3.5" /> Abrir portal
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => regenerateToken(selected.id)} className="gap-1.5">
-                      <RefreshCw className="h-3.5 w-3.5" /> Novo link
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => deleteInvestor(selected.id)} className="gap-1.5">
-                      <Trash2 className="h-3.5 w-3.5" /> Excluir
-                    </Button>
-                  </div>
-                </header>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Empréstimos captados</h3>
-                  <Button size="sm" onClick={() => setNewLoanOpen(true)} className="gap-1.5">
-                    <Plus className="h-4 w-4" /> Novo empréstimo
-                  </Button>
-                </div>
-
-                {selectedLoans.length === 0 ? (
-                  <p className="mt-6 rounded-xl border border-dashed border-white/10 p-8 text-center text-sm text-muted-foreground">
-                    Nenhum empréstimo registrado. Clique em "Novo empréstimo" para começar.
-                  </p>
-                ) : (
-                  <ul className="mt-3 space-y-3">
-                    {selectedLoans.map((l) => {
-                      const saldo = Number(l.total_due) - Number(l.paid_amount);
-                      const pct = Math.min(100, (Number(l.paid_amount) / Number(l.total_due)) * 100);
-                      const overdue = l.status !== "paid" && new Date(l.due_date) < new Date();
-                      return (
-                        <li key={l.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-mono text-lg font-bold text-foreground">{brl(Number(l.total_due))}</p>
-                                {l.status === "paid" ? (
-                                  <Badge className="bg-emerald-500/20 text-emerald-300">Pago</Badge>
-                                ) : overdue ? (
-                                  <Badge className="bg-red-500/20 text-red-300">Atrasado</Badge>
-                                ) : (
-                                  <Badge className="bg-primary/20 text-primary">Ativo</Badge>
-                                )}
-                              </div>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Capital {brl(Number(l.principal))} • Juros {l.interest_rate}% • Venc. {fmtDate(l.due_date)}
-                              </p>
-                            </div>
-                            {l.status !== "paid" && (
-                              <Button size="sm" variant="secondary" onClick={() => setPayOpen(l.id)} className="gap-1.5">
-                                <DollarSign className="h-4 w-4" /> Registrar pagamento
-                              </Button>
-                            )}
-                          </div>
-                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/5">
-                            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                          </div>
-                          <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
-                            <span>Pago: {brl(Number(l.paid_amount))}</span>
-                            <span>Saldo: {brl(saldo)}</span>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </>
-            )}
+                </article>
+              );
+            })}
           </div>
-        </section>
+        )}
       </div>
+
 
       <NewInvestorDialog open={newOpen} onOpenChange={setNewOpen} onCreated={(id) => { setSelectedId(id); void load(); }} />
       {selected && (
