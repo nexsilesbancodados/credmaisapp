@@ -141,7 +141,7 @@ const MobileBottomNav = () => {
             className="fixed inset-0 bg-background/70 backdrop-blur-sm z-40 animate-fade-in"
             onClick={() => setShowMore(false)}
           />
-          <div className="fixed bottom-[4.5rem] left-0 right-0 z-50 px-3 pb-2 animate-slide-up">
+          <div className="fixed left-0 right-0 z-50 px-3 pb-2 animate-slide-up" style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}>
             <div className="glass-strong rounded-2xl border border-border/40 p-4 max-h-[70vh] overflow-y-auto shadow-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-foreground">Menu Completo</h3>
