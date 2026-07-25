@@ -41,16 +41,17 @@ const humanDueLabel = (items: any[]): { text: string; tone: "danger" | "warn" | 
   const unpaid = items.filter((i: any) => i.status !== "paid");
   if (!unpaid.length) return { text: "Tudo em dia", tone: "ok" };
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const withDates = unpaid.map((i: any) => ({ i, d: parseLocalDate(i.due_date) })).filter((x: any) => x.d);
+  const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  const withDates = unpaid.map((i: any) => ({ i, d: parseLocalDate(i.due_date) })).filter((x: any) => x.d).map((x: any) => ({ i: x.i, d: startOfDay(x.d!) }));
   if (!withDates.length) return { text: `${unpaid.length} pendente(s)`, tone: "muted" };
-  const overdue = withDates.filter((x: any) => x.d!.getTime() < today.getTime());
+  const overdue = withDates.filter((x: any) => x.d.getTime() < today.getTime());
   if (overdue.length) {
-    const maxDays = Math.max(...overdue.map((x: any) => Math.floor((today.getTime() - x.d!.getTime()) / 86400000)));
+    const maxDays = Math.max(...overdue.map((x: any) => Math.round((today.getTime() - x.d.getTime()) / 86400000)));
     return { text: overdue.length === 1 ? `há ${maxDays} dia${maxDays === 1 ? "" : "s"} em atraso` : `${overdue.length} parcelas em atraso · até ${maxDays}d`, tone: "danger" };
   }
-  withDates.sort((a: any, b: any) => a.d!.getTime() - b.d!.getTime());
+  withDates.sort((a: any, b: any) => a.d.getTime() - b.d.getTime());
   const next = withDates[0];
-  const diffDays = Math.round((next.d!.getTime() - today.getTime()) / 86400000);
+  const diffDays = Math.round((next.d.getTime() - today.getTime()) / 86400000);
   if (diffDays === 0) return { text: "vence hoje", tone: "warn" };
   if (diffDays === 1) return { text: "vence amanhã", tone: "warn" };
   if (diffDays <= 7) return { text: `vence em ${diffDays} dias`, tone: "warn" };
