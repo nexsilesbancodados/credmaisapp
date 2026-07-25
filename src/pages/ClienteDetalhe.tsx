@@ -343,11 +343,22 @@ const ClienteDetalhe = () => {
   // esta tela usava quinzenal = 14 dias e diária = dias corridos; agora fica
   // quinzenal = 15 dias e diária = dias úteis (mon-fri), igual à criação padrão.
   const generateDueDates = (start: string, freq: string, count: number, periodsAhead?: number) => {
+    // freq pode vir como "daily_mon-fri" | "daily_mon-sat" | "daily_mon-sun"
+    let baseFreq: Frequency = "monthly" as Frequency;
+    let dailyMode: "mon-fri" | "mon-sat" | "mon-sun" = "mon-fri";
+    if (freq?.startsWith("daily")) {
+      baseFreq = "daily" as Frequency;
+      const suffix = freq.split("_")[1];
+      if (suffix === "mon-sat" || suffix === "mon-sun" || suffix === "mon-fri") dailyMode = suffix;
+    } else {
+      baseFreq = (freq || "monthly") as Frequency;
+    }
     return generateInstallmentSchedule({
       startDate: start,
-      frequency: freq as Frequency,
+      frequency: baseFreq,
       count,
       periodsAhead,
+      dailyMode,
     });
   };
 
