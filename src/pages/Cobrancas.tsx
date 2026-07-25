@@ -535,13 +535,13 @@ const Cobrancas = () => {
       if (inst.status !== "paid") contractHasOpen.set(inst.contract_id, true);
       else if (!contractHasOpen.has(inst.contract_id)) contractHasOpen.set(inst.contract_id, false);
     }
-    const m = new Map<string, { loaned: number; totalInstallments: number; grossExpected: number; overdueCount: number; overdueFees: number; overdueAmount: number }>();
+    const m = new Map<string, { loaned: number; totalInstallments: number; grossExpected: number; paidAmount: number; paidCount: number; overdueCount: number; overdueFees: number; overdueAmount: number }>();
     const seenContracts = new Map<string, Set<string>>();
     for (const inst of installments as any[]) {
       const cid = inst.client_id;
       // Skip installments of fully-paid / finished contracts
       if (inst.contract_id && !contractHasOpen.get(inst.contract_id)) continue;
-      if (!m.has(cid)) { m.set(cid, { loaned: 0, totalInstallments: 0, grossExpected: 0, overdueCount: 0, overdueFees: 0, overdueAmount: 0 }); seenContracts.set(cid, new Set()); }
+      if (!m.has(cid)) { m.set(cid, { loaned: 0, totalInstallments: 0, grossExpected: 0, paidAmount: 0, paidCount: 0, overdueCount: 0, overdueFees: 0, overdueAmount: 0 }); seenContracts.set(cid, new Set()); }
 
       const agg = m.get(cid)!;
       const set = seenContracts.get(cid)!;
@@ -552,6 +552,10 @@ const Cobrancas = () => {
         agg.totalInstallments += Number(c.num_installments || 0);
       }
       agg.grossExpected += Number(inst.amount || 0);
+      if (inst.status === "paid") {
+        agg.paidCount += 1;
+        agg.paidAmount += Number(inst.paid_amount ?? inst.amount ?? 0);
+      }
       if (inst.status === "overdue") {
         agg.overdueCount += 1;
         agg.overdueAmount += Number(inst.amount || 0);
@@ -1230,7 +1234,9 @@ const Cobrancas = () => {
 
                     {/* KPIs - richer with icons */}
                     {agg && (() => {
-                      const profit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
+                      const expectedProfit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
+                      const realizedProfit = Math.max(0, (agg.paidAmount || 0) - (agg.loaned || 0));
+                      const paidPctValue = agg.grossExpected > 0 ? Math.round(((agg.paidAmount || 0) / agg.grossExpected) * 100) : 0;
                       return (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div className="rounded-xl border border-border/60 bg-background/50 backdrop-blur px-3 py-2.5 hover:border-primary/30 transition-colors">
@@ -1244,12 +1250,14 @@ const Cobrancas = () => {
                               <span className="text-success">{paidCount}</span>
                               <span className="text-muted-foreground">/{totalActiveInst}</span>
                             </p>
-                            <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">{progressPct}% concluído</p>
+                            <p className="text-[9px] text-success/80 mt-0.5 tabular-nums font-semibold">recebido R$ {fmt(agg.paidAmount)}</p>
+                            <p className="text-[9px] text-muted-foreground tabular-nums">{paidPctValue}% do previsto</p>
                           </div>
                           <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/10 to-success/[0.02] px-3 py-2.5">
                             <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold inline-flex items-center gap-1"><TrendingUp size={10} /> Lucro</p>
-                            <p className="text-sm font-bold text-success tabular-nums mt-1">R$ {fmt(profit)}</p>
-                            {agg.loaned > 0 && <p className="text-[9px] text-success/70 mt-0.5 tabular-nums">{Math.round((profit / agg.loaned) * 100)}% ROI</p>}
+                            <p className="text-sm font-bold text-success tabular-nums mt-1">R$ {fmt(realizedProfit)}</p>
+                            <p className="text-[9px] text-success/70 mt-0.5 tabular-nums">realizado{agg.loaned > 0 ? ` · ${Math.round((realizedProfit / agg.loaned) * 100)}%` : ""}</p>
+                            <p className="text-[9px] text-muted-foreground tabular-nums">previsto R$ {fmt(expectedProfit)}</p>
                           </div>
                           {agg.overdueCount > 0 ? (
                             <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/10 to-destructive/[0.02] px-3 py-2.5">
