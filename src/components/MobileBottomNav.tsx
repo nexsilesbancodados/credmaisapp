@@ -229,8 +229,11 @@ const MobileBottomNav = () => {
       </div>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/40 safe-area-bottom">
-        <div className="flex items-center justify-around px-2 py-1">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/40"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-stretch justify-around px-1.5 pt-1 pb-1">
           {mainTabs.map((tab) => {
             const active =
               tab.path === "__more__"
@@ -249,26 +252,26 @@ const MobileBottomNav = () => {
                   }
                 }}
                 className={`
-                  relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl
-                  transition-all duration-200 min-w-[3.5rem] active:scale-95
+                  relative flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl
+                  transition-all duration-200 active:scale-95
                   ${active ? "text-primary" : mobileIconColor[tab.path] || "text-muted-foreground"}
                 `}
               >
                 {/* Indicador ativo */}
                 {active && (
-                  <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.5)] animate-scale-in" />
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.5)] animate-scale-in" />
                 )}
 
                 <div
                   className={`
                     p-1.5 rounded-xl transition-all duration-200
-                    ${active ? "bg-primary/15" : ""}
+                    ${active ? "bg-primary/15 scale-105" : ""}
                   `}
                 >
                   <tab.icon size={22} strokeWidth={active ? 2.5 : 2} />
                 </div>
                 <span
-                  className={`text-[10px] font-semibold ${
+                  className={`text-[10px] font-semibold leading-none ${
                     active ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
@@ -279,6 +282,7 @@ const MobileBottomNav = () => {
           })}
         </div>
       </nav>
+
     </>
   );
 };
