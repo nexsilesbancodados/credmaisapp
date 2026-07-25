@@ -1396,271 +1396,7 @@ const ClienteDetalhe = () => {
 
       {/* ===== CONTENT ===== */}
 
-      <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><User size={14} /></div>
-            <h3 className="text-sm font-bold text-foreground">Contato & Endereço</h3>
-          </div>
-          <button onClick={startEditAddress} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/60 text-muted-foreground text-[11px] font-semibold hover:bg-accent hover:text-foreground transition-all">
-            <MapPin size={12} /> Endereço
-          </button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {[
-            { Icon: Phone, label: "Telefone", value: client.phone, tint: "text-sky-400 bg-sky-500/10 ring-sky-400/20", onClick: () => { if (client.phone) window.open(`tel:${client.phone.replace(/\D/g, "")}`, "_self"); } },
-            { Icon: MessageSquare, label: "WhatsApp", value: client.whatsapp || client.phone, tint: "text-emerald-400 bg-emerald-500/10 ring-emerald-400/20", onClick: () => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); } },
-            { Icon: Mail, label: "E-mail", value: client.email, tint: "text-amber-400 bg-amber-500/10 ring-amber-400/20", onClick: () => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); } },
-            { Icon: MapPin, label: "Cidade", value: address?.city ? `${address.city}/${address.state}` : null, tint: "text-violet-400 bg-violet-500/10 ring-violet-400/20", onClick: startEditAddress },
-          ].map(item => (
-            <button
-              key={item.label}
-              onClick={item.value ? item.onClick : startEdit}
-              className="flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-background/30 hover:bg-accent/60 hover:border-border transition-all text-left group"
-            >
-              <div className={`w-10 h-10 rounded-xl ring-1 flex items-center justify-center shrink-0 ${item.tint}`}>
-                <item.Icon size={16} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] font-semibold">{item.label}</p>
-                <p className="text-sm text-foreground font-semibold truncate">{item.value || <span className="text-muted-foreground/60 italic font-normal">Adicionar</span>}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-        {address?.street && (
-          <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40 flex items-center gap-1.5">
-            <MapPin size={12} className="text-primary shrink-0" />
-            <span className="truncate">{address.street}{address.number ? `, ${address.number}` : ""}{address.neighborhood ? ` — ${address.neighborhood}` : ""} · {address.city}/{address.state}</span>
-          </p>
-        )}
-      </div>
-
-      {/* Quick actions bar */}
-      {(kpis.pendingInst.length > 0 || kpis.overdueInst.length > 0) && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {kpis.pendingInst.length > 0 && (
-            <button onClick={payAllPending} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-300 border border-emerald-400/30 text-xs font-bold hover:bg-emerald-500/20 hover:-translate-y-0.5 transition-all">
-              <CheckCircle size={14} /> Quitar Todas
-            </button>
-          )}
-          {kpis.overdueInst.length > 0 && (
-            <button onClick={sendAllOverdue} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 text-rose-300 border border-rose-400/30 text-xs font-bold hover:bg-rose-500/20 hover:-translate-y-0.5 transition-all">
-              <Send size={14} /> Cobrar Atrasadas ({kpis.overdueInst.length})
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Section: Resumo — Editorial Magazine Layout */}
-      <section id="sec-resumo" className="scroll-mt-24">{(() => {
-
-        const score = client.credit_score || 0;
-        const scoreMax = 1000;
-        const scorePct = Math.min(100, (score / scoreMax) * 100);
-        const scoreColor = score >= 750 ? "#10b981" : score >= 600 ? "#f59e0b" : score >= 400 ? "#f97316" : "#ef4444";
-        const r = 54, C = 2 * Math.PI * r;
-        // Timeline mini (últimos 6 eventos)
-        const timelineEvents: any[] = [];
-        contracts.forEach((c: any) => timelineEvents.push({ id: `c-${c.id}`, date: c.created_at, title: `Contrato · R$ ${fmt(Number(c.capital))}`, icon: FileText, tone: "text-primary bg-primary/10" }));
-        installments.filter((i: any) => i.status === "paid" && i.paid_at).forEach((i: any) => timelineEvents.push({ id: `i-${i.id}`, date: i.paid_at, title: `Parcela #${i.installment_number} paga · R$ ${fmt(Number(i.paid_amount || i.amount))}`, icon: CheckCircle, tone: "text-emerald-400 bg-emerald-500/10" }));
-        profits.forEach((p: any) => timelineEvents.push({ id: `p-${p.id}`, date: p.date, title: `Lucro · R$ ${fmt(Number(p.amount))}`, icon: TrendingUp, tone: "text-amber-300 bg-amber-500/10" }));
-        const sortedEvents = timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
-
-        return (
-          <div className="space-y-6">
-            {/* ===== ROW 1 — Contato & Endereço (full width) ===== */}
-            <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contato & Endereço</h2>
-                <button onClick={startEditAddress} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Editar endereço</button>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                  { Icon: Phone, label: "Telefone", value: client.phone, tint: "text-sky-400 bg-sky-500/10 ring-sky-400/20" },
-                  { Icon: Mail, label: "E-mail", value: client.email, tint: "text-amber-400 bg-amber-500/10 ring-amber-400/20" },
-                  { Icon: MessageSquare, label: "WhatsApp", value: client.whatsapp, tint: "text-emerald-400 bg-emerald-500/10 ring-emerald-400/20" },
-                  { Icon: MapPin, label: "Cidade", value: address?.city ? `${address.city}/${address.state}` : null, tint: "text-violet-400 bg-violet-500/10 ring-violet-400/20" },
-                ].map(item => (
-                  <div key={item.label} className="flex items-start gap-3">
-                    <div className={`w-9 h-9 rounded-xl ring-1 flex items-center justify-center shrink-0 ${item.tint}`}>
-                      <item.Icon size={15} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] font-semibold">{item.label}</p>
-                      <p className="text-sm text-foreground font-semibold truncate">{item.value || "—"}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {address?.street && (
-                <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40 flex items-center gap-1.5">
-                  <MapPin size={12} className="text-primary" />
-                  {address.street}{address.number ? `, ${address.number}` : ""} · {address.neighborhood} · {address.city}/{address.state}
-                </p>
-              )}
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/40 flex-wrap">
-                <button onClick={() => { const p = client.phone; if (p) window.open(`tel:${p.replace(/\D/g, "")}`, "_self"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sky-300 border border-sky-400/20 text-[11px] font-semibold hover:bg-sky-500/20 transition-all"><Phone size={12} /> Ligar</button>
-                <button onClick={() => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 text-[11px] font-semibold hover:bg-emerald-500/20 transition-all"><MessageSquare size={12} /> WhatsApp</button>
-                <button onClick={sendPortalLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold hover:bg-primary/20 transition-all"><Send size={12} /> Enviar Portal</button>
-                <button onClick={() => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-400/20 text-[11px] font-semibold hover:bg-amber-500/20 transition-all"><Mail size={12} /> E-mail</button>
-              </div>
-            </section>
-
-            {/* ===== ROW 2 — Score+Estatísticas consolidados (full width, denso) ===== */}
-            <section className="rounded-2xl border border-border/60 bg-gradient-to-br from-card/60 to-background p-5">
-              <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-center">
-                {/* Score gauge */}
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-                      <circle cx="70" cy="70" r={r} stroke="hsl(var(--border))" strokeWidth="10" fill="none" />
-                      <circle cx="70" cy="70" r={r} stroke={scoreColor} strokeWidth="10" fill="none"
-                        strokeDasharray={C} strokeDashoffset={C - (C * scorePct) / 100} strokeLinecap="round"
-                        style={{ transition: "stroke-dashoffset 0.8s ease" }} />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <p className="text-4xl font-bold" style={{ fontFamily: "'Sora', sans-serif", color: scoreColor }}>{score}</p>
-                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground">de {scoreMax}</p>
-                    </div>
-                  </div>
-                  <span className={`mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${riskTone}`}>
-                    <ShieldCheck size={11} /> {riskLabel}
-                  </span>
-                </div>
-                {/* Estatísticas grid */}
-                <div>
-                  <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground mb-3">Estatísticas</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {[
-                      { label: "Contratos totais", value: String(contracts.length), Icon: FileText },
-                      { label: "Parcelas pagas", value: `${kpis.paidInst.length}/${kpis.paidInst.length + kpis.overdueInst.length + kpis.pendingInst.length}`, Icon: CheckCircle },
-                      { label: "Taxa de atraso", value: `${kpis.latePayRate}%`, Icon: AlertTriangle, tone: kpis.latePayRate > 30 ? "text-rose-400" : kpis.latePayRate > 10 ? "text-amber-300" : "text-emerald-400" },
-                      { label: "Ticket médio", value: `R$ ${fmt(kpis.ticketMedio)}`, Icon: DollarSign },
-                      { label: "Cliente há", value: `${daysAsClient} dia(s)`, Icon: Calendar },
-                      { label: "Em atraso", value: String(kpis.overdueInst.length), Icon: AlertTriangle, tone: kpis.overdueInst.length ? "text-rose-400" : "text-foreground" },
-                    ].map(s => (
-                      <div key={s.label} className="rounded-xl border border-border/60 bg-background/40 p-3">
-                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                          <s.Icon size={11} />
-                          <span className="text-[9px] uppercase tracking-[0.14em] font-semibold truncate">{s.label}</span>
-                        </div>
-                        <p className={`text-base font-bold ${s.tone || "text-foreground"}`}>{s.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ===== ROW 3 — Contratos (destaque) + Timeline (sidebar) ===== */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-8 space-y-6">
-                {/* Contratos em destaque */}
-                <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contratos</h2>
-                    {contracts.length > 0 && (
-                      <button onClick={() => { setActiveTab("contratos"); document.getElementById("sec-contratos")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
-                    )}
-                  </div>
-                  {contracts.length === 0 ? (
-                    <EmptyState compact icon={FileText} title="Nenhum contrato" description="Crie um novo empréstimo para este cliente." />
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {contracts.slice(0, 4).map((c: any) => {
-                        const cInst = installments.filter((i: any) => i.contract_id === c.id);
-                        const cPaid = cInst.filter((i: any) => i.status === "paid").length;
-                        const cOverdue = cInst.filter((i: any) => i.status === "overdue").length;
-                        const pct = Math.round((cPaid / (c.num_installments || 1)) * 100);
-                        return (
-                          <button key={c.id} onClick={() => { setActiveTab("parcelas"); document.getElementById("sec-parcelas")?.scrollIntoView({ behavior: "smooth" }); }} className="text-left rounded-xl border border-border/60 bg-background/40 p-4 hover:border-primary/40 transition-colors">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-bold text-foreground">R$ {fmt(Number(c.capital))} · {c.num_installments}x</p>
-                              <Badge variant="outline" className={c.status === "active" ? "bg-success/10 text-success border-success/20 text-[9px]" : "bg-muted text-muted-foreground text-[9px]"}>{c.status === "active" ? "Ativo" : c.status}</Badge>
-                            </div>
-                            <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} /></div>
-                            <div className="flex items-center justify-between mt-2">
-                              <p className="text-[10px] text-muted-foreground">{cPaid}/{c.num_installments} · {pct}%</p>
-                              {cOverdue > 0 && <p className="text-[10px] font-bold text-rose-400">{cOverdue} atrasada(s)</p>}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-
-                {/* Documentos & Anexos */}
-                <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Documentos & Anexos</h2>
-                    <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
-                      <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar"}
-                      <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
-                    </label>
-                  </div>
-                  {clientDocs.length === 0 ? (
-                    <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {clientDocs.map((d: any) => {
-                        const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
-                        return (
-                          <div key={d.name} className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background/40 hover:border-primary/40 transition-colors">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"}`}>
-                              {isImg ? <ImageIcon size={14} /> : <FileIcon size={14} />}
-                            </div>
-                            <button onClick={() => signedUrl(d.name)} className="flex-1 min-w-0 text-left">
-                              <p className="text-[11px] text-foreground font-semibold truncate">{d.name.replace(/^\d+-/, "")}</p>
-                              <p className="text-[9px] text-muted-foreground">{d.metadata?.size ? `${Math.round(d.metadata.size / 1024)} KB` : ""}</p>
-                            </button>
-                            <button onClick={() => deleteDoc(d.name)} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-destructive transition-opacity" title="Remover">
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-              </div>
-
-              {/* Timeline sidebar */}
-              <div className="lg:col-span-4">
-                <section className="rounded-2xl border border-border/60 bg-card/40 p-5 lg:sticky lg:top-24">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Timeline</h2>
-                    <button onClick={() => { setActiveTab("historico"); document.getElementById("sec-historico")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver tudo</button>
-                  </div>
-                  {sortedEvents.length === 0 ? (
-                    <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações aparecerão aqui." />
-                  ) : (
-                    <div className="relative pl-5 space-y-3">
-                      <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
-                      {sortedEvents.slice(0, 8).map(ev => (
-                        <div key={ev.id} className="relative flex items-center gap-3">
-                          <div className={`absolute -left-[13px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ev.tone.split(" ")[1]} border-2 border-background`} />
-                          <div className={`w-8 h-8 rounded-lg ${ev.tone} flex items-center justify-center shrink-0`}>
-                            <ev.icon size={13} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-foreground truncate font-medium">{ev.title}</p>
-                            <p className="text-[10px] text-muted-foreground">{formatBR(ev.date)}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </section>
-              </div>
-            </div>
-          </div>
-        );
-      })()}</section>
-
-
-      {/* Section jump nav (sticky) — movida para baixo do Resumo */}
+      {/* Barra sticky de navegação por seções — logo abaixo do header */}
       <div className="sticky top-2 z-20 flex gap-1 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
         {tabs.map(tab => (
           <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
@@ -1669,6 +1405,211 @@ const ClienteDetalhe = () => {
           </button>
         ))}
       </div>
+
+      {/* Alertas críticos (atraso / pendências urgentes) — antes do Resumo */}
+      {(kpis.overdueInst.length > 0 || kpis.pendingInst.length > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {kpis.overdueInst.length > 0 && (
+            <button onClick={sendAllOverdue} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-400/30 text-xs font-bold hover:bg-rose-500/20 hover:-translate-y-0.5 transition-all">
+              <AlertTriangle size={14} /> {kpis.overdueInst.length} parcela(s) em atraso · Cobrar todas
+            </button>
+          )}
+          {kpis.pendingInst.length > 0 && (
+            <button onClick={payAllPending} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-400/30 text-xs font-bold hover:bg-emerald-500/20 hover:-translate-y-0.5 transition-all">
+              <CheckCircle size={14} /> Quitar todas as pendentes
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Section: Resumo — Layout limpo e organizado */}
+      <section id="sec-resumo" className="scroll-mt-24">{(() => {
+        // Timeline mini (últimos eventos)
+        const timelineEvents: any[] = [];
+        contracts.forEach((c: any) => timelineEvents.push({ id: `c-${c.id}`, date: c.created_at, title: `Contrato · R$ ${fmt(Number(c.capital))}`, icon: FileText, tone: "text-primary bg-primary/10" }));
+        installments.filter((i: any) => i.status === "paid" && i.paid_at).forEach((i: any) => timelineEvents.push({ id: `i-${i.id}`, date: i.paid_at, title: `Parcela #${i.installment_number} paga · R$ ${fmt(Number(i.paid_amount || i.amount))}`, icon: CheckCircle, tone: "text-emerald-400 bg-emerald-500/10" }));
+        profits.forEach((p: any) => timelineEvents.push({ id: `p-${p.id}`, date: p.date, title: `Lucro · R$ ${fmt(Number(p.amount))}`, icon: TrendingUp, tone: "text-amber-300 bg-amber-500/10" }));
+        const sortedEvents = timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Coluna principal (8/12) */}
+            <div className="lg:col-span-8 space-y-5">
+              {/* Contato & Endereço */}
+              <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><User size={14} /></div>
+                    <h3 className="text-sm font-bold text-foreground">Contato & Endereço</h3>
+                  </div>
+                  <button onClick={startEditAddress} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/60 text-muted-foreground text-[11px] font-semibold hover:bg-accent hover:text-foreground transition-all">
+                    <MapPin size={12} /> Editar endereço
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { Icon: Phone, label: "Telefone", value: client.phone, tint: "text-sky-400 bg-sky-500/10 ring-sky-400/20", onClick: () => { if (client.phone) window.open(`tel:${client.phone.replace(/\D/g, "")}`, "_self"); } },
+                    { Icon: MessageSquare, label: "WhatsApp", value: client.whatsapp || client.phone, tint: "text-emerald-400 bg-emerald-500/10 ring-emerald-400/20", onClick: () => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); } },
+                    { Icon: Mail, label: "E-mail", value: client.email, tint: "text-amber-400 bg-amber-500/10 ring-amber-400/20", onClick: () => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); } },
+                    { Icon: MapPin, label: "Cidade", value: address?.city ? `${address.city}/${address.state}` : null, tint: "text-violet-400 bg-violet-500/10 ring-violet-400/20", onClick: startEditAddress },
+                  ].map(item => (
+                    <button key={item.label} onClick={item.value ? item.onClick : startEdit}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-background/30 hover:bg-accent/60 hover:border-border transition-all text-left group">
+                      <div className={`w-10 h-10 rounded-xl ring-1 flex items-center justify-center shrink-0 ${item.tint}`}>
+                        <item.Icon size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] font-semibold">{item.label}</p>
+                        <p className="text-sm text-foreground font-semibold truncate">{item.value || <span className="text-muted-foreground/60 italic font-normal">Adicionar</span>}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {address?.street && (
+                  <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40 flex items-center gap-1.5">
+                    <MapPin size={12} className="text-primary shrink-0" />
+                    <span className="truncate">{address.street}{address.number ? `, ${address.number}` : ""}{address.neighborhood ? ` — ${address.neighborhood}` : ""} · {address.city}/{address.state}</span>
+                  </p>
+                )}
+              </section>
+
+              {/* Estatísticas (sem score gauge) */}
+              <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Activity size={14} /></div>
+                  <h3 className="text-sm font-bold text-foreground">Estatísticas do cliente</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { label: "Contratos totais", value: String(contracts.length), Icon: FileText },
+                    { label: "Parcelas pagas", value: `${kpis.paidInst.length}/${kpis.paidInst.length + kpis.overdueInst.length + kpis.pendingInst.length}`, Icon: CheckCircle },
+                    { label: "Taxa de atraso", value: `${kpis.latePayRate}%`, Icon: AlertTriangle, tone: kpis.latePayRate > 30 ? "text-rose-400" : kpis.latePayRate > 10 ? "text-amber-300" : "text-emerald-400" },
+                    { label: "Ticket médio", value: `R$ ${fmt(kpis.ticketMedio)}`, Icon: DollarSign },
+                    { label: "Cliente há", value: `${daysAsClient} dia(s)`, Icon: Calendar },
+                    { label: "Em atraso", value: String(kpis.overdueInst.length), Icon: AlertTriangle, tone: kpis.overdueInst.length ? "text-rose-400" : "text-foreground" },
+                  ].map(s => (
+                    <div key={s.label} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                        <s.Icon size={11} />
+                        <span className="text-[9px] uppercase tracking-[0.14em] font-semibold truncate">{s.label}</span>
+                      </div>
+                      <p className={`text-base font-bold tabular-nums ${s.tone || "text-foreground"}`}>{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Contratos em destaque */}
+              <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileText size={14} /></div>
+                    <h3 className="text-sm font-bold text-foreground">Contratos</h3>
+                  </div>
+                  {contracts.length > 0 && (
+                    <button onClick={() => document.getElementById("sec-contratos")?.scrollIntoView({ behavior: "smooth" })} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos ({contracts.length})</button>
+                  )}
+                </div>
+                {contracts.length === 0 ? (
+                  <EmptyState compact icon={FileText} title="Nenhum contrato" description="Crie um novo empréstimo para este cliente." />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {contracts.slice(0, 4).map((c: any) => {
+                      const cInst = installments.filter((i: any) => i.contract_id === c.id);
+                      const cPaid = cInst.filter((i: any) => i.status === "paid").length;
+                      const cOverdue = cInst.filter((i: any) => i.status === "overdue").length;
+                      const pct = Math.round((cPaid / (c.num_installments || 1)) * 100);
+                      return (
+                        <button key={c.id} onClick={() => document.getElementById("sec-parcelas")?.scrollIntoView({ behavior: "smooth" })} className="text-left rounded-xl border border-border/60 bg-background/40 p-4 hover:border-primary/40 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-sm font-bold text-foreground tabular-nums">R$ {fmt(Number(c.capital))} · {c.num_installments}x</p>
+                            <Badge variant="outline" className={c.status === "active" ? "bg-success/10 text-success border-success/20 text-[9px]" : "bg-muted text-muted-foreground text-[9px]"}>{c.status === "active" ? "Ativo" : c.status}</Badge>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} /></div>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-[10px] text-muted-foreground">{cPaid}/{c.num_installments} · {pct}%</p>
+                            {cOverdue > 0 && <p className="text-[10px] font-bold text-rose-400">{cOverdue} atrasada(s)</p>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+              {/* Documentos & Anexos */}
+              <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
+                    <h3 className="text-sm font-bold text-foreground">Documentos & Anexos</h3>
+                  </div>
+                  <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                    <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar"}
+                    <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
+                  </label>
+                </div>
+                {clientDocs.length === 0 ? (
+                  <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {clientDocs.map((d: any) => {
+                      const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
+                      return (
+                        <div key={d.name} className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background/40 hover:border-primary/40 transition-colors">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"}`}>
+                            {isImg ? <ImageIcon size={14} /> : <FileIcon size={14} />}
+                          </div>
+                          <button onClick={() => signedUrl(d.name)} className="flex-1 min-w-0 text-left">
+                            <p className="text-[11px] text-foreground font-semibold truncate">{d.name.replace(/^\d+-/, "")}</p>
+                            <p className="text-[9px] text-muted-foreground">{d.metadata?.size ? `${Math.round(d.metadata.size / 1024)} KB` : ""}</p>
+                          </button>
+                          <button onClick={() => deleteDoc(d.name)} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-destructive transition-opacity" title="Remover">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            {/* Sidebar (4/12) — Timeline */}
+            <aside className="lg:col-span-4">
+              <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5 lg:sticky lg:top-24">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Activity size={14} /></div>
+                    <h3 className="text-sm font-bold text-foreground">Atividade recente</h3>
+                  </div>
+                  <button onClick={() => document.getElementById("sec-historico")?.scrollIntoView({ behavior: "smooth" })} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver tudo</button>
+                </div>
+                {sortedEvents.length === 0 ? (
+                  <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações aparecerão aqui." />
+                ) : (
+                  <div className="relative pl-5 space-y-3">
+                    <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
+                    {sortedEvents.map(ev => (
+                      <div key={ev.id} className="relative flex items-center gap-3">
+                        <div className={`absolute -left-[13px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ev.tone.split(" ")[1]} border-2 border-background`} />
+                        <div className={`w-8 h-8 rounded-lg ${ev.tone} flex items-center justify-center shrink-0`}>
+                          <ev.icon size={13} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-foreground truncate font-medium">{ev.title}</p>
+                          <p className="text-[10px] text-muted-foreground">{formatBR(ev.date)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </aside>
+          </div>
+        );
+      })()}</section>
+
 
       {/* Section: Contratos */}
       <section id="sec-contratos" className="scroll-mt-24">{(
