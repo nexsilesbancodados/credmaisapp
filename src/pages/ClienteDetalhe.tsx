@@ -1500,25 +1500,24 @@ const ClienteDetalhe = () => {
       </section>
 
 
-      {/* Barra sticky de navegação por seções + gatilho de Documentos (modal) */}
-
-      <div className="sticky top-2 z-20 flex items-center justify-end gap-2 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
+      {/* Ações rápidas: Documentos e Histórico */}
+      <div className="flex items-center justify-end gap-2">
         <button
           onClick={() => setDocsOpen(true)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-card/60 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:border-border transition-all"
         >
           <FileIcon size={14} />
-          <span className="hidden sm:inline">Documentos</span>
+          <span>Documentos</span>
           {clientDocs.length > 0 && (
             <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{clientDocs.length}</span>
           )}
         </button>
         <button
           onClick={() => setHistOpen(true)}
-          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-card/60 border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:border-border transition-all"
         >
           <Clock size={14} />
-          <span className="hidden sm:inline">Histórico</span>
+          <span>Histórico</span>
         </button>
       </div>
 
