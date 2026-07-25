@@ -35,6 +35,7 @@ type BotAction = {
 
 const ACTION_LABEL: Record<string, { label: string; tone: "red" | "amber" | "emerald" | "slate" }> = {
   reply_blocked_by_guardrail: { label: "Bloqueado (guardrail)", tone: "red" },
+  reply_recovered_by_tools: { label: "Recuperado (tools)", tone: "emerald" },
   reply_soft_hits: { label: "Alerta (softhit)", tone: "amber" },
   pix_reply_corrected: { label: "PIX corrigido", tone: "amber" },
 };
