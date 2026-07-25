@@ -682,3 +682,83 @@ export function detectClientTone(text: string): {
   return { hostile, frustrated, urgent, paying_intent, hardship };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GUARDRAIL DE PRECISÃO — pré-envio (assertReplySafe)
+// Última linha de defesa antes de mandar QUALQUER mensagem para o cliente.
+// Bloqueia (block=true) quando detecta violação dura:
+//   • Vazamento: reply cita nome/CPF de OUTRO cliente do mesmo credor.
+//   • Negociação: reply fala em desconto/abatimento/parcelar dívida/perdoar juros.
+//   • Datas inventadas (soft): cita "dia XX/XX" que não bate com nenhuma parcela.
+//   • Identidade não confirmada: reply cita valores ANTES de confirmar identidade.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ReplyGuardrailInput {
+  reply: string;
+  currentClient: { id: string; name?: string | null; cpf_cnpj?: string | null } | null;
+  otherClientsSample?: Array<{ id: string; name?: string | null; cpf_cnpj?: string | null }>;
+  allowedDueDates?: string[];
+  identityConfirmed?: boolean;
+  hasMoney?: boolean;
+}
+
+export interface ReplyGuardrailResult {
+  block: boolean;
+  reasons: string[];
+  softHits: string[];
+}
+
+const NEGOTIATION_RE = /\b(desconto|abatimento|abater|parcelar (a )?d[ií]vida|perdoar? (os )?juros|reduzir (o )?valor|acordo especial)/i;
+const DATE_BR_RE = /\b([0-3]?\d)[\/\-]([01]?\d)(?:[\/\-](\d{2,4}))?\b/g;
+
+function firstNameOf(full: string): string {
+  return String(full || "").trim().split(/\s+/)[0]?.toLowerCase() || "";
+}
+
+export function assertReplySafe(input: ReplyGuardrailInput): ReplyGuardrailResult {
+  const reasons: string[] = [];
+  const softHits: string[] = [];
+  const reply = String(input.reply || "");
+  if (!reply.trim()) return { block: false, reasons, softHits };
+  const low = reply.toLowerCase();
+
+  const meFirst = firstNameOf(input.currentClient?.name || "");
+  const meCpf = String(input.currentClient?.cpf_cnpj || "").replace(/\D/g, "");
+  for (const other of input.otherClientsSample || []) {
+    if (!other?.id || other.id === input.currentClient?.id) continue;
+    const oFirst = firstNameOf(other.name || "");
+    if (oFirst && oFirst !== meFirst && oFirst.length >= 4) {
+      const re = new RegExp(`\\b${oFirst.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+      if (re.test(low)) reasons.push(`leak_name:${oFirst}`);
+    }
+    const oCpf = String(other.cpf_cnpj || "").replace(/\D/g, "");
+    if (oCpf.length >= 11 && oCpf !== meCpf && reply.replace(/\D/g, "").includes(oCpf)) {
+      reasons.push(`leak_cpf:${oCpf.slice(-4)}`);
+    }
+  }
+
+  if (NEGOTIATION_RE.test(low)) reasons.push("negotiation_offered");
+
+  if (input.allowedDueDates && input.allowedDueDates.length) {
+    const allowedSet = new Set<string>();
+    for (const iso of input.allowedDueDates) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+      if (m) allowedSet.add(`${Number(m[3])}/${Number(m[2])}`);
+    }
+    if (allowedSet.size) {
+      const cited: string[] = [];
+      for (const m of reply.matchAll(DATE_BR_RE)) {
+        cited.push(`${Number(m[1])}/${Number(m[2])}`);
+      }
+      const bad = cited.filter((k) => !allowedSet.has(k));
+      if (bad.length) softHits.push(`unknown_date:${bad.slice(0, 3).join(",")}`);
+    }
+  }
+
+  if (input.identityConfirmed === false && input.hasMoney) {
+    reasons.push("value_before_identity");
+  }
+
+  return { block: reasons.length > 0, reasons, softHits };
+}
+
+
