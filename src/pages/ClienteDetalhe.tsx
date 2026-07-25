@@ -1698,18 +1698,20 @@ const ClienteDetalhe = () => {
             return (
               <div key={cid} className="rounded-2xl border border-border/60 bg-card/40 p-3 space-y-2">
                 <div className="flex items-center justify-between px-1 mb-1 gap-2">
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 min-w-0">
-                    <FileText size={12} className="text-primary shrink-0" />
-                    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px]" title={`Contrato ${cid}`}>
-                      Contrato {gIdx + 1} · #{String(cid).slice(0, 6)}
-                    </span>
-                    {contract && (
-                      <span className="truncate text-muted-foreground normal-case font-medium">
-                        R$ {fmt(Number(contract.capital))} · {formatBR(contract.start_date)}
-                      </span>
-                    )}
-                  </h3>
-                  <Badge variant="outline" className="text-[10px] py-0 h-5 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <FileText size={13} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Contrato {gIdx + 1} <span className="opacity-40 font-mono normal-case tracking-normal">#{String(cid).slice(0, 6)}</span></p>
+                      {contract && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          R$ {fmt(Number(contract.capital))} · {formatBR(contract.start_date)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] py-0 h-5 shrink-0 font-semibold">
                     {insts.filter((i: any) => i.status === "paid").length}/{insts.length} pagas
                   </Badge>
                 </div>
