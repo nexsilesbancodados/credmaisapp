@@ -1235,7 +1235,9 @@ const Cobrancas = () => {
                     {/* KPIs - richer with icons */}
                     {agg && (() => {
                       const expectedProfit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
-                      const realizedProfit = Math.max(0, (agg.paidAmount || 0) - (agg.loaned || 0));
+                      const realizedProfit = agg.grossExpected > 0
+                        ? Math.max(0, ((agg.paidAmount || 0) / agg.grossExpected) * expectedProfit)
+                        : 0;
                       const paidPctValue = agg.grossExpected > 0 ? Math.round(((agg.paidAmount || 0) / agg.grossExpected) * 100) : 0;
                       return (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
