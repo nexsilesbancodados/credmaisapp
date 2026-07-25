@@ -581,6 +581,21 @@ serve(async (req) => {
     if (convoExisting?.bot_paused) return new Response(JSON.stringify({ status: "paused" }), { headers: corsHeaders });
     if (apiUrl && apiKey) sendPresence(apiUrl, apiKey, instanceName, senderJid, "composing").catch(() => {});
 
+    // AMBÍGUO: mesmo número em vários cadastros → pedir CPF antes de qualquer dado.
+    if (!client && ambiguousCandidates.length > 1) {
+      const empresa = settings.company_name || profile?.name || "nossa equipe";
+      await botSay(
+        `Olá! 👋 Aqui é da *${empresa}*.\n\nEncontrei *${ambiguousCandidates.length} cadastros* com este número. ` +
+        `Pra eu te atender com segurança, me envia seu *CPF* (só os 11 números).`,
+      );
+      await auditDecision(supabase, {
+        userId, conversationId: convoId, clientId: null,
+        intent: "asked_cpf_disambiguation", outcome: "blocked",
+        details: { candidate_ids: ambiguousCandidates.map((c: any) => c.id) },
+      });
+      return new Response(JSON.stringify({ status: "ambiguous_ask_cpf" }), { headers: corsHeaders });
+    }
+
     if (!client) {
       // ─── SDR: Agente completo de qualificação de lead ────────────
       try {
