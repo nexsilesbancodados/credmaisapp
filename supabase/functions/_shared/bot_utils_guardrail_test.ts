@@ -65,3 +65,26 @@ Deno.test("softHit para data desconhecida", () => {
   assertEquals(r.block, false);
   assertEquals(r.softHits.some((x) => x.startsWith("unknown_date")), true);
 });
+
+Deno.test("bloqueia valor inventado fora do conjunto permitido", () => {
+  const r = assertReplySafe({
+    reply: "Sua parcela é de R$ 999,00.",
+    currentClient: me,
+    identityConfirmed: true,
+    hasMoney: true,
+    allowedAmounts: [350, 700, 1050],
+  });
+  assertEquals(r.block, true);
+  assertEquals(r.reasons.some((x) => x.startsWith("invented_amount")), true);
+});
+
+Deno.test("aceita valor permitido com tolerância de centavos", () => {
+  const r = assertReplySafe({
+    reply: "Sua parcela é de R$ 350,00 e o total em atraso é R$ 1.050,00.",
+    currentClient: me,
+    identityConfirmed: true,
+    hasMoney: true,
+    allowedAmounts: [350, 700, 1050],
+  });
+  assertEquals(r.block, false);
+});
