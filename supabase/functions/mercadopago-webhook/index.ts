@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { sendEmail } from "../_shared/brevo.ts";
+import { guard as rateLimitGuard } from "../_shared/rate_limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Rate limit por IP: 20 req/s (webhook Mercado Pago tem picos legítimos)
+  const rl = rateLimitGuard(req, "mp", 40, 20, corsHeaders);
+  if (rl) return rl;
+
 
   try {
     const supabase = createClient(
