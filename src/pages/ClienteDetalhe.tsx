@@ -343,11 +343,22 @@ const ClienteDetalhe = () => {
   // esta tela usava quinzenal = 14 dias e diária = dias corridos; agora fica
   // quinzenal = 15 dias e diária = dias úteis (mon-fri), igual à criação padrão.
   const generateDueDates = (start: string, freq: string, count: number, periodsAhead?: number) => {
+    // freq pode vir como "daily_mon-fri" | "daily_mon-sat" | "daily_mon-sun"
+    let baseFreq: Frequency = "monthly" as Frequency;
+    let dailyMode: "mon-fri" | "mon-sat" | "mon-sun" = "mon-fri";
+    if (freq?.startsWith("daily")) {
+      baseFreq = "daily" as Frequency;
+      const suffix = freq.split("_")[1];
+      if (suffix === "mon-sat" || suffix === "mon-sun" || suffix === "mon-fri") dailyMode = suffix;
+    } else {
+      baseFreq = (freq || "monthly") as Frequency;
+    }
     return generateInstallmentSchedule({
       startDate: start,
-      frequency: freq as Frequency,
+      frequency: baseFreq,
       count,
       periodsAhead,
+      dailyMode,
     });
   };
 
@@ -484,12 +495,17 @@ const ClienteDetalhe = () => {
 
   const openEditContract = (c: any) => {
     setEditContract(c);
+    const raw = c.frequency || "monthly";
+    const isDaily = raw.startsWith("daily");
+    const baseFreq = isDaily ? "daily" : raw;
+    const dailyMode = isDaily ? (raw.split("_")[1] || "mon-fri") : "mon-fri";
     setEditContractForm({
       capital: String(c.capital ?? ""),
       interest_rate: String(c.interest_rate ?? ""),
       num_installments: String(c.num_installments ?? ""),
       installment_amount: String(c.installment_amount ?? ""),
-      frequency: c.frequency || "monthly",
+      frequency: baseFreq,
+      daily_mode: dailyMode,
       start_date: c.start_date ? new Date(c.start_date).toISOString().split("T")[0] : "",
       late_fee_percent: String(c.late_fee_percent ?? "0"),
       daily_interest_percent: String(c.daily_interest_percent ?? "0"),
@@ -510,12 +526,14 @@ const ClienteDetalhe = () => {
       const totalAmount = instAmt * n;
       const totalInterest = totalAmount - cap;
 
+      const freqValue = f.frequency === "daily" ? `daily_${f.daily_mode || "mon-fri"}` : f.frequency;
+
       const { error } = await supabase.from("contracts").update({
         capital: cap,
         interest_rate: rate,
         num_installments: n,
         installment_amount: instAmt,
-        frequency: f.frequency,
+        frequency: freqValue,
         start_date: new Date(f.start_date + "T12:00:00").toISOString(),
         late_fee_percent: parseFloat(f.late_fee_percent),
         daily_interest_percent: parseFloat(f.daily_interest_percent),
@@ -538,7 +556,7 @@ const ClienteDetalhe = () => {
           .neq("status", "paid");
 
         if (remaining > 0) {
-          const dueDates = generateDueDates(f.start_date, f.frequency, n).slice(paidCount);
+          const dueDates = generateDueDates(f.start_date, freqValue, n).slice(paidCount);
           const newInst = dueDates.map((dd, i) => ({
             user_id: user.id,
             contract_id: editContract.id,
