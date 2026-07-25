@@ -495,12 +495,17 @@ const ClienteDetalhe = () => {
 
   const openEditContract = (c: any) => {
     setEditContract(c);
+    const raw = c.frequency || "monthly";
+    const isDaily = raw.startsWith("daily");
+    const baseFreq = isDaily ? "daily" : raw;
+    const dailyMode = isDaily ? (raw.split("_")[1] || "mon-fri") : "mon-fri";
     setEditContractForm({
       capital: String(c.capital ?? ""),
       interest_rate: String(c.interest_rate ?? ""),
       num_installments: String(c.num_installments ?? ""),
       installment_amount: String(c.installment_amount ?? ""),
-      frequency: c.frequency || "monthly",
+      frequency: baseFreq,
+      daily_mode: dailyMode,
       start_date: c.start_date ? new Date(c.start_date).toISOString().split("T")[0] : "",
       late_fee_percent: String(c.late_fee_percent ?? "0"),
       daily_interest_percent: String(c.daily_interest_percent ?? "0"),
