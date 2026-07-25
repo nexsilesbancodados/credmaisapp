@@ -67,7 +67,11 @@ const DashboardLayout = () => {
         <TopBar onSearchClick={() => setSearchOpen(true)} />
         <Breadcrumbs />
         <main
-          className={`max-w-[1600px] mx-auto ${isMobile ? "px-3 py-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))]" : "px-4 py-5 lg:px-8 lg:py-8"}`}
+          className={`max-w-[1600px] mx-auto min-w-0 ${
+            isMobile
+              ? "px-3 py-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+              : "px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-6 lg:px-8 lg:py-8"
+          }`}
         >
           <Outlet />
         </main>
