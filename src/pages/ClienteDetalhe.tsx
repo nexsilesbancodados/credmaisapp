@@ -1414,18 +1414,18 @@ const ClienteDetalhe = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 glass-card rounded-2xl p-1.5">
+      {/* Section jump nav (sticky) */}
+      <div className="sticky top-2 z-20 flex gap-1 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
         {tabs.map(tab => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+          <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
             <tab.Icon size={14} /> {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab: Resumo — Editorial Magazine Layout */}
-      {activeTab === "resumo" && (() => {
+      {/* Section: Resumo — Editorial Magazine Layout */}
+      <section id="sec-resumo" className="scroll-mt-24">{(() => {
         const score = client.credit_score || 0;
         const scoreMax = 1000;
         const scorePct = Math.min(100, (score / scoreMax) * 100);
@@ -1484,7 +1484,7 @@ const ClienteDetalhe = () => {
               <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Timeline de Atividade</h2>
-                  <button onClick={() => setActiveTab("historico")} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
+                  <button onClick={() => { setActiveTab("historico"); document.getElementById("sec-historico")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
                 </div>
                 {sortedEvents.length === 0 ? (
                   <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações e eventos aparecerão aqui." />
@@ -1597,7 +1597,7 @@ const ClienteDetalhe = () => {
                 <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contratos</h2>
-                    <button onClick={() => setActiveTab("contratos")} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
+                    <button onClick={() => { setActiveTab("contratos"); document.getElementById("sec-contratos")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
                   </div>
                   <div className="space-y-2">
                     {contracts.slice(0, 3).map((c: any) => {
@@ -1605,7 +1605,7 @@ const ClienteDetalhe = () => {
                       const cPaid = cInst.filter((i: any) => i.status === "paid").length;
                       const pct = Math.round((cPaid / (c.num_installments || 1)) * 100);
                       return (
-                        <button key={c.id} onClick={() => setActiveTab("parcelas")} className="w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 transition-colors">
+                        <button key={c.id} onClick={() => { setActiveTab("parcelas"); document.getElementById("sec-parcelas")?.scrollIntoView({ behavior: "smooth" }); }} className="w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 transition-colors">
                           <div className="flex items-center justify-between mb-1.5">
                             <p className="text-xs font-bold text-foreground">R$ {fmt(Number(c.capital))} · {c.num_installments}x</p>
                             <Badge variant="outline" className={c.status === "active" ? "bg-success/10 text-success border-success/20 text-[9px]" : "bg-muted text-muted-foreground text-[9px]"}>{c.status === "active" ? "Ativo" : c.status}</Badge>
@@ -1621,10 +1621,10 @@ const ClienteDetalhe = () => {
             </div>
           </div>
         );
-      })()}
+      })()}</section>
 
-      {/* Tab: Score & Risco */}
-      {activeTab === "score" && (() => {
+      {/* Section: Score & Risco */}
+      <section id="sec-score" className="scroll-mt-24">{(() => {
         const score = client.credit_score || 0;
         const scoreMax = 1000;
         const scorePct = Math.min(100, (score / scoreMax) * 100);
@@ -1801,10 +1801,11 @@ const ClienteDetalhe = () => {
             </section>
           </div>
         );
-      })()}
+      })()}</section>
 
-      {/* Tab: Contratos */}
-      {activeTab === "contratos" && (
+      {/* Section: Contratos */}
+      <section id="sec-contratos" className="scroll-mt-24">{(
+
         <div className="space-y-3">
           <button onClick={() => navigate(`/clientes/novo?clientId=${id}`)} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-border text-sm font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors">
             <Plus size={16} /> Novo Empréstimo
@@ -1896,10 +1897,11 @@ const ClienteDetalhe = () => {
             );
           })}
         </div>
-      )}
+      )}</section>
 
-      {/* Tab: Parcelas */}
-      {activeTab === "parcelas" && (
+      {/* Section: Parcelas */}
+      <section id="sec-parcelas" className="scroll-mt-24">{(
+
         <div className="space-y-6">
           {installments.length === 0 ? (
             <EmptyState icon={Receipt} title="Nenhuma parcela" description="As parcelas aparecerão aqui quando o contrato for criado." compact />
@@ -2075,10 +2077,10 @@ const ClienteDetalhe = () => {
             );
           })}
         </div>
-      )}
+      )}</section>
 
-      {/* Tab: Histórico (timeline unificada) */}
-      {activeTab === "historico" && (() => {
+      {/* Section: Histórico (timeline unificada) */}
+      <section id="sec-historico" className="scroll-mt-24">{(() => {
         const events: any[] = [];
         // Contratos criados
         contracts.forEach((c: any) => events.push({
@@ -2159,7 +2161,7 @@ const ClienteDetalhe = () => {
             )}
           </div>
         );
-      })()}
+      })()}</section>
     </div>
   );
 };
