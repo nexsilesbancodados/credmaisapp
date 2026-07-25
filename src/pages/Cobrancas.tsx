@@ -1234,7 +1234,9 @@ const Cobrancas = () => {
 
                     {/* KPIs - richer with icons */}
                     {agg && (() => {
-                      const profit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
+                      const expectedProfit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
+                      const realizedProfit = Math.max(0, (agg.paidAmount || 0) - (agg.loaned || 0));
+                      const paidPctValue = agg.grossExpected > 0 ? Math.round(((agg.paidAmount || 0) / agg.grossExpected) * 100) : 0;
                       return (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div className="rounded-xl border border-border/60 bg-background/50 backdrop-blur px-3 py-2.5 hover:border-primary/30 transition-colors">
@@ -1248,12 +1250,14 @@ const Cobrancas = () => {
                               <span className="text-success">{paidCount}</span>
                               <span className="text-muted-foreground">/{totalActiveInst}</span>
                             </p>
-                            <p className="text-[9px] text-muted-foreground mt-0.5 tabular-nums">{progressPct}% concluído</p>
+                            <p className="text-[9px] text-success/80 mt-0.5 tabular-nums font-semibold">recebido R$ {fmt(agg.paidAmount)}</p>
+                            <p className="text-[9px] text-muted-foreground tabular-nums">{paidPctValue}% do previsto</p>
                           </div>
                           <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/10 to-success/[0.02] px-3 py-2.5">
                             <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold inline-flex items-center gap-1"><TrendingUp size={10} /> Lucro</p>
-                            <p className="text-sm font-bold text-success tabular-nums mt-1">R$ {fmt(profit)}</p>
-                            {agg.loaned > 0 && <p className="text-[9px] text-success/70 mt-0.5 tabular-nums">{Math.round((profit / agg.loaned) * 100)}% ROI</p>}
+                            <p className="text-sm font-bold text-success tabular-nums mt-1">R$ {fmt(realizedProfit)}</p>
+                            <p className="text-[9px] text-success/70 mt-0.5 tabular-nums">realizado{agg.loaned > 0 ? ` · ${Math.round((realizedProfit / agg.loaned) * 100)}%` : ""}</p>
+                            <p className="text-[9px] text-muted-foreground tabular-nums">previsto R$ {fmt(expectedProfit)}</p>
                           </div>
                           {agg.overdueCount > 0 ? (
                             <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/10 to-destructive/[0.02] px-3 py-2.5">
