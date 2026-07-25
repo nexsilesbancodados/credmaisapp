@@ -888,15 +888,22 @@ const Cobrancas = () => {
 
       {/* Toolbar unificada — busca + tabs com contagem + ações */}
       {(() => {
+        const today0 = new Date(); today0.setHours(0,0,0,0);
+        const tomorrow0 = new Date(today0); tomorrow0.setDate(tomorrow0.getDate() + 1);
+        const in7 = new Date(today0); in7.setDate(in7.getDate() + 7);
+        const tomorrowCount = installments.filter((i: any) => {
+          if (i.status === "paid") return false;
+          const d = parseLocalDate(i.due_date); if (!d) return false;
+          return d.getFullYear() === tomorrow0.getFullYear() && d.getMonth() === tomorrow0.getMonth() && d.getDate() === tomorrow0.getDate();
+        }).length;
         const next7Count = installments.filter((i: any) => {
           if (i.status === "paid") return false;
           const d = parseLocalDate(i.due_date); if (!d) return false;
-          const today = new Date(); today.setHours(0,0,0,0);
-          const limit = new Date(today); limit.setDate(limit.getDate() + 7);
-          return d.getTime() >= today.getTime() && d.getTime() <= limit.getTime();
+          return d.getTime() >= today0.getTime() && d.getTime() <= in7.getTime();
         }).length;
         const tabs = [
           { key: "hoje", label: "Hoje", count: dueTodayStats.count, tone: "primary", match: period === "today" && filter === "all" && !focoDia },
+          { key: "amanha", label: "Amanhã", count: tomorrowCount, tone: "warn", match: period === "tomorrow" && filter === "all" && !focoDia },
           { key: "atrasadas", label: "Atrasadas", count: stats.overdue, tone: "destructive", match: filter === "overdue" },
           { key: "7d", label: "Próx. 7d", count: next7Count, tone: "muted", match: period === "7d" && filter === "all" },
           { key: "todas", label: "Todas", count: stats.pending + stats.overdue, tone: "muted", match: filter === "all" && period === "all" && !focoDia },
