@@ -46,7 +46,7 @@ const ClienteDetalhe = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"resumo" | "score" | "contratos" | "parcelas" | "historico">("resumo");
+  const [activeTab, setActiveTab] = useState<"documentos" | "contratos" | "parcelas" | "historico">("documentos");
   const [historyFilter, setHistoryFilter] = useState<"all" | "contract" | "payment" | "profit" | "note" | "contact">("all");
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<any>({});
@@ -1047,11 +1047,12 @@ const ClienteDetalhe = () => {
   const scoreClr = (client.credit_score || 0) >= 700 ? "text-success" : (client.credit_score || 0) >= 400 ? "text-warning" : "text-destructive";
 
   const tabs = [
-    { key: "resumo" as const, label: "Informações", Icon: User },
+    { key: "documentos" as const, label: "Documentos", Icon: FileIcon },
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
     { key: "parcelas" as const, label: "Parcelas", Icon: Receipt },
     { key: "historico" as const, label: "Histórico", Icon: Clock },
   ];
+
 
 
 
@@ -1492,7 +1493,8 @@ const ClienteDetalhe = () => {
         </div>
 
         {/* Documentos & Anexos (full width) */}
-        <section className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+        <section id="sec-documentos" className="scroll-mt-24 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-md p-5">
+
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><FileIcon size={14} /></div>
