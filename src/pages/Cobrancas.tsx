@@ -795,232 +795,131 @@ const Cobrancas = () => {
       )}
 
 
-      {/* Stats cards */}
-      <div className={`grid grid-cols-2 ${simpleMode ? "" : "sm:grid-cols-4"} gap-3 stagger-fade-in`}>
-
-        {(() => {
-          const all = [
-            { label: "Vence hoje", value: dueTodayStats.count, sub: `R$ ${fmt(dueTodayStats.total)}`, icon: CalendarDays, color: "text-primary", bg: "bg-primary/8", border: dueTodayStats.count > 0 ? "border-primary/20" : "", filterKey: "all" as const, onClick: () => { setFocoDia(false); setPeriod("today"); setFilter("all"); } },
-            { label: "Atrasadas", value: stats.overdue, sub: `R$ ${fmt(stats.totalOverdue)}`, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/8", border: stats.overdue > 0 ? "border-destructive/20 danger-glow" : "", filterKey: "overdue" as const, onClick: () => { setFocoDia(false); setPeriod("all"); setFilter("overdue"); } },
-            { label: "Pendentes", value: stats.pending, sub: `R$ ${fmt(stats.totalPending)}`, icon: Clock, color: "text-warning", bg: "bg-warning/8", border: "", filterKey: "pending" as const, onClick: () => { setFocoDia(false); setPeriod("all"); setFilter("pending"); } },
-            { label: "Pagas", value: stats.paid, sub: `R$ ${fmt(stats.totalPaid)}`, icon: CheckCircle, color: "text-success", bg: "bg-success/8", border: "", filterKey: "paid" as const, onClick: () => { setFocoDia(false); setPeriod("all"); setFilter("paid"); } },
-          ];
-          return (simpleMode ? all.slice(0, 2) : all).map((s: any) => (
-            <button
-              key={s.label}
-              onClick={s.onClick}
-              className={`rounded-2xl border bg-card p-4 card-shine text-left transition-all focus-ring ${
-                filter === s.filterKey ? "border-primary/30 ring-1 ring-primary/20" : s.border || "border-border"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`w-7 h-7 rounded-lg ${s.bg} flex items-center justify-center`}>
-                  <s.icon size={14} className={s.color} />
+      {/* Stats cards — 3 KPIs essenciais */}
+      {(() => {
+        const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+        const cobradoIds = new Set<string>();
+        for (const a of attempts as any[]) {
+          if (!a?.created_at) continue;
+          if (new Date(a.created_at).getTime() >= startOfDay.getTime()) {
+            if (a.channel === "whatsapp" || a.channel === "email") cobradoIds.add(a.client_id);
+          }
+        }
+        const kpis = [
+          { label: "Vence hoje", value: dueTodayStats.count, sub: `R$ ${fmt(dueTodayStats.total)}`, icon: CalendarDays, color: "text-primary", bg: "bg-primary/8", border: dueTodayStats.count > 0 ? "border-primary/20" : "border-border", active: period === "today" && filter === "all" && !focoDia, onClick: () => applyFocus("hoje") },
+          { label: "Atrasadas", value: stats.overdue, sub: `R$ ${fmt(stats.totalOverdue)}`, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/8", border: stats.overdue > 0 ? "border-destructive/20 danger-glow" : "border-border", active: filter === "overdue", onClick: () => applyFocus("atrasadas") },
+          { label: "Cobrado hoje", value: cobradoIds.size, sub: `${cobradoIds.size} cliente${cobradoIds.size === 1 ? "" : "s"}`, icon: CheckCircle, color: "text-success", bg: "bg-success/8", border: "border-border", active: false, onClick: () => {} },
+        ];
+        return (
+          <div className="grid grid-cols-3 gap-3 stagger-fade-in">
+            {kpis.map((s) => (
+              <button
+                key={s.label}
+                onClick={s.onClick}
+                className={`rounded-2xl border bg-card p-4 card-shine text-left transition-all focus-ring ${s.active ? "border-primary/30 ring-1 ring-primary/20" : s.border}`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-7 h-7 rounded-lg ${s.bg} flex items-center justify-center`}>
+                    <s.icon size={14} className={s.color} />
+                  </div>
                 </div>
-              </div>
-              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{s.label}</p>
-              {s.sub && <p className="text-xs text-muted-foreground mt-0.5">{s.sub}</p>}
-            </button>
-          ));
-        })()}
-      </div>
+                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{s.label}</p>
+                {s.sub && <p className="text-xs text-muted-foreground mt-0.5">{s.sub}</p>}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
-      {/* Bucket de atraso — só no modo avançado */}
-      {!simpleMode && (
-      <div className="flex items-center gap-2 flex-wrap animate-fade-in">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Atraso</span>
-        {([
-          { v: "all", label: "Todos" },
-          { v: "today", label: "Hoje" },
-          { v: "1-7", label: "1-7 dias" },
-          { v: "8-30", label: "8-30 dias" },
-          { v: "30+", label: "30+ dias" },
-        ] as const).map(b => (
-          <button
-            key={b.v}
-            onClick={() => setBucket(b.v)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-              bucket === b.v
-                ? "bg-destructive/15 text-destructive ring-1 ring-destructive/30"
-                : "bg-muted/40 text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            {b.label}
-          </button>
-        ))}
-      </div>
-      )}
+      {/* Filtros unificados — 1 linha de foco */}
+      <div className="flex flex-col lg:flex-row gap-2 animate-fade-in">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            ref={searchRef}
+            type="text"
+            placeholder="Buscar por cliente, parcela # ou valor…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground/50 text-sm input-enhanced"
+          />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            {search ? (
+              <>
+                <span className="text-[10px] text-muted-foreground">{filtered.length}</span>
+                <button aria-label="Limpar busca" onClick={() => setSearch("")} className="p-1 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
+              </>
+            ) : (
+              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md border border-border/40 bg-muted/40 text-[10px] font-mono text-muted-foreground">/</kbd>
+            )}
+          </div>
+        </div>
 
-      {/* View switcher — só no modo avançado */}
-      {!simpleMode && (
-      <div className="flex items-center gap-2 animate-fade-in">
-
-        <div className="pill-tabs">
+        <div className="pill-tabs overflow-x-auto scrollbar-thin">
           {([
-            { key: "list", label: "Lista", icon: List },
-            { key: "calendar", label: "Calendário", icon: CalendarIcon },
-          ] as const).map((v) => (
+            { key: "hoje", label: "Hoje", match: period === "today" && filter === "all" && !focoDia },
+            { key: "atrasadas", label: "Atrasadas", match: filter === "overdue" },
+            { key: "7d", label: "Próx. 7d", match: period === "7d" && filter === "all" },
+            { key: "todas", label: "Todas", match: filter === "all" && period === "all" && !focoDia },
+            { key: "pagas", label: "Pagas", match: filter === "paid" },
+          ] as const).map((f) => (
             <button
-              key={v.key}
-              onClick={() => setView(v.key)}
-              className={`pill-tab ${view === v.key ? "pill-tab-active" : "pill-tab-inactive"}`}
+              key={f.key}
+              onClick={() => applyFocus(f.key)}
+              className={`pill-tab ${f.match ? "pill-tab-active" : "pill-tab-inactive"}`}
             >
-              <v.icon size={12} /> {v.label}
+              {f.label}
             </button>
           ))}
         </div>
-        {view === "list" && (
-          <div className="pill-tabs" title="Modo de agrupamento">
-            <button
-              onClick={() => { setGroupMode("expanded"); setCollapsed(new Set()); }}
-              className={`pill-tab ${groupMode === "expanded" ? "pill-tab-active" : "pill-tab-inactive"}`}
-              aria-label="Mostrar parcelas separadas"
-            >
-              <ListTree size={12} /> Parcelas
-            </button>
-            <button
-              onClick={() => { setGroupMode("collapsed"); setCollapsed(new Set()); }}
-              className={`pill-tab ${groupMode === "collapsed" ? "pill-tab-active" : "pill-tab-inactive"}`}
-              aria-label="Mostrar somente totais por cliente"
-            >
-              <Layers size={12} /> Totais
-            </button>
-          </div>
-        )}
-      </div>
-      )}
 
-
-      {/* Search + Filters + select all */}
-      <div className="space-y-3 animate-fade-in">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Buscar por cliente, parcela # ou valor…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground/50 text-sm input-enhanced"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              {search ? (
-                <>
-                  <span className="text-[10px] text-muted-foreground">{filtered.length}</span>
-                  <button aria-label="Limpar busca" onClick={() => setSearch("")} className="p-1 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
-                </>
-              ) : (
-                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md border border-border/40 bg-muted/40 text-[10px] font-mono text-muted-foreground">/</kbd>
-              )}
-            </div>
-          </div>
-
-          {!simpleMode && (
-          <button
-            onClick={() => setShowFilters(v => !v)}
-            className={`relative shrink-0 px-3.5 py-2.5 rounded-2xl border transition-all ${activeFilters > 0 ? "border-primary/40 bg-primary/5 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-            title="Filtros e ordenação"
+        <div className="flex items-center gap-2">
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className="px-3 py-2.5 rounded-2xl text-xs font-medium bg-card text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/40"
+            title="Ordenar por"
           >
-            <SlidersHorizontal size={16} />
-            {activeFilters > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold rounded-full bg-primary text-primary-foreground flex items-center justify-center">{activeFilters}</span>
-            )}
-          </button>
-          )}
-
-
-          <div className="pill-tabs">
-            {([
-              { key: "all", label: "Todas", count: stats.total },
-              { key: "overdue", label: "Atrasadas", count: stats.overdue },
-              { key: "pending", label: "Pendentes", count: stats.pending },
-              { key: "paid", label: "Pagas", count: stats.paid },
-            ] as const).map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`pill-tab ${filter === f.key ? "pill-tab-active" : "pill-tab-inactive"}`}
-              >
-                {f.label}
-                {f.count > 0 && filter !== f.key && (
-                  <span className="text-[9px] px-1 rounded bg-muted/50">{f.count}</span>
-                )}
-              </button>
-            ))}
-            {period !== "all" && (
-              <>
-                <span className="mx-1 w-px h-5 bg-border/40" />
-                <button
-                  onClick={() => setPeriod("all")}
-                  className="pill-tab pill-tab-active"
-                  title="Período ativo — clique para limpar"
-                >
-                  {period === "today" ? "Hoje" : period === "7d" ? "7 dias" : period === "30d" ? "30 dias" : "Futuras"}
-                  <X size={10} />
-                </button>
-              </>
-            )}
-          </div>
-
-
-          {!simpleMode && (
+            <option value="overdue_days">Mais atrasadas</option>
+            <option value="due_asc">Vencimento próximo</option>
+            <option value="amount_desc">Maior valor</option>
+          </select>
           <button
             onClick={toggleSelectAll}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-card border border-border text-foreground text-sm font-medium hover:bg-accent transition-colors focus-ring"
-            title="Selecionar todas as parcelas visíveis" aria-label="Selecionar todas as parcelas visíveis"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card border border-border text-foreground text-xs font-medium hover:bg-accent transition-colors focus-ring shrink-0"
+            title="Selecionar todas visíveis"
           >
             {selected.size > 0 ? <CheckSquare size={14} className="text-primary" /> : <Square size={14} />}
             <span className="hidden sm:inline">{selected.size > 0 ? `${selected.size}` : "Selecionar"}</span>
           </button>
-          )}
         </div>
-
-        {showFilters && (
-          <div className="rounded-2xl border border-border/30 bg-card/40 backdrop-blur-md p-4 space-y-3 animate-fade-in">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">Período</span>
-                {([
-                  { v: "all", label: "Tudo" },
-                  { v: "today", label: "Hoje" },
-                  { v: "7d", label: "Próx. 7d" },
-                  { v: "30d", label: "Próx. 30d" },
-                  { v: "future", label: "Futuras" },
-                ] as const).map(b => (
-                  <button key={b.v} onClick={() => setPeriod(b.v)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${period === b.v ? "bg-primary/15 text-primary ring-1 ring-primary/30" : "bg-muted/30 text-muted-foreground hover:bg-muted/50"}`}>
-                    {b.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-1.5 ml-auto">
-                <ArrowUpDown size={13} className="text-muted-foreground" />
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">Ordenar</span>
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as SortKey)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium bg-muted/30 text-foreground border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/40"
-                >
-                  <option value="due_asc">Venc. mais próximo</option>
-                  <option value="due_desc">Venc. mais distante</option>
-                  <option value="amount_desc">Maior valor</option>
-                  <option value="amount_asc">Menor valor</option>
-                  <option value="overdue_days">Mais dias atrasada</option>
-                </select>
-
-                {activeFilters > 0 && (
-                  <button onClick={clearFilters} className="ml-2 text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-                    Limpar
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Ferramentas secundárias — link discreto */}
+      <div className="flex flex-wrap items-center gap-2 text-[11px]">
+        <button
+          onClick={() => setShowAging(v => !v)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${showAging ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+        >
+          <AlertTriangle size={11} /> {showAging ? "Ocultar análise por cliente" : "Ver análise por cliente"}
+        </button>
+        <button
+          onClick={() => setShowAutomation(v => !v)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${showAutomation ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+        >
+          <Bell size={11} /> {showAutomation ? "Ocultar automação" : "Automação e métricas"}
+        </button>
+        <button
+          onClick={() => setView(view === "calendar" ? "list" : "calendar")}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${view === "calendar" ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+        >
+          <CalendarIcon size={11} /> {view === "calendar" ? "Voltar à lista" : "Calendário"}
+        </button>
+      </div>
+
+      {showAging && <InadimplenciaPanel />}
+
 
       {/* Sticky bulk action bar */}
       {selected.size > 0 && (
