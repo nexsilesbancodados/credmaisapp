@@ -48,8 +48,10 @@ const ClienteDetalhe = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"contratos" | "parcelas" | "historico">("contratos");
+  const [activeTab, setActiveTab] = useState<"contratos" | "parcelas">("contratos");
   const [docsOpen, setDocsOpen] = useState(false);
+  const [histOpen, setHistOpen] = useState(false);
+
 
   const [historyFilter, setHistoryFilter] = useState<"all" | "contract" | "payment" | "profit" | "note" | "contact">("all");
   const [editMode, setEditMode] = useState(false);
