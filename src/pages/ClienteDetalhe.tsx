@@ -25,7 +25,7 @@ import {
   MessageSquare, Star, Ban, RotateCcw, Download, TrendingUp,
   Calendar, Receipt, Activity, Search, X, Percent, Wallet, Printer, Camera,
   Wrench, Repeat, PhoneCall, StickyNote,
-  Info, UploadCloud, File as FileIcon, ImageIcon, ShieldCheck, Sparkles, ChevronRight,
+  Info, UploadCloud, File as FileIcon, ImageIcon, ShieldCheck, Sparkles, ChevronRight, MoreHorizontal,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { formatBR } from "@/lib/dateUtils";
@@ -1575,9 +1575,16 @@ const ClienteDetalhe = () => {
 
 
         <div className="space-y-3">
-          <button onClick={() => navigate(`/clientes/novo?clientId=${id}`)} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-border text-sm font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors">
-            <Plus size={16} /> Novo Empréstimo
+          <button
+            onClick={() => navigate(`/clientes/novo?clientId=${id}`)}
+            className="group w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-2xl border border-dashed border-border/70 bg-card/30 text-sm font-semibold text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all"
+          >
+            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              <Plus size={14} strokeWidth={2.5} />
+            </span>
+            Novo Empréstimo
           </button>
+
           {contracts.length === 0 ? (
             <EmptyState compact title="Nenhum contrato" description="Clique em Novo Empréstimo para começar." />
           ) : contracts.map((c: any) => {
@@ -1587,80 +1594,91 @@ const ClienteDetalhe = () => {
             const overdue = cInsts.filter((i: any) => i.status === "overdue").length;
             const isPaid = total > 0 && paid === total;
             const status = isPaid
-              ? { label: "Quitado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
+              ? { label: "Quitado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25", dot: "bg-emerald-500" }
               : overdue > 0
-              ? { label: `${overdue} em atraso`, cls: "bg-destructive/15 text-destructive border-destructive/30" }
-              : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
+              ? { label: `${overdue} em atraso`, cls: "bg-destructive/15 text-destructive border-destructive/25", dot: "bg-destructive" }
+              : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/25", dot: "bg-amber-400" };
             const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-            const accent = isPaid ? "from-emerald-500/60 via-emerald-400/30" : overdue > 0 ? "from-destructive/60 via-destructive/30" : "from-primary/60 via-primary/20";
             const barColor = isPaid ? "bg-emerald-500" : overdue > 0 ? "bg-destructive" : "bg-primary";
             return (
-            <div key={c.id} className="group relative overflow-hidden bg-gradient-to-br from-card to-card/60 border border-border/60 rounded-2xl p-4 hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.3)] transition-all">
-              <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${accent} to-transparent`} />
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-lg font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>{status.label}</span>
+            <div key={c.id} className="group relative overflow-hidden bg-card border border-border/60 rounded-2xl hover:border-primary/40 hover:shadow-[0_8px_24px_-16px_hsl(var(--primary)/0.4)] transition-all">
+              {/* Faixa lateral de status */}
+              <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor}`} />
+
+              <div className="p-4 pl-5">
+                {/* Linha 1: valor + status + lucro */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <p className="text-xl font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                        {status.label}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      <span className="text-foreground/80 font-semibold tabular-nums">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
+                      <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
+                      <span className="mx-1.5 opacity-40">·</span>{formatBR(c.start_date)}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 truncate">
-                    <span className="text-foreground/80 font-medium">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
-                    <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
-                  </p>
+                  <div className="text-right shrink-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Lucro</p>
+                    <p className="text-base font-bold text-primary tabular-nums leading-tight">+R$ {fmt(Number(c.total_interest))}</p>
+                  </div>
                 </div>
-                <div className="text-right cursor-pointer shrink-0" onClick={() => navigate(`/contratos/${c.id}`)}>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{formatBR(c.start_date)}</p>
-                  <p className="text-sm font-bold text-primary tabular-nums mt-0.5">+R$ {fmt(Number(c.total_interest))}</p>
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Lucro</p>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-border/40 flex-wrap justify-end">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
-                    title="Exportar contrato em PDF"
-                  >
-                    <Download size={13} /> PDF
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-medium transition-colors"
-                    title="Enviar contrato por WhatsApp"
-                  >
-                    <MessageSquare size={13} /> Enviar
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
-                    title="Editar empréstimo"
-                  >
-                    <Edit size={13} /> Editar
-                  </button>
+
+                {/* Progresso */}
+                {total > 0 && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                      <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0 w-8 text-right">{pct}%</span>
+                  </div>
+                )}
+
+                {/* Ações — primárias visíveis, secundárias sob "Mais" */}
+                <div className="mt-3 pt-3 border-t border-border/40 flex items-center gap-1.5 flex-wrap">
                   {c.status === "active" && !isPaid && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setRenegotiating(c); }}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-medium transition-colors"
-                      title="Renegociar contrato"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-semibold transition-colors"
                     >
-                      <Repeat size={13} /> Renegociar
+                      <Repeat size={12} /> Renegociar
                     </button>
                   )}
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-medium transition-colors"
-                    title="Excluir empréstimo"
+                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-semibold transition-colors"
                   >
-                    <Trash2 size={13} /> Excluir
+                    <MessageSquare size={12} /> Enviar
                   </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-semibold transition-colors"
+                  >
+                    <Download size={12} /> PDF
+                  </button>
+
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
+                      className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      title="Editar empréstimo"
+                    >
+                      <Edit size={13} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
+                      className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      title="Excluir empréstimo"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
-              {total > 0 && (
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
-                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0">{pct}%</span>
-                </div>
-              )}
             </div>
             );
           })}
@@ -1680,18 +1698,20 @@ const ClienteDetalhe = () => {
             return (
               <div key={cid} className="rounded-2xl border border-border/60 bg-card/40 p-3 space-y-2">
                 <div className="flex items-center justify-between px-1 mb-1 gap-2">
-                  <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 min-w-0">
-                    <FileText size={12} className="text-primary shrink-0" />
-                    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px]" title={`Contrato ${cid}`}>
-                      Contrato {gIdx + 1} · #{String(cid).slice(0, 6)}
-                    </span>
-                    {contract && (
-                      <span className="truncate text-muted-foreground normal-case font-medium">
-                        R$ {fmt(Number(contract.capital))} · {formatBR(contract.start_date)}
-                      </span>
-                    )}
-                  </h3>
-                  <Badge variant="outline" className="text-[10px] py-0 h-5 shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <FileText size={13} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Contrato {gIdx + 1} <span className="opacity-40 font-mono normal-case tracking-normal">#{String(cid).slice(0, 6)}</span></p>
+                      {contract && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          R$ {fmt(Number(contract.capital))} · {formatBR(contract.start_date)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] py-0 h-5 shrink-0 font-semibold">
                     {insts.filter((i: any) => i.status === "paid").length}/{insts.length} pagas
                   </Badge>
                 </div>
@@ -1718,29 +1738,29 @@ const ClienteDetalhe = () => {
                     });
                     const totalDue = base + feeLive;
                     return (
-                      <div key={inst.id} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors ${isOverdue ? "bg-destructive/5 border-destructive/15" : isPaid ? "bg-success/5 border-success/15" : "bg-card border-border"}`}>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isOverdue ? "bg-destructive/10 text-destructive" : isPaid ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
+                      <div key={inst.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors ${isOverdue ? "bg-destructive/[0.04] border-destructive/20 hover:border-destructive/30" : isPaid ? "bg-success/[0.04] border-success/15" : "bg-card border-border/60 hover:border-border"}`}>
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isOverdue ? "bg-destructive/10 text-destructive ring-1 ring-destructive/20" : isPaid ? "bg-success/10 text-success ring-1 ring-success/20" : "bg-muted text-muted-foreground"}`}>
                           {inst.installment_number}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground flex items-center gap-2 flex-wrap">
-                            R$ {fmt(base)}
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-foreground tabular-nums">R$ {fmt(base)}</p>
                             {isOverdue && feeLive > 0 && (
                               <>
-                                <span className="text-[10px] font-semibold text-destructive">
-                                  + R$ {fmt(feeLive)} multa/juros
+                                <span className="text-[10px] font-medium text-destructive/80 tabular-nums">
+                                  + R$ {fmt(feeLive)}
                                 </span>
-                                <span className="text-[10px] font-bold text-destructive">
-                                  = R$ {fmt(totalDue)}
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-destructive tabular-nums ml-auto sm:ml-0">
+                                  <span className="opacity-50">=</span> R$ {fmt(totalDue)}
                                 </span>
                               </>
                             )}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {formatBR(inst.due_date)}
-                            {isOverdue && ` · ${daysOverdue} dia(s) em atraso`}
-                            {inst.paid_at && ` · Pago: ${formatBR(inst.paid_at)}`}
-                            {partial && ` · Parcial: R$ ${fmt(Number(inst.paid_amount))}`}
+                            {isOverdue && <span className="text-destructive/70 font-medium"> · {daysOverdue} dia(s) em atraso</span>}
+                            {inst.paid_at && ` · Pago ${formatBR(inst.paid_at)}`}
+                            {partial && ` · Parcial R$ ${fmt(Number(inst.paid_amount))}`}
                             {inst.payment_method && ` · ${String(inst.payment_method).toUpperCase()}`}
                           </p>
                           {inst.receipt_url && (
@@ -1749,12 +1769,12 @@ const ClienteDetalhe = () => {
                             </a>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-0.5 shrink-0">
                           {isOverdue && (
                             <Popover>
                               <PopoverTrigger asChild>
                                 <button
-                                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive"
+                                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
                                   title="Ver cálculo da multa e juros" aria-label="Ver cálculo da multa e juros"
                                 >
                                   <Info size={14} />
