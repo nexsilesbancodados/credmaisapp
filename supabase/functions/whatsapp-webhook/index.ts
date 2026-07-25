@@ -838,16 +838,11 @@ serve(async (req) => {
       const now = Date.now();
       const nowBrDay = new Date(now - 3 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-      // Helper: parcelas em aberto do cliente
+      // Helper: parcelas em aberto do cliente (agent_core: só com saldo > 0)
       const loadOpenInstallments = async () => {
-        const { data } = await supabase
-          .from("contract_installments")
-          .select("id, amount, due_date, status, late_fee, installment_number, paid_amount, contract_id")
-          .eq("client_id", client.id)
-          .in("status", ["pending", "overdue"])
-          .order("due_date", { ascending: true })
-          .limit(30);
-        return data || [];
+        const bucket = await loadClientInstallments(supabase, client.id, nowBrDay);
+        // Devolve pending/overdue ordenadas por vencimento (compatível com o resto do fluxo)
+        return [...bucket.overdue, ...bucket.dueToday, ...bucket.future].slice(0, 30);
       };
       const loadContractStats = async () => {
         const { data: all } = await supabase
