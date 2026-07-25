@@ -1502,15 +1502,7 @@ const ClienteDetalhe = () => {
 
       {/* Barra sticky de navegação por seções + gatilho de Documentos (modal) */}
 
-      <div className="sticky top-2 z-20 flex items-center gap-2 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
-        <div className="flex-1 flex gap-1">
-          {tabs.map(tab => (
-            <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
-              <tab.Icon size={14} /> {tab.label}
-            </button>
-          ))}
-        </div>
+      <div className="sticky top-2 z-20 flex items-center justify-end gap-2 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
         <button
           onClick={() => setDocsOpen(true)}
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
