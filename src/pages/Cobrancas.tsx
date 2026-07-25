@@ -644,6 +644,14 @@ const Cobrancas = () => {
 
   const activeFilters = (period !== "all" ? 1 : 0) + (sort !== "amount_desc" ? 1 : 0) + (focoDia ? 1 : 0) + (bucket !== "all" ? 1 : 0);
   const clearFilters = () => { setPeriod("all"); setSort("amount_desc"); setFocoDia(false); setBucket("all"); };
+  const applyFocus = useCallback((k: "hoje" | "atrasadas" | "7d" | "todas" | "pagas") => {
+    setFocoDia(false); setBucket("all");
+    if (k === "hoje") { setPeriod("today"); setFilter("all"); }
+    else if (k === "atrasadas") { setPeriod("all"); setFilter("overdue"); }
+    else if (k === "7d") { setPeriod("7d"); setFilter("all"); }
+    else if (k === "todas") { setPeriod("all"); setFilter("all"); }
+    else if (k === "pagas") { setPeriod("all"); setFilter("paid"); }
+  }, []);
 
   const copyPix = async (inst: any) => {
     const pix = (profile as any)?.pix_key;
