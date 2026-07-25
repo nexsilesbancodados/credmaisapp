@@ -174,7 +174,7 @@ export async function loadClientInstallments(
     .order("due_date", { ascending: true });
 
   const rows: InstallmentRow[] = (data || [])
-    .map((r: any) => ({
+    .map((r: any): InstallmentRow => ({
       id: r.id,
       contract_id: r.contract_id,
       installment_number: Number(r.installment_number) || 0,
@@ -185,7 +185,7 @@ export async function loadClientInstallments(
       status: String(r.status || ""),
     }))
     // Saldo > 0 (proteção contra parcelas quitadas mas com status errado)
-    .filter((r) => r.amount - (r.paid_amount || 0) > 0.005);
+    .filter((r: InstallmentRow) => r.amount - (r.paid_amount || 0) > 0.005);
 
   const overdue = rows.filter((r) => r.due_date < today);
   const dueToday = rows.filter((r) => r.due_date === today);
