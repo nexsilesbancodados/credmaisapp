@@ -1699,80 +1699,8 @@ const ClienteDetalhe = () => {
 
         return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Gauge principal */}
-            <section className="lg:col-span-5 rounded-2xl border border-border/60 bg-gradient-to-br from-card/60 to-background p-6">
-              <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground mb-6 text-center">Score de Crédito</h2>
-              <div className="flex items-center justify-center relative">
-                <svg width="200" height="200" viewBox="0 0 200 200" className="-rotate-90">
-                  <circle cx="100" cy="100" r={r} stroke="hsl(var(--border))" strokeWidth="14" fill="none" />
-                  <circle cx="100" cy="100" r={r} stroke={scoreColor} strokeWidth="14" fill="none"
-                    strokeDasharray={C} strokeDashoffset={C - (C * scorePct) / 100} strokeLinecap="round"
-                    style={{ transition: "stroke-dashoffset 1s ease" }} />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <p className="text-6xl font-bold tracking-tight" style={{ fontFamily: "'Sora', sans-serif", color: scoreColor }}>{score}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">de {scoreMax}</p>
-                </div>
-              </div>
-              <div className="mt-6 text-center">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border ${riskTone}`}>
-                  <ShieldCheck size={13} /> {riskLabel}
-                </span>
-              </div>
-              <div className="mt-6 pt-6 border-t border-border/40">
-                <AICreditScore clientId={id!} currentScore={score} onApplyScore={() => inv("client-detail")} />
-              </div>
-            </section>
+            {/* Score gauge, fatores e evolução do saldo — removidos a pedido */}
 
-            {/* Fatores */}
-            <section className="lg:col-span-7 rounded-2xl border border-border/60 bg-card/40 p-6">
-              <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground mb-4">Fatores comportamentais</h2>
-              <div className="space-y-4">
-                {factors.map((f) => (
-                  <div key={f.label}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-semibold text-foreground">{f.label}</span>
-                      <span className="text-xs font-bold text-muted-foreground font-mono">{f.value}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div className={`h-full rounded-full ${f.color} transition-all`} style={{ width: `${f.value}%` }} />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Evolução do saldo devedor */}
-            <section className="lg:col-span-12 rounded-2xl border border-border/60 bg-card/40 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Evolução do saldo devedor (12 meses)</h2>
-                <span className="text-[10px] font-bold text-muted-foreground">Pico: R$ {fmt(maxSaldo)}</span>
-              </div>
-              <div className="overflow-x-auto">
-                <svg width={chartW} height={chartH} className="w-full max-w-full" preserveAspectRatio="none" viewBox={`0 0 ${chartW} ${chartH}`}>
-                  <defs>
-                    <linearGradient id="saldoGrad" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor={scoreColor} stopOpacity="0.35" />
-                      <stop offset="100%" stopColor={scoreColor} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  {[0, 0.5, 1].map((t) => (
-                    <line key={t} x1={padL} x2={chartW - padR} y1={padT + innerH * t} y2={padT + innerH * t} stroke="hsl(var(--border))" strokeDasharray="2 4" />
-                  ))}
-                  <path d={areaD} fill="url(#saldoGrad)" />
-                  <path d={pathD} fill="none" stroke={scoreColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  {points.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r="3" fill={scoreColor}>
-                      <title>{`${months[i].label}: R$ ${fmt(months[i].saldo)}`}</title>
-                    </circle>
-                  ))}
-                  {months.map((m, i) => (
-                    <text key={i} x={padL + (innerW * i) / Math.max(1, months.length - 1)} y={chartH - 6} textAnchor="middle" fontSize="9" fill="hsl(var(--muted-foreground))">{m.label}</text>
-                  ))}
-                </svg>
-              </div>
-            </section>
 
             {/* Sugestões da IA */}
             <section className="lg:col-span-12 rounded-2xl border border-border/60 bg-card/40 p-6">
