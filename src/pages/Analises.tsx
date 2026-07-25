@@ -575,20 +575,50 @@ const Analises = () => {
 
   const periodLabel = `${format(dateFrom, "dd/MM/yy")} → ${format(dateTo, "dd/MM/yy")}`;
 
+  const heroDelta = m.deltaReceived;
+  const heroUp = heroDelta >= 0;
+
   return (
-    <div className="space-y-6">
-      <div className="page-hero animate-fade-in">
-        <div className="page-hero-content flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="page-hero-icon"><BarChart3 size={22} /></div>
+    <div className="space-y-6 pb-8">
+      {/* HERO Premium */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 md:p-8 animate-fade-in">
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-success/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.25)]">
+              <BarChart3 size={26} className="text-primary" />
+            </div>
             <div>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Análises</h1>
-              <p className="text-muted-foreground text-sm mt-0.5">Totais organizados por tipo · {periodLabel}</p>
+              <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Análises · {periodLabel}</p>
+              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Recebido no período</h1>
+              <div className="flex items-baseline gap-3 mt-1 flex-wrap">
+                <span className="text-4xl md:text-5xl font-bold text-success tracking-tight tabular-nums">{fmtBRL(m.totalReceived)}</span>
+                {isFinite(heroDelta) && (
+                  <span className={cn("text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1", heroUp ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive")}>
+                    {heroUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {Math.abs(heroDelta).toFixed(1)}% vs anterior
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex items-center gap-1"><CheckCircle2 size={11} className="text-success" /> {m.paidCount} parcela(s) paga(s)</span>
+                <span className="text-border">•</span>
+                <span className="flex items-center gap-1"><PiggyBank size={11} className="text-success" /> {fmtBRL(m.lucroPeriodo)} de juros</span>
+                {m.overdueAmount > 0 && <>
+                  <span className="text-border">•</span>
+                  <span className="flex items-center gap-1 text-destructive"><AlertTriangle size={11} /> {fmtBRL(m.overdueAmount)} em atraso</span>
+                </>}
+              </p>
             </div>
           </div>
-          <button onClick={handleExport} className="btn-ghost">
-            <Download size={16} /> Exportar CSV
-          </button>
+
+          <div className="flex flex-wrap gap-2">
+            <button onClick={handleExport} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card/70 backdrop-blur border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring">
+              <Download size={13} className="text-primary" /> Exportar CSV
+            </button>
+          </div>
         </div>
       </div>
 
