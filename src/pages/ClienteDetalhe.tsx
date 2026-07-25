@@ -1858,8 +1858,17 @@ const ClienteDetalhe = () => {
         </div>
       )}</section>
 
-      {/* Section: Histórico (timeline unificada) */}
-      <section id="sec-historico" className="scroll-mt-24">{(() => {
+      {/* Modal: Histórico (timeline unificada) */}
+      <Dialog open={histOpen} onOpenChange={setHistOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Clock size={14} /></div>
+              Histórico de Atividades
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-y-auto pr-1">{(() => {
+
         const events: any[] = [];
         // Contratos criados
         contracts.forEach((c: any) => events.push({
