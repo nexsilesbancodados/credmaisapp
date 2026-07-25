@@ -2568,6 +2568,7 @@ export type Database = {
         Args: { _birth_date: string; _cpf: string }
         Returns: Json
       }
+      portal_client_login_cpf: { Args: { _cpf: string }; Returns: Json }
       portal_client_mark_notifications_read: {
         Args: { _cpf: string; _ids?: string[] }
         Returns: number
