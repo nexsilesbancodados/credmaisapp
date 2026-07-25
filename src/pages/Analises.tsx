@@ -716,25 +716,54 @@ const Analises = () => {
               <StatCard onClick={() => setDetail(m.details.inadRate)} s={{ label: "Taxa de inadimplência", value: fmtPct(m.inadRate), tone: "warning", icon: TrendingDown }} />
               <StatCard onClick={() => setDetail(m.details.taxaCobranca)} s={{ label: "Taxa de cobrança", value: fmtPct(m.taxaCobranca), tone: "info", icon: TrendingUp, hint: "pagas no prazo / vencidas no período" }} />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              {[
-                { label: "1-7 dias",   data: m.aging.a, key: "agingA" },
-                { label: "8-15 dias",  data: m.aging.b, key: "agingB" },
-                { label: "16-30 dias", data: m.aging.c, key: "agingC" },
-                { label: "31-60 dias", data: m.aging.d, key: "agingD" },
-                { label: "60+ dias",   data: m.aging.e, key: "agingE" },
-              ].map((b) => (
-                <button
-                  type="button"
-                  key={b.label}
-                  onClick={() => setDetail((m.details as any)[b.key])}
-                  className="glass-card rounded-2xl p-3 text-left hover:border-primary/40 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-primary/40"
-                >
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{b.label}</p>
-                  <p className="text-lg font-bold text-destructive mt-1 tabular-nums">{fmtBRL(m.sumAmt(b.data))}</p>
-                  <p className="text-[11px] text-muted-foreground">{b.data.length} parcela(s)</p>
-                </button>
-              ))}
+            <div className="glass-card rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Aging da inadimplência</p>
+                <p className="text-[11px] text-muted-foreground">{m.overdueCount} parcela(s) · {fmtBRL(m.overdueAmount)}</p>
+              </div>
+              {(() => {
+                const buckets = [
+                  { label: "1-7 dias",   data: m.aging.a, key: "agingA", color: "bg-amber-400"   },
+                  { label: "8-15 dias",  data: m.aging.b, key: "agingB", color: "bg-orange-400"  },
+                  { label: "16-30 dias", data: m.aging.c, key: "agingC", color: "bg-orange-500"  },
+                  { label: "31-60 dias", data: m.aging.d, key: "agingD", color: "bg-red-500"     },
+                  { label: "60+ dias",   data: m.aging.e, key: "agingE", color: "bg-red-700"     },
+                ];
+                const total = m.overdueAmount || 1;
+                return (
+                  <>
+                    <div className="flex h-2.5 rounded-full overflow-hidden bg-muted/40">
+                      {buckets.map((b) => {
+                        const amt = m.sumAmt(b.data);
+                        const pct = (amt / total) * 100;
+                        if (pct === 0) return null;
+                        return <div key={b.label} className={b.color} style={{ width: `${pct}%` }} title={`${b.label}: ${fmtBRL(amt)}`} />;
+                      })}
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+                      {buckets.map((b) => {
+                        const amt = m.sumAmt(b.data);
+                        const pct = (amt / total) * 100;
+                        return (
+                          <button
+                            type="button"
+                            key={b.label}
+                            onClick={() => setDetail((m.details as any)[b.key])}
+                            className="rounded-xl border border-border bg-card/50 p-2.5 text-left hover:border-primary/40 hover:shadow-sm transition-all focus-ring group"
+                          >
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <div className={cn("w-2 h-2 rounded-full", b.color)} />
+                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{b.label}</p>
+                            </div>
+                            <p className="text-sm font-bold text-destructive tabular-nums">{fmtBRL(amt)}</p>
+                            <p className="text-[10px] text-muted-foreground">{b.data.length} parcela(s) · {pct.toFixed(0)}%</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </Section>
 
