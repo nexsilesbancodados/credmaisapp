@@ -1424,8 +1424,8 @@ const ClienteDetalhe = () => {
         ))}
       </div>
 
-      {/* Tab: Resumo — Editorial Magazine Layout */}
-      {activeTab === "resumo" && (() => {
+      {/* Section: Resumo — Editorial Magazine Layout */}
+      <section id="sec-resumo" className="scroll-mt-24">{(() => {
         const score = client.credit_score || 0;
         const scoreMax = 1000;
         const scorePct = Math.min(100, (score / scoreMax) * 100);
