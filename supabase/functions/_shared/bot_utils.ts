@@ -712,7 +712,7 @@ export interface ReplyGuardrailResult {
 const NEGOTIATION_RE = /\b(desconto|abatimento|abater|parcelar (a )?d[ií]vida|perdoar? (os )?juros|reduzir (o )?valor|acordo especial)/i;
 const DATE_BR_RE = /\b([0-3]?\d)[\/\-]([01]?\d)(?:[\/\-](\d{2,4}))?\b/g;
 // Captura "R$ 1.234,56" | "R$ 350,00" | "R$ 350" | "R$1234.56"
-const MONEY_RE = /R\$\s*([\d\.]+(?:,\d{1,2})?|\d+(?:\.\d{1,2}))/gi;
+const MONEY_RE_GUARD = /R\$\s*([\d\.]+(?:,\d{1,2})?|\d+(?:\.\d{1,2}))/gi;
 
 function firstNameOf(full: string): string {
   return String(full || "").trim().split(/\s+/)[0]?.toLowerCase() || "";
