@@ -13,7 +13,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
   // Rate limit: chat de negociação (AI), 12 req/min por IP
-  const rl = rateLimit(req, "client-negotiation", 12, 12 / 60, corsHeaders);
+  const rl = await rateLimit(req, "client-negotiation", 12, 12 / 60, corsHeaders);
   if (rl) return rl;
 
 

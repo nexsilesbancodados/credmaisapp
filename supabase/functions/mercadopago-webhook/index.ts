@@ -62,7 +62,7 @@ serve(async (req) => {
   }
 
   // Rate limit por IP: 20 req/s (webhook Mercado Pago tem picos legítimos)
-  const rl = rateLimitGuard(req, "mp", 40, 20, corsHeaders);
+  const rl = await rateLimitGuard(req, "mp", 40, 20, corsHeaders);
   if (rl) return rl;
 
 
