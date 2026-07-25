@@ -882,91 +882,131 @@ const Cobrancas = () => {
         );
       })()}
 
-      {/* Filtros unificados — 1 linha de foco */}
-      <div className="flex flex-col lg:flex-row gap-2 animate-fade-in">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="Buscar por cliente, parcela # ou valor…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-24 py-2.5 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground/50 text-sm input-enhanced"
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {search ? (
-              <>
-                <span className="text-[10px] text-muted-foreground">{filtered.length}</span>
-                <button aria-label="Limpar busca" onClick={() => setSearch("")} className="p-1 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
-              </>
-            ) : (
-              <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md border border-border/40 bg-muted/40 text-[10px] font-mono text-muted-foreground">/</kbd>
-            )}
+      {/* Toolbar unificada — busca + tabs com contagem + ações */}
+      {(() => {
+        const next7Count = installments.filter((i: any) => {
+          if (i.status === "paid") return false;
+          const d = parseLocalDate(i.due_date); if (!d) return false;
+          const today = new Date(); today.setHours(0,0,0,0);
+          const limit = new Date(today); limit.setDate(limit.getDate() + 7);
+          return d.getTime() >= today.getTime() && d.getTime() <= limit.getTime();
+        }).length;
+        const tabs = [
+          { key: "hoje", label: "Hoje", count: dueTodayStats.count, tone: "primary", match: period === "today" && filter === "all" && !focoDia },
+          { key: "atrasadas", label: "Atrasadas", count: stats.overdue, tone: "destructive", match: filter === "overdue" },
+          { key: "7d", label: "Próx. 7d", count: next7Count, tone: "muted", match: period === "7d" && filter === "all" },
+          { key: "todas", label: "Todas", count: stats.pending + stats.overdue, tone: "muted", match: filter === "all" && period === "all" && !focoDia },
+          { key: "pagas", label: "Pagas", count: stats.paid, tone: "success", match: filter === "paid" },
+        ] as const;
+        const sortLabel = sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
+        return (
+          <div className="relative rounded-3xl border border-border/60 bg-gradient-to-b from-card/90 to-card/60 backdrop-blur-xl shadow-lg shadow-black/5 p-2 sm:p-2.5 animate-fade-in">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2">
+              {/* Search */}
+              <div className="relative flex-1 min-w-0 group">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <input
+                  ref={searchRef}
+                  type="text"
+                  placeholder="Buscar por cliente, parcela # ou valor…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-11 pr-24 h-11 rounded-2xl bg-background/60 border border-border/50 text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                  {search ? (
+                    <>
+                      <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{filtered.length} result.</span>
+                      <button aria-label="Limpar busca" onClick={() => setSearch("")} className="p-1 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
+                    </>
+                  ) : (
+                    <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md border border-border/40 bg-muted/40 text-[10px] font-mono text-muted-foreground">/</kbd>
+                  )}
+                </div>
+              </div>
+
+              {/* Segmented tabs com contagem */}
+              <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/40 border border-border/40 overflow-x-auto scrollbar-thin">
+                {tabs.map((f) => {
+                  const toneColor = f.tone === "destructive" ? "text-destructive" : f.tone === "success" ? "text-success" : f.tone === "primary" ? "text-primary" : "text-muted-foreground";
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => applyFocus(f.key as any)}
+                      className={`relative flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${f.match ? "bg-background text-foreground shadow-sm border border-border/60" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      <span>{f.label}</span>
+                      {f.count > 0 && (
+                        <span className={`inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[10px] font-bold tabular-nums ${f.match ? `bg-muted ${toneColor}` : "bg-background/70 text-muted-foreground"}`}>
+                          {f.count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sort + selection */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <ArrowUpDown size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as SortKey)}
+                    className="appearance-none pl-8 pr-8 h-11 rounded-2xl text-xs font-semibold bg-background/60 text-foreground border border-border/50 hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                    title={`Ordenar por: ${sortLabel}`}
+                    aria-label="Ordenar por"
+                  >
+                    <option value="overdue_days">Mais atrasadas</option>
+                    <option value="due_asc">Vencimento próximo</option>
+                    <option value="amount_desc">Maior valor</option>
+                  </select>
+                  <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                </div>
+                <button
+                  onClick={toggleSelectAll}
+                  className={`flex items-center gap-2 px-3.5 h-11 rounded-2xl text-xs font-semibold shrink-0 transition-all focus-ring ${selected.size > 0 ? "bg-primary/10 border border-primary/40 text-primary" : "bg-background/60 border border-border/50 text-foreground hover:border-primary/30"}`}
+                  title="Selecionar todas visíveis"
+                >
+                  {selected.size > 0 ? <CheckSquare size={14} /> : <Square size={14} />}
+                  <span className="hidden sm:inline">{selected.size > 0 ? `${selected.size} sel.` : "Selecionar"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Ações secundárias inline */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-border/40">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 pl-2 pr-1">Ferramentas</span>
+              <button
+                onClick={() => setShowAging(v => !v)}
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all ${showAging ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+              >
+                <AlertTriangle size={11} /> Análise por cliente
+              </button>
+              <button
+                onClick={() => setShowAutomation(v => !v)}
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all ${showAutomation ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+              >
+                <Bell size={11} /> Automação
+              </button>
+              <button
+                onClick={() => setView(view === "calendar" ? "list" : "calendar")}
+                className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all ${view === "calendar" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+              >
+                <CalendarIcon size={11} /> {view === "calendar" ? "Lista" : "Calendário"}
+              </button>
+              {(search || activeFilters > 0) && (
+                <button
+                  onClick={() => { setSearch(""); clearFilters(); }}
+                  className="ml-auto inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+                >
+                  <X size={11} /> Limpar filtros
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-
-        <div className="pill-tabs overflow-x-auto scrollbar-thin">
-          {([
-            { key: "hoje", label: "Hoje", match: period === "today" && filter === "all" && !focoDia },
-            { key: "atrasadas", label: "Atrasadas", match: filter === "overdue" },
-            { key: "7d", label: "Próx. 7d", match: period === "7d" && filter === "all" },
-            { key: "todas", label: "Todas", match: filter === "all" && period === "all" && !focoDia },
-            { key: "pagas", label: "Pagas", match: filter === "paid" },
-          ] as const).map((f) => (
-            <button
-              key={f.key}
-              onClick={() => applyFocus(f.key)}
-              className={`pill-tab ${f.match ? "pill-tab-active" : "pill-tab-inactive"}`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="px-3 py-2.5 rounded-2xl text-xs font-medium bg-card text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/40"
-            title="Ordenar por"
-          >
-            <option value="overdue_days">Mais atrasadas</option>
-            <option value="due_asc">Vencimento próximo</option>
-            <option value="amount_desc">Maior valor</option>
-          </select>
-          <button
-            onClick={toggleSelectAll}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card border border-border text-foreground text-xs font-medium hover:bg-accent transition-colors focus-ring shrink-0"
-            title="Selecionar todas visíveis"
-          >
-            {selected.size > 0 ? <CheckSquare size={14} className="text-primary" /> : <Square size={14} />}
-            <span className="hidden sm:inline">{selected.size > 0 ? `${selected.size}` : "Selecionar"}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Ferramentas secundárias — link discreto */}
-      <div className="flex flex-wrap items-center gap-2 text-[11px]">
-        <button
-          onClick={() => setShowAging(v => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${showAging ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-        >
-          <AlertTriangle size={11} /> {showAging ? "Ocultar análise por cliente" : "Ver análise por cliente"}
-        </button>
-        <button
-          onClick={() => setShowAutomation(v => !v)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${showAutomation ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-        >
-          <Bell size={11} /> {showAutomation ? "Ocultar automação" : "Automação e métricas"}
-        </button>
-        <button
-          onClick={() => setView(view === "calendar" ? "list" : "calendar")}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${view === "calendar" ? "border-primary/40 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-        >
-          <CalendarIcon size={11} /> {view === "calendar" ? "Voltar à lista" : "Calendário"}
-        </button>
-      </div>
+        );
+      })()}
 
       {showAging && <InadimplenciaPanel />}
 
