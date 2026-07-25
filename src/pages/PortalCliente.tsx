@@ -405,7 +405,20 @@ const PortalCliente = () => {
 
   return (
     <main className="portal-shell text-foreground">
-      <div className="portal-content mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
+      {!portalData && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none fixed inset-0 z-0 bg-center bg-cover bg-no-repeat opacity-40 md:opacity-55"
+            style={{ backgroundImage: `url(${eagleBg})` }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"
+          />
+        </>
+      )}
+      <div className="portal-content relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
         {!portalData ? (
           justLoggedOut ? (
             /* ═══════════ TELA PÓS-LOGOUT ═══════════ */
