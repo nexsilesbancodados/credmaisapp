@@ -1106,9 +1106,13 @@ const Cobrancas = () => {
             }
             const daysSinceContact = lastAttemptAt ? Math.floor((Date.now() - lastAttemptAt) / 86400000) : null;
             // Next unpaid due date
-            const nextUnpaid = [...groupSelectable].sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
-            const nextDueDate = nextUnpaid ? new Date(nextUnpaid.due_date + "T00:00:00") : null;
-            const nextDueLabel = nextDueDate ? nextDueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : null;
+            const nextUnpaid = [...groupSelectable]
+              .filter((x: any) => !!x.due_date)
+              .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0];
+            const nextDueDate = nextUnpaid?.due_date ? parseLocalDate(nextUnpaid.due_date) : null;
+            const nextDueLabel = nextDueDate && !isNaN(nextDueDate.getTime())
+              ? nextDueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+              : null;
             const avatarRing =
               dueInfo.tone === "danger" ? "ring-destructive/50 bg-destructive/15 text-destructive"
               : dueInfo.tone === "warn" ? "ring-amber-500/50 bg-amber-500/15 text-amber-500"
