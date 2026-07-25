@@ -261,15 +261,15 @@ const Dashboard = () => {
             <button
               key={a.label}
               onClick={() => navigate(a.path)}
-              className={`group relative overflow-hidden flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br ${a.tone} border border-border/40 hover:border-border/70 ring-1 ring-transparent hover:${a.ring} transition-all duration-300 hover:-translate-y-0.5 text-left`}
+              className={`group relative overflow-hidden flex items-center gap-2.5 p-3 md:p-4 rounded-2xl bg-gradient-to-br ${a.tone} border border-border/40 hover:border-border/70 ring-1 ring-transparent hover:${a.ring} transition-all duration-300 hover:-translate-y-0.5 text-left`}
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              <div className={`w-10 h-10 rounded-xl bg-background/40 backdrop-blur flex items-center justify-center ${a.iconColor} shrink-0 group-hover:scale-110 transition`}>
-                <a.icon size={18} strokeWidth={2.2} />
+              <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl bg-background/40 backdrop-blur flex items-center justify-center ${a.iconColor} shrink-0 group-hover:scale-110 transition`}>
+                <a.icon size={16} strokeWidth={2.2} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-foreground truncate">{a.label}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Abrir →</p>
+                <p className="text-[13px] md:text-sm font-semibold text-foreground leading-tight break-words">{a.label}</p>
+                <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Abrir →</p>
               </div>
             </button>
           ))}
