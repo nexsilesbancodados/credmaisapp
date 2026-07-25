@@ -7,7 +7,7 @@ import {
   Receipt, Check, MessageSquare, Search, X, AlertTriangle, Clock, CheckCircle,
   CalendarDays, Mail, CheckSquare, Square, MinusSquare, List, Copy,
   Calendar as CalendarIcon, SlidersHorizontal, ArrowUpDown, Zap, Flame,
-  History, Bell, Send, Phone
+  History, Bell, Send, Phone, TrendingUp, Wallet, Percent, Sparkles, ExternalLink
   , ChevronDown, ChevronRight, Layers, ListTree
 } from "lucide-react";
 import { computeLateFee, computeLateFeeBreakdown } from "@/lib/lateFee";
