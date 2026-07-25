@@ -23,7 +23,7 @@ import EmptyState from "@/components/EmptyState";
 import CollectionMetrics from "@/components/cobrancas/CollectionMetrics";
 import { fetchAll } from "@/lib/fetchAll";
 
-const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const fmt = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const relTime = (iso: string) => {
   const d = new Date(iso).getTime();
   const diff = Math.max(0, Date.now() - d);
