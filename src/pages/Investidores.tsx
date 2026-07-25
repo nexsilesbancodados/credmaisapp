@@ -13,8 +13,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import {
-  Landmark, Plus, Link as LinkIcon, RefreshCw, Wallet, TrendingUp,
-  CheckCircle2, Clock, ExternalLink, Trash2, Copy, DollarSign, ArrowLeft,
+  Landmark, Plus, RefreshCw, Wallet, TrendingUp,
+  CheckCircle2, ExternalLink, Trash2, Copy, DollarSign,
+  Search, ArrowUpDown, CalendarDays, AlertTriangle, Users,
 } from "lucide-react";
 import InvestidorPerfil from "./InvestidorPerfil";
 
