@@ -1853,12 +1853,43 @@ Ex6 — "queria mais 3 mil emprestado":
           ...(dueToday || []).map((i: any) => String(i.due_date || "").slice(0, 10)),
           ...((installments || []) as any[]).map((i) => String(i.due_date || "").slice(0, 10)),
         ].filter(Boolean);
+        // Conjunto de valores permitidos: parcelas individuais (bruto/pago/saldo), totais e somas comuns.
+        const amountsBase: number[] = [];
+        const pushAmt = (n: any) => {
+          const v = Number(n);
+          if (Number.isFinite(v) && v > 0) amountsBase.push(v);
+        };
+        for (const i of ((installments || []) as any[])) {
+          pushAmt(i.amount);
+          pushAmt(i.paid_amount);
+          pushAmt(Number(i.amount || 0) - Number(i.paid_amount || 0));
+        }
+        for (const i of ((overdue || []) as any[])) {
+          pushAmt(i.amount);
+          pushAmt(Number(i.amount || 0) - Number(i.paid_amount || 0));
+          pushAmt((i as any).amount_with_fee);
+          pushAmt((i as any).late_fee);
+          pushAmt((i as any).daily_interest);
+        }
+        for (const i of ((dueToday || []) as any[])) {
+          pushAmt(i.amount);
+          pushAmt(Number(i.amount || 0) - Number(i.paid_amount || 0));
+        }
+        pushAmt(totalOverdue);
+        pushAmt(totalDueToday);
+        pushAmt(Number(totalOverdue || 0) + Number(totalDueToday || 0));
+        for (const r of ((rolloverOptions || []) as any[])) {
+          pushAmt((r as any).amount);
+          pushAmt((r as any).total);
+        }
+        const allowedAmounts = Array.from(new Set(amountsBase.map((v) => Math.round(v * 100) / 100)));
         const hasMoney = /R\$\s*\d/.test(result.reply);
         const g = assertReplySafe({
           reply: result.reply,
           currentClient: { id: client.id, name: client.name, cpf_cnpj: client.cpf_cnpj },
           otherClientsSample: (otherSample || []) as any,
           allowedDueDates: allowedDates,
+          allowedAmounts,
           identityConfirmed: true, // já passamos por identifyClient com status "unique"
           hasMoney,
         });
