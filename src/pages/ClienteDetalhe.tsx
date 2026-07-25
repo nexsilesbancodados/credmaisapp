@@ -2077,10 +2077,10 @@ const ClienteDetalhe = () => {
             );
           })}
         </div>
-      )}
+      )}</section>
 
-      {/* Tab: Histórico (timeline unificada) */}
-      {activeTab === "historico" && (() => {
+      {/* Section: Histórico (timeline unificada) */}
+      <section id="sec-historico" className="scroll-mt-24">{(() => {
         const events: any[] = [];
         // Contratos criados
         contracts.forEach((c: any) => events.push({
