@@ -70,7 +70,7 @@ const Relatorios = () => {
 
   useEffect(() => { 
     fetchReport(); 
-    setAiAnalysis(null);
+    
   }, [user, month]);
 
   useEffect(() => {

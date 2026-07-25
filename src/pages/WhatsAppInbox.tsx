@@ -188,7 +188,7 @@ export default function WhatsAppInbox() {
         (p) => setMessages(prev => prev.map(m => m.id === (p.new as Message).id ? p.new as Message : m)))
       .subscribe();
 
-    setAiSuggestions(null); setAiSummary(null);
+    
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [selectedId, user]);
 
@@ -264,7 +264,7 @@ export default function WhatsAppInbox() {
     setSending(true);
     try {
       await invokeSend({ conversation_id: selected.id, text: draft.trim() });
-      setDraft(""); setAiSuggestions(null);
+      setDraft("");
     } catch (e: any) {
       toast({ title: "Erro ao enviar", description: e?.message || "Falha", variant: "destructive" });
     } finally { setSending(false); }
