@@ -1047,11 +1047,12 @@ const ClienteDetalhe = () => {
   const scoreClr = (client.credit_score || 0) >= 700 ? "text-success" : (client.credit_score || 0) >= 400 ? "text-warning" : "text-destructive";
 
   const tabs = [
-    { key: "resumo" as const, label: "Informações", Icon: User },
+    { key: "documentos" as const, label: "Documentos", Icon: FileIcon },
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
     { key: "parcelas" as const, label: "Parcelas", Icon: Receipt },
     { key: "historico" as const, label: "Histórico", Icon: Clock },
   ];
+
 
 
 
