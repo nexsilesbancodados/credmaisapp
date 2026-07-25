@@ -1902,25 +1902,69 @@ Ex6 — "queria mais 3 mil emprestado":
           hasMoney,
         });
         if (g.block) {
-          // Substitui por resposta segura determinística e escala para humano
-          const safeLines = [
-            `Oi, ${String(client.name || "").split(" ")[0] || "tudo bem"}. Vou repassar seu atendimento para um responsável do nosso time e ele te responde por aqui.`,
-          ];
-          result.reply = safeLines.join("\n");
-          result.needs_human = true;
+          // ── Recovery com tool calls tipadas ─────────────────────────
+          // Antes de escalar cegamente, damos uma última chance à IA
+          // com tools server-side (dados garantidos, sem alucinação).
+          let recovered = false;
+          try {
+            const siteUrl = Deno.env.get("SITE_URL") || "";
+            const toolRun = await runAgentWithTools({
+              system: `Você é um agente de cobrança. Cliente confirmado: ${client.name} (id=${client.id}). Use SEMPRE as tools para obter valores/parcelas — nunca invente. Se o cliente pedir desconto/parcelamento/negociação, chame escalar_para_humano. Responda em PT-BR, objetivo, sem emojis. Máximo 3 linhas.`,
+              userMessage: incomingText || "",
+              history: (conversationHistory || []).slice(-6).map(m => ({ role: m.role as "user" | "assistant", content: typeof m.content === "string" ? m.content : "" })),
+              ctx: { supabase, siteUrl, today: todayStr },
+              maxSteps: 4,
+            });
+            await supabase.from("bot_actions_log").insert({
+              user_id: userId,
+              client_id: client.id,
+              conversation_id: convoId,
+              action_type: "tool_recovery",
+              tool_name: "runAgentWithTools",
+              tool_input: { trigger: "guardrail_block", reasons: g.reasons.slice(0, 5) },
+              tool_output: { tools_used: toolRun.tools_used.map(t => ({ name: t.name, ok: (t.output as any).ok })), handoff: toolRun.handoff, motivo: toolRun.handoff_motivo, reply_len: toolRun.reply.length },
+            });
+            if (toolRun.reply && !toolRun.handoff) {
+              // Reaplicar guardrail no reply recuperado
+              const g2 = assertReplySafe({
+                reply: toolRun.reply,
+                currentClient: { id: client.id, name: client.name, cpf_cnpj: client.cpf_cnpj },
+                otherClientsSample: (otherSample || []) as any,
+                allowedDueDates: allowedDates,
+                allowedAmounts,
+                identityConfirmed: true,
+                hasMoney: /R\$\s*\d/.test(toolRun.reply),
+              });
+              if (!g2.block) {
+                result.reply = toolRun.reply;
+                recovered = true;
+              }
+            }
+          } catch (e) {
+            console.warn("[tool-recovery] falhou:", (e as Error).message);
+          }
+          if (!recovered) {
+            const safeLines = [
+              `Oi, ${String(client.name || "").split(" ")[0] || "tudo bem"}. Vou repassar seu atendimento para um responsável do nosso time e ele te responde por aqui.`,
+            ];
+            result.reply = safeLines.join("\n");
+            result.needs_human = true;
+          }
           await supabase.from("audit_logs").insert({
             user_id: userId,
             entity_type: "whatsapp_bot",
-            action: "reply_blocked_by_guardrail",
+            action: recovered ? "reply_recovered_by_tools" : "reply_blocked_by_guardrail",
             entity_id: client.id,
-            details: { reasons: g.reasons, softHits: g.softHits },
+            details: { reasons: g.reasons, softHits: g.softHits, recovered },
           });
-          await supabase.from("notifications").insert({
-            user_id: userId,
-            title: "🛑 Bot bloqueado pelo guardrail",
-            message: `Cliente ${client.name}: ${g.reasons.slice(0, 3).join(", ")}. Assuma a conversa.`,
-            type: "warning",
-          });
+          if (!recovered) {
+            await supabase.from("notifications").insert({
+              user_id: userId,
+              title: "🛑 Bot bloqueado pelo guardrail",
+              message: `Cliente ${client.name}: ${g.reasons.slice(0, 3).join(", ")}. Assuma a conversa.`,
+              type: "warning",
+            });
+          }
         } else if (g.softHits.length) {
           await supabase.from("audit_logs").insert({
             user_id: userId,
