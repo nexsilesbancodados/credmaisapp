@@ -483,35 +483,48 @@ serve(async (req) => {
 
     const userId = settings.user_id;
 
-    // CLIENT LOOKUP
+    // CLIENT LOOKUP (agent_core v2 — estrito + desambiguação por CPF)
     let client: any = null;
     const CLIENT_FIELDS = "id, name, phone, whatsapp, cpf_cnpj, status, credit_score, bot_memory, birth_date, email, address";
     const { data: convoExisting } = await supabase.from("whatsapp_conversations").select("id, client_id, bot_paused, blocked").eq("user_id", userId).eq("phone", senderPhone).maybeSingle();
+    let preboundClient: any = null;
     if (convoExisting?.client_id) {
-      const { data: c, error: clientByConversationError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
-      if (clientByConversationError) console.warn("[client_lookup] conversa vinculada falhou:", clientByConversationError.message);
-      if (c) client = c;
+      const { data: c } = await supabase.from("clients").select(CLIENT_FIELDS).eq("id", convoExisting.client_id).maybeSingle();
+      if (c) {
+        // Confirma que o telefone AINDA bate com esse cliente — evita vínculo "podre"
+        if (samePhoneBR(senderPhone, c.whatsapp || "") || samePhoneBR(senderPhone, c.phone || "")) {
+          preboundClient = c;
+        } else {
+          console.warn("[client_lookup] conversation.client_id não bate mais com o telefone; ignorando vínculo antigo");
+        }
+      }
     }
-    if (!client) {
-      // Normaliza: remove código do país 55 (Brasil) se vier prefixado
-      const normalizedIn = senderPhone.replace(/^55/, "");
-      const tail8 = normalizedIn.slice(-8);
-      const tail9 = normalizedIn.slice(-9);
-      const tail10 = normalizedIn.slice(-10);
-      const tail11 = normalizedIn.slice(-11);
-      const { data: clients, error: clientsByPhoneError } = await supabase.from("clients").select(CLIENT_FIELDS).eq("user_id", userId);
-      if (clientsByPhoneError) console.warn("[client_lookup] busca por telefone falhou:", clientsByPhoneError.message);
-      client = clients?.find(c => {
-        const cRaw = ((c.whatsapp || "") + " " + (c.phone || "")).replace(/\D/g, "");
-        if (!cRaw) return false;
-        return (
-          cRaw.endsWith(tail11) ||
-          cRaw.endsWith(tail10) ||
-          cRaw.endsWith(tail9) ||
-          cRaw.endsWith(tail8)
-        );
-      });
+    const ident = await identifyClient(supabase, { userId, senderPhone, incomingText, preboundClient });
+    let ambiguousCandidates: any[] = [];
+    if (ident.status === "unique") {
+      client = ident.client;
+      // Se veio de match por telefone/CPF e a conversa não estava vinculada, vincula agora
+      if (!preboundClient && convoExisting?.id) {
+        await supabase.from("whatsapp_conversations").update({ client_id: client.id }).eq("id", convoExisting.id).then(() => {}, () => {});
+      }
+    } else if (ident.status === "ambiguous") {
+      ambiguousCandidates = ident.candidates;
+      client = null;
+    } else {
+      client = null;
     }
+    await auditDecision(supabase, {
+      userId,
+      conversationId: convoExisting?.id ?? null,
+      clientId: client?.id ?? null,
+      intent: `identify_${ident.status}`,
+      outcome: "ok",
+      details: {
+        sender_phone: senderPhone,
+        match_type: ident.status === "unique" ? (ident as any).matchType : null,
+        candidate_count: ident.status === "ambiguous" ? ambiguousCandidates.length : (ident.status === "unique" ? 1 : 0),
+      },
+    });
 
     const { data: profile } = await supabase.from("profiles").select("name, pix_key, pix_key_type").eq("id", userId).single();
 
