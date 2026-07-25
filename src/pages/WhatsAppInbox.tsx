@@ -582,31 +582,74 @@ export default function WhatsAppInbox() {
 
 
         {/* Chat */}
-        <Card className="flex flex-col overflow-hidden">
+        <Card className="flex flex-col overflow-hidden rounded-2xl border-border/60">
           {!selected ? (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-              Selecione uma conversa
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-8 bg-gradient-to-b from-transparent to-muted/10">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-primary/10 border border-emerald-500/20 flex items-center justify-center mb-4 shadow-[0_0_40px_rgb(16_185_129/0.15)]">
+                <MessageCircle className="h-9 w-9 text-emerald-500" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-1">Sua caixa de conversas</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">Selecione uma conversa à esquerda para responder, acionar o bot ou registrar notas internas.</p>
+              <div className="flex items-center gap-2 mt-4 text-[11px] text-muted-foreground">
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px]">↑</kbd>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px]">↓</kbd>
+                <span>navegar</span>
+                <span className="mx-1">•</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px]">Ctrl+P</kbd>
+                <span>pausar bot</span>
+              </div>
             </div>
           ) : (
             <>
               {/* Header */}
-              <div className="p-3 border-b border-border flex items-center justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold truncate">{selected.contact_name || selected.phone}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                    <span>{selected.phone}</span>
-                    {selected.bot_status === "handoff" && (
-                      <span className="text-destructive font-medium">🚨 aguardando atendente humano{selected.human_takeover_reason ? ` — ${selected.human_takeover_reason}` : ""}</span>
-                    )}
-                    {selected.bot_status !== "handoff" && selected.needs_human && <span className="text-destructive font-medium">• precisa de atendimento</span>}
-                    {(selected.tags || []).map(t => (
-                      <span key={t} className="inline-flex items-center gap-1 bg-primary/10 text-primary px-1.5 rounded-full">
-                        #{t}
-                        <button onClick={() => removeTag(t)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
-                      </span>
-                    ))}
+              {(() => {
+                const hname = selected.contact_name || selected.phone;
+                const hinitials = hname.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase() || "").join("") || "?";
+                const inHandoff = selected.bot_status === "handoff";
+                const botOn = !selected.bot_paused && !inHandoff && !selected.blocked;
+                return (
+              <div className="p-3 border-b border-border/60 flex items-center justify-between gap-2 bg-gradient-to-r from-card via-card to-emerald-500/5">
+                <div className="min-w-0 flex-1 flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    inHandoff || selected.needs_human ? "bg-destructive/20 text-destructive border border-destructive/30"
+                    : "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  }`}>{hinitials}</div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-foreground truncate leading-tight">{hname}</h3>
+                    <div className="flex items-center gap-2 text-[11px] flex-wrap mt-0.5">
+                      <span className="text-muted-foreground">{selected.phone}</span>
+                      <span className="text-border">•</span>
+                      {inHandoff ? (
+                        <span className="text-destructive font-semibold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                          Aguardando atendente{selected.human_takeover_reason ? ` — ${selected.human_takeover_reason}` : ""}
+                        </span>
+                      ) : selected.needs_human ? (
+                        <span className="text-destructive font-semibold flex items-center gap-1">
+                          <AlertTriangle className="h-2.5 w-2.5" /> Precisa de atenção
+                        </span>
+                      ) : botOn ? (
+                        <span className="text-primary font-semibold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                          Bot ativo
+                        </span>
+                      ) : selected.blocked ? (
+                        <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                          <Ban className="h-2.5 w-2.5" /> Bloqueado
+                        </span>
+                      ) : (
+                        <span className="text-amber-600 dark:text-amber-400 font-semibold">Bot pausado</span>
+                      )}
+                      {(selected.tags || []).map(t => (
+                        <span key={t} className="inline-flex items-center gap-1 bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                          #{t}
+                          <button onClick={() => removeTag(t)} className="hover:text-destructive"><X className="h-2.5 w-2.5" /></button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
+
                 <div className="flex items-center gap-1.5">
                   <Button size="sm" variant={selected.bot_status === "handoff" ? "destructive" : (selected.bot_paused ? "default" : "outline")}
                     onClick={toggleBot} className="gap-1.5 h-8" title="Ctrl+P">
