@@ -1359,21 +1359,27 @@ serve(async (req) => {
       return Math.round((db.getTime() - da.getTime()) / 86400000);
     };
 
-    const overdue = (installments || []).filter(i => {
+    // Só considera parcelas com SALDO real (amount - paid_amount > 0) — protege contra
+    // status desatualizado (ex: parcela quitada mas ainda marcada como 'overdue').
+    const openWithBalance = (installments || []).filter(i => {
+      const paid = Number(i.paid_amount) || 0;
+      return (Number(i.amount) || 0) - paid > 0.005;
+    });
+    const overdue = openWithBalance.filter(i => {
       const dueDate = typeof i.due_date === 'string' ? i.due_date.split('T')[0] : i.due_date;
       return dueDate < todayStr;
     });
-    const dueToday = (installments || []).filter(i => {
+    const dueToday = openWithBalance.filter(i => {
       const dueDate = typeof i.due_date === 'string' ? i.due_date.split('T')[0] : i.due_date;
       return dueDate === todayStr;
     });
-    const upcoming = (installments || []).filter(i => {
+    const upcoming = openWithBalance.filter(i => {
       const dueDate = typeof i.due_date === 'string' ? i.due_date.split('T')[0] : i.due_date;
       return dueDate > todayStr;
     }).slice(0, 3);
 
-    const totalOverdue = overdue.reduce((s, i) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
-    const totalDueToday = dueToday.reduce((s, i) => s + Number(i.amount), 0);
+    const totalOverdue = overdue.reduce((s, i) => s + (Number(i.amount) - (Number(i.paid_amount) || 0)) + (Number(i.late_fee) || 0), 0);
+    const totalDueToday = dueToday.reduce((s, i) => s + (Number(i.amount) - (Number(i.paid_amount) || 0)), 0);
 
     // Renovação (pagar só juros) — usa cálculo estável (capital × taxa)
     const rolloverOptions = (activeContracts || []).map(c => {
