@@ -205,7 +205,11 @@ const Clientes = () => {
     e.stopPropagation();
     if (!(await confirm("Excluir este cliente e todos os seus dados?"))) return;
     const { error } = await supabase.rpc("delete_client_cascade", { _client_id: id });
-    if (error) { toast({ ...friendlyError(error), variant: "destructive" }); return; }
+    if (error) {
+      console.error("[delete_client_cascade]", error);
+      toast({ title: "Não foi possível excluir", description: (error as any)?.message || "Erro desconhecido", variant: "destructive" });
+      return;
+    }
     toast({ title: "Cliente excluído!" });
     qc.invalidateQueries({ queryKey: ["clients", user?.id] });
   }, [confirm, toast, qc, user?.id]);
@@ -225,7 +229,11 @@ const Clientes = () => {
     if (!(await confirm(`Excluir ${ids.length} cliente(s) e todos os dados associados?`))) return;
     const results = await Promise.all(ids.map((cid) => supabase.rpc("delete_client_cascade", { _client_id: cid })));
     const firstErr = results.find((r) => r.error)?.error;
-    if (firstErr) { toast({ ...friendlyError(firstErr), variant: "destructive" }); return; }
+    if (firstErr) {
+      console.error("[delete_client_cascade bulk]", firstErr);
+      toast({ title: "Não foi possível excluir", description: (firstErr as any)?.message || "Erro desconhecido", variant: "destructive" });
+      return;
+    }
     toast({ title: `${ids.length} cliente(s) excluído(s)!` });
     clearSelection();
     qc.invalidateQueries({ queryKey: ["clients", user?.id] });
