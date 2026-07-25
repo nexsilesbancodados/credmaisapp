@@ -1414,10 +1414,10 @@ const ClienteDetalhe = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 glass-card rounded-2xl p-1.5">
+      {/* Section jump nav (sticky) */}
+      <div className="sticky top-2 z-20 flex gap-1 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
         {tabs.map(tab => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+          <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
             <tab.Icon size={14} /> {tab.label}
           </button>
