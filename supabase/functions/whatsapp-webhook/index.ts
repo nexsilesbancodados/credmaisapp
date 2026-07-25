@@ -1839,7 +1839,65 @@ Ex6 — "queria mais 3 mil emprestado":
       }
     }
 
+    // ─── Guardrail duro pré-envio (última linha de defesa) ────────────────
+    if (result.reply) {
+      try {
+        const { data: otherSample } = await supabase
+          .from("clients")
+          .select("id, name, cpf_cnpj")
+          .eq("user_id", userId)
+          .neq("id", client.id)
+          .limit(50);
+        const allowedDates = [
+          ...(overdue || []).map((i: any) => String(i.due_date || "").slice(0, 10)),
+          ...(dueToday || []).map((i: any) => String(i.due_date || "").slice(0, 10)),
+          ...((installments || []) as any[]).map((i) => String(i.due_date || "").slice(0, 10)),
+        ].filter(Boolean);
+        const hasMoney = /R\$\s*\d/.test(result.reply);
+        const g = assertReplySafe({
+          reply: result.reply,
+          currentClient: { id: client.id, name: client.name, cpf_cnpj: client.cpf_cnpj },
+          otherClientsSample: (otherSample || []) as any,
+          allowedDueDates: allowedDates,
+          identityConfirmed: true, // já passamos por identifyClient com status "unique"
+          hasMoney,
+        });
+        if (g.block) {
+          // Substitui por resposta segura determinística e escala para humano
+          const safeLines = [
+            `Oi, ${String(client.name || "").split(" ")[0] || "tudo bem"}. Vou repassar seu atendimento para um responsável do nosso time e ele te responde por aqui.`,
+          ];
+          result.reply = safeLines.join("\n");
+          result.needs_human = true;
+          await supabase.from("audit_logs").insert({
+            user_id: userId,
+            entity_type: "whatsapp_bot",
+            action: "reply_blocked_by_guardrail",
+            entity_id: client.id,
+            details: { reasons: g.reasons, softHits: g.softHits },
+          });
+          await supabase.from("notifications").insert({
+            user_id: userId,
+            title: "🛑 Bot bloqueado pelo guardrail",
+            message: `Cliente ${client.name}: ${g.reasons.slice(0, 3).join(", ")}. Assuma a conversa.`,
+            type: "warning",
+          });
+        } else if (g.softHits.length) {
+          await supabase.from("audit_logs").insert({
+            user_id: userId,
+            entity_type: "whatsapp_bot",
+            action: "reply_soft_hits",
+            entity_id: client.id,
+            details: { softHits: g.softHits },
+          });
+        }
+      } catch (e) {
+        console.error("[guardrail] falha ao validar reply", e);
+      }
+    }
+
     if (result.reply) await botSay(result.reply);
+
 
     // Merge inteligente da memória (validado + dedup + limite por seção, ver _shared/memory.ts)
     if (result.memory_update || true) {
