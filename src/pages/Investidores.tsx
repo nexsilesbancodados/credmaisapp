@@ -285,13 +285,13 @@ export default function Investidores() {
               return (
                 <article
                   key={inv.id}
-                  className={`group relative overflow-hidden rounded-2xl border bg-card/60 backdrop-blur transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 ${
-                    s.state === "overdue" ? "border-destructive/25" : "border-border/70"
+                  className={`group relative overflow-hidden rounded-2xl border bg-card/70 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10 ${
+                    s.state === "overdue" ? "border-destructive/30" : "border-border/70"
                   }`}
                 >
-                  <div className={`h-1 w-full bg-gradient-to-r ${accentGrad}`} />
-                  <div className="p-4 space-y-3.5">
-                    {/* Head */}
+                  <div className={`h-[3px] w-full bg-gradient-to-r ${accentGrad}`} />
+                  <div className="p-5 space-y-4">
+                    {/* Head — avatar + identity */}
                     <div className="flex items-start gap-3">
                       <button
                         onClick={() => setExpandedId(inv.id)}
@@ -305,114 +305,117 @@ export default function Investidores() {
                         onClick={() => setExpandedId(inv.id)}
                         className="min-w-0 flex-1 text-left focus-ring rounded-lg"
                       >
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="truncate text-[15px] font-bold text-foreground tracking-tight max-w-[220px]">{inv.name}</p>
+                        <p className="truncate text-[15px] font-bold text-foreground tracking-tight" title={inv.name}>{inv.name}</p>
+                        <div className="mt-1 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground">
+                          {inv.cpf_cnpj && <span className="tabular-nums">{inv.cpf_cnpj}</span>}
+                          {(inv.whatsapp || inv.phone) && <span className="tabular-nums">· {inv.whatsapp || inv.phone}</span>}
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                           {s.overdueCount > 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-destructive/25 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
-                              <AlertTriangle size={10} /> {s.overdueCount} atras.
+                            <span className="inline-flex items-center gap-1 rounded-full border border-destructive/25 bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">
+                              <AlertTriangle size={10} /> {s.overdueCount} em atraso
                             </span>
                           )}
                           {s.state === "paid" && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-success/25 bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-success/25 bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success">
                               <CheckCircle2 size={10} /> quitado
                             </span>
                           )}
-                        </div>
-                        <div className="mt-1 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
-                          {inv.cpf_cnpj && <span className="tabular-nums">{inv.cpf_cnpj}</span>}
-                          {(inv.whatsapp || inv.phone) && <span>· {inv.whatsapp || inv.phone}</span>}
+                          <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/50 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                            {s.count} contrato{s.count === 1 ? "" : "s"}
+                          </span>
                         </div>
                       </button>
-                      <div className="hidden sm:flex shrink-0 flex-col items-end">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Saldo</span>
-                        <span className={`text-lg font-black tabular-nums leading-none ${s.state === "overdue" ? "text-destructive" : "text-foreground"}`}>
-                          {brl(s.saldo)}
-                        </span>
+                    </div>
+
+                    {/* Balance hero */}
+                    <div className={`rounded-xl border p-3 ${
+                      s.state === "overdue" ? "border-destructive/25 bg-destructive/5" : "border-border/60 bg-background/40"
+                    }`}>
+                      <div className="flex items-end justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Saldo a receber</p>
+                          <p className={`text-2xl font-black tabular-nums leading-tight mt-0.5 ${s.state === "overdue" ? "text-destructive" : "text-foreground"}`}>
+                            {brl(s.saldo)}
+                          </p>
+                        </div>
+                        <div className={`shrink-0 text-right ${
+                          s.state === "overdue" ? "text-destructive" : s.state === "warn" ? "text-amber-500" : "text-muted-foreground"
+                        }`}>
+                          <p className="text-[10px] uppercase tracking-widest font-semibold flex items-center gap-1 justify-end">
+                            <CalendarDays size={10} /> Próx.
+                          </p>
+                          <p className="text-sm font-bold tabular-nums leading-tight mt-0.5">{proxLabel}</p>
+                        </div>
                       </div>
                     </div>
 
                     {/* KPIs */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
-                        <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Capital</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">Capital</p>
                         <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{brl(s.capital)}</p>
                       </div>
-                      <div className="rounded-xl border border-border/60 bg-background/40 px-2.5 py-2">
-                        <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">Total</p>
+                      <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                        <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">Total</p>
                         <p className="text-sm font-bold text-foreground tabular-nums mt-0.5">{brl(s.total)}</p>
-                        <p className="text-[9px] text-success/80 tabular-nums">pago {brl(s.paid)}</p>
-                      </div>
-                      <div className={`rounded-xl border px-2.5 py-2 ${
-                        s.state === "overdue" ? "border-destructive/30 bg-destructive/10" :
-                        s.state === "warn" ? "border-amber-500/30 bg-amber-500/10" :
-                        "border-border/60 bg-background/40"
-                      }`}>
-                        <p className={`text-[9px] uppercase tracking-wide font-semibold ${
-                          s.state === "overdue" ? "text-destructive/90" : s.state === "warn" ? "text-amber-500/90" : "text-muted-foreground"
-                        }`}>
-                          <CalendarDays size={9} className="inline mr-0.5" /> Próx.
-                        </p>
-                        <p className={`text-sm font-bold tabular-nums mt-0.5 ${
-                          s.state === "overdue" ? "text-destructive" : s.state === "warn" ? "text-amber-500" : "text-foreground"
-                        }`}>{proxLabel}</p>
-                        <p className="text-[9px] text-muted-foreground tabular-nums">{s.count} contrato{s.count === 1 ? "" : "s"}</p>
                       </div>
                     </div>
 
                     {/* Progress */}
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span className="font-semibold">Progresso</span>
-                        <span className="tabular-nums font-semibold text-foreground">{s.pct}%</span>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-semibold text-muted-foreground">Recebido {brl(s.paid)}</span>
+                        <span className="tabular-nums font-bold text-foreground">{s.pct}%</span>
                       </div>
-                      <div className="relative h-2 overflow-hidden rounded-full bg-muted/40">
+                      <div className="relative h-2 overflow-hidden rounded-full bg-muted/50">
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${
+                          className={`h-full rounded-full transition-all bg-gradient-to-r ${
                             s.pct >= 80 ? "from-success to-success/70" : s.pct >= 40 ? "from-primary to-primary/70" : "from-amber-500 to-amber-400"
                           }`}
-                          style={{ width: `${Math.max(2, s.pct)}%` }}
+                          style={{ width: `${Math.max(s.pct > 0 ? 4 : 0, s.pct)}%` }}
                         />
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setExpandedId(inv.id)}
-                        className="col-span-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/85 px-3 py-2 text-xs font-semibold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] focus-ring"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/85 px-3 py-2.5 text-xs font-bold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] focus-ring"
                       >
                         <ExternalLink size={13} /> Abrir perfil
                       </button>
                       <button
                         onClick={() => copyPortal(inv.access_token)}
                         title="Copiar link do portal"
-                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-border bg-accent/40 px-2 py-2 text-xs font-semibold text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
                       >
-                        <Copy size={13} />
+                        <Copy size={14} />
                       </button>
                       <button
                         onClick={() => window.open(`/investidor/${inv.access_token}`, "_blank")}
-                        title="Abrir portal"
-                        className="inline-flex items-center justify-center gap-1 rounded-lg border border-border bg-accent/40 px-2 py-2 text-xs font-semibold text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
+                        title="Abrir portal do investidor"
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
                       >
-                        <ExternalLink size={13} />
+                        <ExternalLink size={14} />
                       </button>
                     </div>
 
                     {/* Secondary actions */}
-                    <div className="flex items-center justify-between pt-1 text-[11px]">
+                    <div className="flex items-center justify-between border-t border-border/50 pt-3 text-[11px]">
                       <button
                         onClick={() => { setSelectedId(inv.id); setNewLoanOpen(true); }}
-                        className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                        className="inline-flex items-center gap-1 font-bold text-primary hover:underline"
                       >
-                        <Plus size={12} /> Novo empréstimo
+                        <Plus size={13} /> Novo empréstimo
                       </button>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <button onClick={() => regenerateToken(inv.id)} className="inline-flex items-center gap-1 hover:text-foreground" title="Gerar novo link">
-                          <RefreshCw size={11} />
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <button onClick={() => regenerateToken(inv.id)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-accent hover:text-foreground transition-colors" title="Gerar novo link do portal">
+                          <RefreshCw size={12} />
                         </button>
-                        <button onClick={() => deleteInvestor(inv.id)} className="inline-flex items-center gap-1 hover:text-destructive" title="Excluir">
-                          <Trash2 size={11} />
+                        <button onClick={() => deleteInvestor(inv.id)} className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors" title="Excluir investidor">
+                          <Trash2 size={12} />
                         </button>
                       </div>
                     </div>
