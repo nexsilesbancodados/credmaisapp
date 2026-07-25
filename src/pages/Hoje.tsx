@@ -282,14 +282,12 @@ const Hoje = () => {
           </button>
         </div>
 
-        {/* KPI ribbon integrado ao header */}
-        <div className="relative grid grid-cols-2 md:grid-cols-4 border-t border-border/60 divide-x divide-border/40">
+        {/* KPI ribbon: só o essencial do "hoje" */}
+        <div className="relative grid grid-cols-2 border-t border-border/60 divide-x divide-border/40">
           {[
             { label: "Vencendo hoje",    value: totals.dueToday,          sub: `${totals.dueTodayCount} parcelas`, tone: "primary" as const, Icon: Clock },
             { label: "Em atraso",        value: totals.overdue,           sub: `${totals.overdueCount} parcelas`, tone: "danger" as const,  Icon: AlertCircle },
-            { label: "Lucro hoje",       value: data?.profitToday || 0,   sub: "registrado",                       tone: "success" as const, Icon: TrendingUp },
-            { label: "A receber no mês", value: data?.aReceberMonth || 0, sub: "pendente",                         tone: "amber" as const,   Icon: CalendarDays },
-          ].map((k, idx) => {
+          ].map((k) => {
             const t = toneMap[k.tone];
             return (
               <div key={k.label} className="group relative px-4 sm:px-5 py-4 transition-colors hover:bg-accent/20">
