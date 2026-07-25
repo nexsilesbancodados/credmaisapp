@@ -1297,3 +1297,84 @@ div[style*="Edit with Lovable"],
   60% { transform: rotate(14deg); }
   80% { transform: rotate(-4deg); }
 }
+
+/* ═══════════════ Responsividade Global — utilidades e defesas ═══════════════ */
+@layer utilities {
+  /* Defesa contra overflow em filhos flex/grid (evita textos empurrando layout) */
+  .min-w-0-all > * { min-width: 0; }
+
+  /* Grid auto-fit responsivo: preenche colunas conforme largura */
+  .grid-auto-fit-xs { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .grid-auto-fit-sm { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .grid-auto-fit-md { display: grid; gap: 1rem;     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .grid-auto-fit-lg { display: grid; gap: 1rem;     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+  /* Wrapper de tabela com scroll horizontal seguro */
+  .table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* Barra de filtros/segmentos horizontal com scroll suave em mobile */
+  .h-scroll {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+  .h-scroll > * { flex: 0 0 auto; scroll-snap-align: start; }
+  .h-scroll::-webkit-scrollbar { display: none; }
+  .h-scroll { scrollbar-width: none; }
+
+  /* Números tabulares que não quebram linha (comum em valores R$) */
+  .num-nowrap { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Truncamento seguro para nomes longos em cards/linhas */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Tipografia fluida para KPIs (não estoura em telas estreitas) */
+  .kpi-value { font-size: clamp(1.125rem, 2.4vw + 0.6rem, 1.75rem); font-weight: 800; line-height: 1.1; }
+  .kpi-value-lg { font-size: clamp(1.375rem, 3vw + 0.7rem, 2.25rem); font-weight: 800; line-height: 1.05; }
+
+  /* Toolbar flexível (wrap em telas estreitas, alinhado desktop) */
+  .toolbar-flex {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .toolbar-flex > .toolbar-grow { flex: 1 1 220px; min-width: 0; }
+
+  /* Cards e seções nunca menores que o container */
+  .safe-card { max-width: 100%; min-width: 0; }
+}
+
+/* Defesas no viewport pequeno (mobile) */
+@media (max-width: 640px) {
+  /* Evita que containers com muitos flex-children estourem */
+  .card, .glass, .glass-card, .surface-card { min-width: 0; }
+
+  /* Modais/Dialogs Radix ficam com padding lateral seguro */
+  [role="dialog"] { max-width: calc(100vw - 1rem) !important; }
+
+  /* Corrige overflow em <pre>/<code> e valores extensos */
+  pre, code { max-width: 100%; overflow-x: auto; }
+
+  /* Diminui gaps default de grades muito densas em telas estreitas */
+  .grid { gap: max(0.5rem, var(--grid-gap, 0.75rem)); }
+}
+
+/* Tablets — melhor uso do espaço horizontal */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* Deixa modais um pouco maiores mas com ar */
+  [role="dialog"] { max-width: min(680px, calc(100vw - 3rem)) !important; }
+}
+
