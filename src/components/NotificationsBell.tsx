@@ -41,6 +41,18 @@ const timeAgo = (dateStr: string) => {
   return formatBR(dateStr);
 };
 
+// Extrai chips estruturados de mensagens longas (valores, parcelas, clientes)
+const extractHighlights = (msg: string) => {
+  const chips: { label: string; tone: "money" | "count" | "people" }[] = [];
+  const money = msg.match(/R\$\s?[\d.,]+/);
+  if (money) chips.push({ label: money[0].replace(/\s+/g, " "), tone: "money" });
+  const parcelas = msg.match(/(\d+)\s*parcela/i);
+  if (parcelas) chips.push({ label: `${parcelas[1]} parcela${Number(parcelas[1]) > 1 ? "s" : ""}`, tone: "count" });
+  const clientes = msg.match(/(\d+)\s*cliente/i);
+  if (clientes) chips.push({ label: `${clientes[1]} cliente${Number(clientes[1]) > 1 ? "s" : ""}`, tone: "people" });
+  return chips;
+};
+
 const groupByDate = (items: NotificationItem[]) => {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
