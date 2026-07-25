@@ -1521,7 +1521,15 @@ const ClienteDetalhe = () => {
             <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">{clientDocs.length}</span>
           )}
         </button>
+        <button
+          onClick={() => setHistOpen(true)}
+          className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all"
+        >
+          <Clock size={14} />
+          <span className="hidden sm:inline">Histórico</span>
+        </button>
       </div>
+
 
       {/* Modal de Documentos & Anexos */}
       <Dialog open={docsOpen} onOpenChange={setDocsOpen}>
