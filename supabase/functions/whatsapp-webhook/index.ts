@@ -422,7 +422,7 @@ serve(async (req) => {
 
   // Rate limit por IP (60 msgs/min, capacidade 30). Evolution costuma chamar de
   // 1-2 IPs — se estourar é abuso, não uso legítimo.
-  const rl = rateLimitGuard(req, "wa", 30, 1, corsHeaders);
+  const rl = await rateLimitGuard(req, "wa", 30, 1, corsHeaders);
   if (rl) return rl;
 
 

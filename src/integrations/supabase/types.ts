@@ -1468,6 +1468,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          key: string
+          tokens: number
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          tokens: number
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          tokens?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rentals: {
         Row: {
           client_id: string
@@ -2599,6 +2617,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      try_consume_rate_limit: {
+        Args: { _capacity: number; _key: string; _refill_per_sec: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "operator" | "viewer"

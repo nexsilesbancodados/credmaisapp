@@ -14,7 +14,7 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   // Rate limit: portais anônimos, 10 uploads/min por IP
-  const rl = rateLimit(req, "portal-upload", 10, 10 / 60, corsHeaders);
+  const rl = await rateLimit(req, "portal-upload", 10, 10 / 60, corsHeaders);
   if (rl) return rl;
 
 
