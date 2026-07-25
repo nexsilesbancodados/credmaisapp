@@ -535,13 +535,13 @@ const Cobrancas = () => {
       if (inst.status !== "paid") contractHasOpen.set(inst.contract_id, true);
       else if (!contractHasOpen.has(inst.contract_id)) contractHasOpen.set(inst.contract_id, false);
     }
-    const m = new Map<string, { loaned: number; totalInstallments: number; grossExpected: number; overdueCount: number; overdueFees: number; overdueAmount: number }>();
+    const m = new Map<string, { loaned: number; totalInstallments: number; grossExpected: number; paidAmount: number; paidCount: number; overdueCount: number; overdueFees: number; overdueAmount: number }>();
     const seenContracts = new Map<string, Set<string>>();
     for (const inst of installments as any[]) {
       const cid = inst.client_id;
       // Skip installments of fully-paid / finished contracts
       if (inst.contract_id && !contractHasOpen.get(inst.contract_id)) continue;
-      if (!m.has(cid)) { m.set(cid, { loaned: 0, totalInstallments: 0, grossExpected: 0, overdueCount: 0, overdueFees: 0, overdueAmount: 0 }); seenContracts.set(cid, new Set()); }
+      if (!m.has(cid)) { m.set(cid, { loaned: 0, totalInstallments: 0, grossExpected: 0, paidAmount: 0, paidCount: 0, overdueCount: 0, overdueFees: 0, overdueAmount: 0 }); seenContracts.set(cid, new Set()); }
 
       const agg = m.get(cid)!;
       const set = seenContracts.get(cid)!;
@@ -552,6 +552,10 @@ const Cobrancas = () => {
         agg.totalInstallments += Number(c.num_installments || 0);
       }
       agg.grossExpected += Number(inst.amount || 0);
+      if (inst.status === "paid") {
+        agg.paidCount += 1;
+        agg.paidAmount += Number(inst.paid_amount ?? inst.amount ?? 0);
+      }
       if (inst.status === "overdue") {
         agg.overdueCount += 1;
         agg.overdueAmount += Number(inst.amount || 0);
