@@ -15,6 +15,7 @@ import {
   detectClientTone,
 } from "../_shared/bot_utils.ts";
 import { findFaqMatch, FAQ_COUNT } from "../_shared/faq_knowledge.ts";
+import { identifyClient, loadClientInstallments, auditDecision, todayInSP, samePhoneBR } from "../_shared/agent_core.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
