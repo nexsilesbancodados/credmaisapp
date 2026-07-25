@@ -80,6 +80,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
     let cancelled = false;
     (async () => {
+      // Re-check profile directly because access may have been released by an
+      // admin/webhook while the user is already stuck on this screen.
+      const { data: freshProfile } = await supabase
+        .from("profiles")
+        .select("subscription_expires_at, trial_ends_at")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      const freshTrialOk =
+        freshProfile?.trial_ends_at && new Date(freshProfile.trial_ends_at).getTime() > Date.now();
+      const freshProfileSubOk =
+        freshProfile?.subscription_expires_at &&
+        new Date(freshProfile.subscription_expires_at).getTime() > Date.now();
+
+      if (freshTrialOk || freshProfileSubOk) {
+        clearAccessCache(user.id);
+        writeCache(user.id, "allowed");
+        setAccess("allowed");
+        return;
+      }
+
       // 2) Active subscription on `subscriptions` table (paid via Mercado Pago)
       const { data: sub } = await supabase
         .from("subscriptions")
