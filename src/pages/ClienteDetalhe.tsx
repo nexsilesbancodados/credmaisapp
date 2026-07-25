@@ -1484,7 +1484,7 @@ const ClienteDetalhe = () => {
               <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Timeline de Atividade</h2>
-                  <button onClick={() => setActiveTab("historico")} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
+                  <button onClick={() => { setActiveTab("historico"); document.getElementById("sec-historico")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
                 </div>
                 {sortedEvents.length === 0 ? (
                   <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações e eventos aparecerão aqui." />
@@ -1597,7 +1597,7 @@ const ClienteDetalhe = () => {
                 <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contratos</h2>
-                    <button onClick={() => setActiveTab("contratos")} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
+                    <button onClick={() => { setActiveTab("contratos"); document.getElementById("sec-contratos")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
                   </div>
                   <div className="space-y-2">
                     {contracts.slice(0, 3).map((c: any) => {
@@ -1605,7 +1605,7 @@ const ClienteDetalhe = () => {
                       const cPaid = cInst.filter((i: any) => i.status === "paid").length;
                       const pct = Math.round((cPaid / (c.num_installments || 1)) * 100);
                       return (
-                        <button key={c.id} onClick={() => setActiveTab("parcelas")} className="w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 transition-colors">
+                        <button key={c.id} onClick={() => { setActiveTab("parcelas"); document.getElementById("sec-parcelas")?.scrollIntoView({ behavior: "smooth" }); }} className="w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 transition-colors">
                           <div className="flex items-center justify-between mb-1.5">
                             <p className="text-xs font-bold text-foreground">R$ {fmt(Number(c.capital))} · {c.num_installments}x</p>
                             <Badge variant="outline" className={c.status === "active" ? "bg-success/10 text-success border-success/20 text-[9px]" : "bg-muted text-muted-foreground text-[9px]"}>{c.status === "active" ? "Ativo" : c.status}</Badge>
