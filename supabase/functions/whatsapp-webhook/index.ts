@@ -1231,20 +1231,12 @@ serve(async (req) => {
         //  - parcelas em atraso / vence hoje
         //  - promessa de pagamento em aberto
         //  - última intenção registrada na memória
-        const { data: openInst } = await supabase
-          .from("contract_installments")
-          .select("id, amount, due_date, status, late_fee, installment_number")
-          .eq("client_id", client.id)
-          .in("status", ["pending", "overdue"])
-          .order("due_date", { ascending: true })
-          .limit(20);
-
-        const nowBr = new Date(Date.now() - 3 * 60 * 60 * 1000);
-        const todayStr = nowBr.toISOString().split("T")[0];
-        const overdueQ = (openInst || []).filter((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) < todayStr);
-        const dueTodayQ = (openInst || []).filter((i: any) => (typeof i.due_date === "string" ? i.due_date.split("T")[0] : i.due_date) === todayStr);
-        const totOver = overdueQ.reduce((s: number, i: any) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
-        const totToday = dueTodayQ.reduce((s: number, i: any) => s + Number(i.amount), 0);
+        const todayStr = todayInSP();
+        const bucket = await loadClientInstallments(supabase, client.id, todayStr);
+        const overdueQ = bucket.overdue;
+        const dueTodayQ = bucket.dueToday;
+        const totOver = bucket.totalOverdue;
+        const totToday = bucket.totalDueToday;
 
         const memObj = parseMemory(client.bot_memory);
         const openPromise = (memObj.promessas || []).find((p: any) => p && typeof p === "object" && p.data && p.data >= todayStr);
