@@ -95,13 +95,22 @@ export default function Investidores() {
   }, [loans, investors]);
 
   const perInvestor = (id: string) => {
-    const rows = loans.filter((l) => l.investor_id === id && l.status !== "paid");
-    return {
-      total: rows.reduce((s, l) => s + Number(l.total_due), 0),
-      capital: rows.reduce((s, l) => s + Number(l.principal), 0),
-      prox: rows.map((r) => r.due_date).sort()[0] || null,
-      count: rows.length,
-    };
+    const all = loans.filter((l) => l.investor_id === id);
+    const active = all.filter((l) => l.status !== "paid");
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const overdue = active.filter((l) => new Date(l.due_date + "T00:00:00") < today);
+    const totalDue = active.reduce((s, l) => s + Number(l.total_due), 0);
+    const capital = active.reduce((s, l) => s + Number(l.principal), 0);
+    const paidActive = active.reduce((s, l) => s + Number(l.paid_amount), 0);
+    const saldo = Math.max(0, totalDue - paidActive);
+    const pct = totalDue > 0 ? Math.min(100, Math.round((paidActive / totalDue) * 100)) : 0;
+    const prox = active.map((r) => r.due_date).sort()[0] || null;
+    const proxDays = prox ? Math.floor((new Date(prox + "T00:00:00").getTime() - today.getTime()) / 86400000) : null;
+    const state: "overdue" | "warn" | "ok" | "paid" =
+      overdue.length > 0 ? "overdue" :
+      proxDays !== null && proxDays <= 7 ? "warn" :
+      active.length === 0 && all.length > 0 ? "paid" : "ok";
+    return { total: totalDue, capital, paid: paidActive, saldo, pct, prox, proxDays, count: active.length, allCount: all.length, overdueCount: overdue.length, state };
   };
 
   const copyPortal = (token: string) => {
