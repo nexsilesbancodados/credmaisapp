@@ -66,7 +66,7 @@ const DashboardLayout = () => {
       <div className={`transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[76px]" : "ml-[260px]"}`}>
         <TopBar onSearchClick={() => setSearchOpen(true)} />
         <Breadcrumbs />
-        <main className={`px-4 py-5 lg:px-8 lg:py-8 max-w-[1600px] mx-auto ${isMobile ? "pb-28" : ""}`}>
+        <main className={`px-4 py-5 lg:px-8 lg:py-8 max-w-[1600px] mx-auto ${isMobile ? "pb-40" : ""}`}>
           <Outlet />
         </main>
       </div>
