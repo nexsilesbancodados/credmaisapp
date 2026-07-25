@@ -173,6 +173,14 @@
     font-family: var(--font-body);
     background-image: var(--gradient-mesh);
     background-attachment: fixed;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #root {
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   /* Refined selection */
@@ -195,6 +203,8 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   /* Respeitar preferência de movimento reduzido */
