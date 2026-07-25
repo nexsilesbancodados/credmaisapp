@@ -244,19 +244,37 @@ const Lucros = () => {
 
   const activeFilterCount = (timeFilter !== "all" ? 1 : 0) + (sourceFilter !== "all" ? 1 : 0) + (sortKey !== "date_desc" ? 1 : 0);
 
+  const bestMonth = monthlyData.reduce((best, m) => (m.amount > best.amount ? m : best), monthlyData[0] || { month: "-", amount: 0 });
+  const avgMonthly = monthlyData.reduce((s, m) => s + m.amount, 0) / (monthlyData.length || 1);
+  const progressToBest = bestMonth.amount > 0 ? (currentMonthTotal / bestMonth.amount) * 100 : 0;
+
   return (
     <div className="space-y-5 animate-fade-in pb-24">
-      <div className="page-hero">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-success/15 flex items-center justify-center shadow-[0_0_20px_hsl(var(--success)/0.2)]">
-              <TrendingUp size={22} className="text-success" />
+      {/* HERO Premium */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-success/10 via-card to-card p-6 md:p-8">
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-success/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-success/20 border border-success/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--success)/0.25)]">
+              <TrendingUp size={26} className="text-success" />
             </div>
             <div>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Lucros</h1>
-              <p className="text-muted-foreground text-sm mt-1">Registre e acompanhe seus lucros</p>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Lucros</p>
+              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Total Acumulado</h1>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-4xl md:text-5xl font-bold text-success tracking-tight tabular-nums">R$ {fmt(totalAll)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="flex items-center gap-1"><Sparkles size={12} className="text-success" /> {profits.length} lançamento(s)</span>
+                <span className="text-border">•</span>
+                <span>Média/lançamento <span className="font-semibold text-foreground">R$ {fmt(avgPerEntry)}</span></span>
+                {bestMonth.amount > 0 && <><span className="text-border">•</span><span>Melhor mês <span className="font-semibold text-foreground">{bestMonth.month}</span></span></>}
+              </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             {filtered.length > 0 && (
               <button onClick={handleExportCSV} className="btn-ghost">
@@ -270,82 +288,85 @@ const Lucros = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="rounded-2xl border border-success/20 bg-gradient-to-br from-success/10 to-success/5 p-4 card-shine">
-          <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center mb-2">
-            <TrendingUp size={14} className="text-success" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 stagger-fade-in">
+        {[
+          { icon: Calendar, label: "Este Mês", value: currentMonthTotal, color: "text-success", bg: "bg-success/10", ring: "border-success/20",
+            delta: prevMonthTotal > 0 ? Number(monthlyChange) : null, hint: "vs mês anterior" },
+          { icon: Wallet, label: "Esta Semana", value: weekTotal, color: "text-foreground", bg: "bg-accent/50", ring: "border-border", hint: "acumulado" },
+          { icon: Wallet, label: "Hoje", value: todayTotal, color: "text-foreground", bg: "bg-accent/50", ring: "border-border", hint: "registros do dia" },
+          { icon: Target, label: "Projeção Mês", value: projection, color: "text-primary", bg: "bg-primary/10", ring: "border-primary/20",
+            hint: `${dayOfMonth}/${daysInMonth} dias` },
+          { icon: Trophy, label: "Melhor Mês", value: bestMonth.amount, color: "text-warning", bg: "bg-warning/10", ring: "border-warning/20",
+            hint: bestMonth.month || "-" },
+        ].map((s, idx) => (
+          <div key={s.label} className={`rounded-2xl border ${s.ring} bg-card p-4 card-shine hover:border-primary/30 transition-colors`} style={{ animationDelay: `${idx * 60}ms` }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
+                <s.icon size={15} className={s.color} />
+              </div>
+              {s.delta != null && (
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${s.delta >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                  {s.delta >= 0 ? "+" : ""}{s.delta.toFixed(0)}%
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
+            <p className={`text-xl font-bold mt-0.5 tabular-nums ${s.color}`}>R$ {fmt(s.value)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{s.hint}</p>
           </div>
-          <p className="text-xl font-bold text-success">R$ {fmt(totalAll)}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Total Geral</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
-            <Calendar size={14} className="text-primary" />
-          </div>
-          <p className="text-xl font-bold text-foreground">R$ {fmt(currentMonthTotal)}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Este Mês</p>
-            {prevMonthTotal > 0 && (
-              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${
-                Number(monthlyChange) >= 0 ? "text-success bg-success/10 border-success/20" : "text-destructive bg-destructive/10 border-destructive/20"
-              }`}>
-                {Number(monthlyChange) >= 0 ? "+" : ""}{monthlyChange}%
-              </Badge>
-            )}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center mb-2">
-            <Wallet size={14} className="text-foreground" />
-          </div>
-          <p className="text-xl font-bold text-foreground">R$ {fmt(weekTotal)}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Esta Semana</p>
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center mb-2">
-            <Wallet size={14} className="text-foreground" />
-          </div>
-          <p className="text-xl font-bold text-foreground">R$ {fmt(todayTotal)}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Hoje</p>
-        </div>
-        <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-4">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center mb-2">
-            <Target size={14} className="text-primary" />
-          </div>
-          <p className="text-xl font-bold text-primary">R$ {fmt(projection)}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Projeção Mês</p>
-        </div>
+        ))}
       </div>
 
-      {/* Monthly chart + Insights */}
+      {/* Monthly chart + Top Fontes */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <BarChart3 size={13} className="text-primary" /> Evolução Mensal
-            </p>
-            <p className="text-[10px] text-muted-foreground">Últimos 6 meses</p>
+          <div className="flex items-start justify-between mb-4 gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                <BarChart3 size={14} className="text-primary" /> Evolução Mensal
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Últimos 6 meses • Média R$ {fmt(avgMonthly)}</p>
+            </div>
+            {bestMonth.amount > 0 && currentMonthTotal > 0 && (
+              <div className="text-right">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Progresso do melhor mês</p>
+                <p className="text-sm font-bold text-success">{progressToBest.toFixed(0)}%</p>
+              </div>
+            )}
           </div>
-          <div className="flex items-end gap-2 h-28">
+          <div className="relative flex items-end gap-2 h-36">
+            {/* linha de média */}
+            {avgMonthly > 0 && maxMonthly > 0 && (
+              <div
+                className="absolute left-0 right-0 border-t border-dashed border-primary/30 pointer-events-none"
+                style={{ bottom: `${(avgMonthly / maxMonthly) * 100}%` }}
+              >
+                <span className="absolute -top-4 right-0 text-[9px] text-primary/70 font-semibold">média</span>
+              </div>
+            )}
             {monthlyData.map((m, i) => {
               const heightPct = Math.max(4, (m.amount / maxMonthly) * 100);
               const isCurrentMonth = i === 5;
+              const isBest = m.amount === bestMonth.amount && m.amount > 0;
               return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group relative">
+                <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group relative h-full justify-end">
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg bg-popover border border-border shadow-lg text-[10px] font-semibold text-foreground opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                     R$ {fmt(m.amount)}
                   </div>
-                  <div
-                    className={`w-full rounded-lg transition-all duration-500 cursor-pointer ${
-                      isCurrentMonth
-                        ? "bg-gradient-to-t from-success/80 to-success/40 shadow-[0_0_20px_hsl(var(--success)/0.3)]"
-                        : "bg-success/20 hover:bg-success/30"
-                    }`}
-                    style={{ height: `${heightPct}%` }}
-                  />
+                  <div className="w-full flex items-end justify-center" style={{ height: `${heightPct}%` }}>
+                    <div
+                      className={`w-full rounded-t-lg transition-all duration-500 cursor-pointer ${
+                        isCurrentMonth
+                          ? "bg-gradient-to-t from-success to-success/40 shadow-[0_0_20px_hsl(var(--success)/0.4)]"
+                          : isBest
+                          ? "bg-gradient-to-t from-warning/70 to-warning/30"
+                          : "bg-success/20 hover:bg-success/30"
+                      } h-full`}
+                    />
+                  </div>
                   <span className={`text-[10px] ${isCurrentMonth ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
-                    {m.month}
+                    {m.month}{isBest && !isCurrentMonth ? " ★" : ""}
                   </span>
                 </div>
               );
@@ -354,25 +375,28 @@ const Lucros = () => {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
-          <p className="text-xs font-semibold text-foreground flex items-center gap-1.5 mb-3">
-            <Trophy size={13} className="text-primary" /> Top Fontes
+          <p className="text-sm font-semibold text-foreground flex items-center gap-1.5 mb-3">
+            <Trophy size={14} className="text-primary" /> Top Fontes
+            <span className="text-[10px] text-muted-foreground font-normal ml-auto">no período</span>
           </p>
           {topDescriptions.length === 0 ? (
             <p className="text-[11px] text-muted-foreground text-center py-6">Sem dados no período</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {topDescriptions.map(([name, val], i) => {
                 const pct = total > 0 ? (val / total) * 100 : 0;
+                const medals = ["bg-warning/20 text-warning", "bg-muted-foreground/20 text-foreground", "bg-orange-500/20 text-orange-500"];
                 return (
                   <div key={name}>
-                    <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="text-foreground truncate flex-1 mr-2">
-                        <span className="text-muted-foreground mr-1.5">#{i+1}</span>{name}
+                    <div className="flex items-center justify-between text-[11px] mb-1 gap-2">
+                      <span className="text-foreground truncate flex-1 flex items-center gap-1.5">
+                        <span className={`w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0 ${medals[i] || "bg-muted/40 text-muted-foreground"}`}>{i+1}</span>
+                        {name}
                       </span>
-                      <span className="font-semibold text-success shrink-0">R$ {fmt(val)}</span>
+                      <span className="font-semibold text-success shrink-0 tabular-nums">R$ {fmt(val)}</span>
                     </div>
-                    <div className="h-1 rounded-full bg-muted/40 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-success/60 to-success" style={{ width: `${pct}%` }} />
+                    <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-success/60 to-success rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 );
@@ -384,23 +408,31 @@ const Lucros = () => {
 
       {/* Source split */}
       {filtered.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Sparkles size={12} className="text-primary" /> Composição do período:
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-success" />
-            <span className="text-muted-foreground">Operacional:</span>
-            <span className="font-semibold text-foreground">R$ {fmt(opTotal)}</span>
-            <span className="text-[10px] text-muted-foreground">({total > 0 ? ((opTotal/total)*100).toFixed(0) : 0}%)</span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-muted-foreground">Manual:</span>
-            <span className="font-semibold text-foreground">R$ {fmt(manualTotal)}</span>
-            <span className="text-[10px] text-muted-foreground">({total > 0 ? ((manualTotal/total)*100).toFixed(0) : 0}%)</span>
-          </span>
-          <span className="ml-auto text-muted-foreground">Média: <span className="font-semibold text-foreground">R$ {fmt(avgPerEntry)}</span></span>
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs mb-3">
+            <span className="flex items-center gap-1.5 font-semibold text-foreground">
+              <Sparkles size={12} className="text-primary" /> Composição do período
+            </span>
+            <span className="ml-auto text-muted-foreground">Média: <span className="font-semibold text-foreground">R$ {fmt(avgPerEntry)}</span></span>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden flex mb-2">
+            <div className="h-full bg-success transition-all duration-700" style={{ width: `${total > 0 ? (opTotal/total)*100 : 0}%` }} />
+            <div className="h-full bg-primary transition-all duration-700" style={{ width: `${total > 0 ? (manualTotal/total)*100 : 0}%` }} />
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-success" />
+              <span className="text-muted-foreground">Operacional</span>
+              <span className="ml-auto font-semibold text-foreground tabular-nums">R$ {fmt(opTotal)}</span>
+              <span className="text-[10px] text-muted-foreground">({total > 0 ? ((opTotal/total)*100).toFixed(0) : 0}%)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span className="text-muted-foreground">Manual</span>
+              <span className="ml-auto font-semibold text-foreground tabular-nums">R$ {fmt(manualTotal)}</span>
+              <span className="text-[10px] text-muted-foreground">({total > 0 ? ((manualTotal/total)*100).toFixed(0) : 0}%)</span>
+            </div>
+          </div>
         </div>
       )}
 
