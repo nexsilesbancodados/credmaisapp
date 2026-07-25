@@ -1439,185 +1439,195 @@ const ClienteDetalhe = () => {
         const sortedEvents = timelineEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
 
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* ===== LEFT COLUMN — main story ===== */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* Contato & Endereço */}
-              <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contato & Endereço</h2>
-                  <button onClick={startEditAddress} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Editar endereço</button>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { Icon: Phone, label: "Telefone", value: client.phone, tint: "text-sky-400 bg-sky-500/10 ring-sky-400/20" },
-                    { Icon: Mail, label: "E-mail", value: client.email, tint: "text-amber-400 bg-amber-500/10 ring-amber-400/20" },
-                    { Icon: MessageSquare, label: "WhatsApp", value: client.whatsapp, tint: "text-emerald-400 bg-emerald-500/10 ring-emerald-400/20" },
-                    { Icon: MapPin, label: "Cidade", value: address?.city ? `${address.city}/${address.state}` : null, tint: "text-violet-400 bg-violet-500/10 ring-violet-400/20" },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-start gap-3">
-                      <div className={`w-9 h-9 rounded-xl ring-1 flex items-center justify-center shrink-0 ${item.tint}`}>
-                        <item.Icon size={15} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] font-semibold">{item.label}</p>
-                        <p className="text-sm text-foreground font-semibold truncate">{item.value || "—"}</p>
-                      </div>
+          <div className="space-y-6">
+            {/* ===== ROW 1 — Contato & Endereço (full width) ===== */}
+            <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contato & Endereço</h2>
+                <button onClick={startEditAddress} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Editar endereço</button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { Icon: Phone, label: "Telefone", value: client.phone, tint: "text-sky-400 bg-sky-500/10 ring-sky-400/20" },
+                  { Icon: Mail, label: "E-mail", value: client.email, tint: "text-amber-400 bg-amber-500/10 ring-amber-400/20" },
+                  { Icon: MessageSquare, label: "WhatsApp", value: client.whatsapp, tint: "text-emerald-400 bg-emerald-500/10 ring-emerald-400/20" },
+                  { Icon: MapPin, label: "Cidade", value: address?.city ? `${address.city}/${address.state}` : null, tint: "text-violet-400 bg-violet-500/10 ring-violet-400/20" },
+                ].map(item => (
+                  <div key={item.label} className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-xl ring-1 flex items-center justify-center shrink-0 ${item.tint}`}>
+                      <item.Icon size={15} />
                     </div>
-                  ))}
-                </div>
-                {address?.street && (
-                  <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40 flex items-center gap-1.5">
-                    <MapPin size={12} className="text-primary" />
-                    {address.street}{address.number ? `, ${address.number}` : ""} · {address.neighborhood} · {address.city}/{address.state}
-                  </p>
-                )}
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/40 flex-wrap">
-                  <button onClick={() => { const p = client.phone; if (p) window.open(`tel:${p.replace(/\D/g, "")}`, "_self"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sky-300 border border-sky-400/20 text-[11px] font-semibold hover:bg-sky-500/20 transition-all"><Phone size={12} /> Ligar</button>
-                  <button onClick={() => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 text-[11px] font-semibold hover:bg-emerald-500/20 transition-all"><MessageSquare size={12} /> WhatsApp</button>
-                  <button onClick={sendPortalLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold hover:bg-primary/20 transition-all"><Send size={12} /> Enviar Portal</button>
-                  <button onClick={() => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-400/20 text-[11px] font-semibold hover:bg-amber-500/20 transition-all"><Mail size={12} /> E-mail</button>
-                </div>
-              </section>
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] font-semibold">{item.label}</p>
+                      <p className="text-sm text-foreground font-semibold truncate">{item.value || "—"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {address?.street && (
+                <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border/40 flex items-center gap-1.5">
+                  <MapPin size={12} className="text-primary" />
+                  {address.street}{address.number ? `, ${address.number}` : ""} · {address.neighborhood} · {address.city}/{address.state}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/40 flex-wrap">
+                <button onClick={() => { const p = client.phone; if (p) window.open(`tel:${p.replace(/\D/g, "")}`, "_self"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 text-sky-300 border border-sky-400/20 text-[11px] font-semibold hover:bg-sky-500/20 transition-all"><Phone size={12} /> Ligar</button>
+                <button onClick={() => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 text-[11px] font-semibold hover:bg-emerald-500/20 transition-all"><MessageSquare size={12} /> WhatsApp</button>
+                <button onClick={sendPortalLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold hover:bg-primary/20 transition-all"><Send size={12} /> Enviar Portal</button>
+                <button onClick={() => { if (client.email) window.open(`mailto:${client.email}`, "_blank"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-400/20 text-[11px] font-semibold hover:bg-amber-500/20 transition-all"><Mail size={12} /> E-mail</button>
+              </div>
+            </section>
 
-              {/* Timeline de Atividade */}
-              <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Timeline de Atividade</h2>
-                  <button onClick={() => { setActiveTab("historico"); document.getElementById("sec-historico")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver histórico completo</button>
+            {/* ===== ROW 2 — Score+Estatísticas consolidados (full width, denso) ===== */}
+            <section className="rounded-2xl border border-border/60 bg-gradient-to-br from-card/60 to-background p-5">
+              <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-center">
+                {/* Score gauge */}
+                <div className="flex flex-col items-center">
+                  <div className="relative">
+                    <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
+                      <circle cx="70" cy="70" r={r} stroke="hsl(var(--border))" strokeWidth="10" fill="none" />
+                      <circle cx="70" cy="70" r={r} stroke={scoreColor} strokeWidth="10" fill="none"
+                        strokeDasharray={C} strokeDashoffset={C - (C * scorePct) / 100} strokeLinecap="round"
+                        style={{ transition: "stroke-dashoffset 0.8s ease" }} />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <p className="text-4xl font-bold" style={{ fontFamily: "'Sora', sans-serif", color: scoreColor }}>{score}</p>
+                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground">de {scoreMax}</p>
+                    </div>
+                  </div>
+                  <span className={`mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${riskTone}`}>
+                    <ShieldCheck size={11} /> {riskLabel}
+                  </span>
+                  <div className="mt-3 w-full">
+                    <AICreditScore clientId={id!} currentScore={score} onApplyScore={() => inv("client-detail")} />
+                  </div>
                 </div>
-                {sortedEvents.length === 0 ? (
-                  <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações e eventos aparecerão aqui." />
-                ) : (
-                  <div className="relative pl-5 space-y-3">
-                    <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
-                    {sortedEvents.map(ev => (
-                      <div key={ev.id} className="relative flex items-center gap-3">
-                        <div className={`absolute -left-[13px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ev.tone.split(" ")[1]} border-2 border-background`} />
-                        <div className={`w-8 h-8 rounded-lg ${ev.tone} flex items-center justify-center shrink-0`}>
-                          <ev.icon size={13} />
+                {/* Estatísticas grid */}
+                <div>
+                  <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground mb-3">Estatísticas</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { label: "Contratos totais", value: String(contracts.length), Icon: FileText },
+                      { label: "Parcelas pagas", value: `${kpis.paidInst.length}/${kpis.paidInst.length + kpis.overdueInst.length + kpis.pendingInst.length}`, Icon: CheckCircle },
+                      { label: "Taxa de atraso", value: `${kpis.latePayRate}%`, Icon: AlertTriangle, tone: kpis.latePayRate > 30 ? "text-rose-400" : kpis.latePayRate > 10 ? "text-amber-300" : "text-emerald-400" },
+                      { label: "Ticket médio", value: `R$ ${fmt(kpis.ticketMedio)}`, Icon: DollarSign },
+                      { label: "Cliente há", value: `${daysAsClient} dia(s)`, Icon: Calendar },
+                      { label: "Em atraso", value: String(kpis.overdueInst.length), Icon: AlertTriangle, tone: kpis.overdueInst.length ? "text-rose-400" : "text-foreground" },
+                    ].map(s => (
+                      <div key={s.label} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                          <s.Icon size={11} />
+                          <span className="text-[9px] uppercase tracking-[0.14em] font-semibold truncate">{s.label}</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground truncate font-medium">{ev.title}</p>
-                          <p className="text-[10px] text-muted-foreground">{formatBR(ev.date)}</p>
-                        </div>
+                        <p className={`text-base font-bold ${s.tone || "text-foreground"}`}>{s.value}</p>
                       </div>
                     ))}
                   </div>
-                )}
-              </section>
-
-              {/* Documentos & Anexos */}
-              <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Documentos & Anexos</h2>
-                  <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
-                    <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar"}
-                    <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
-                  </label>
                 </div>
-                {clientDocs.length === 0 ? (
-                  <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
+              </div>
+            </section>
 
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {clientDocs.map((d: any) => {
-                      const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
-                      return (
-                        <div key={d.name} className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background/40 hover:border-primary/40 transition-colors">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"}`}>
-                            {isImg ? <ImageIcon size={14} /> : <FileIcon size={14} />}
-                          </div>
-                          <button onClick={() => signedUrl(d.name)} className="flex-1 min-w-0 text-left">
-                            <p className="text-[11px] text-foreground font-semibold truncate">{d.name.replace(/^\d+-/, "")}</p>
-                            <p className="text-[9px] text-muted-foreground">{d.metadata?.size ? `${Math.round(d.metadata.size / 1024)} KB` : ""}</p>
-                          </button>
-                          <button onClick={() => deleteDoc(d.name)} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-destructive transition-opacity" title="Remover">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            </div>
-
-            {/* ===== RIGHT COLUMN — sidebar dossier ===== */}
-            <div className="lg:col-span-4 space-y-6">
-              {/* Score & Risco */}
-              <section className="rounded-2xl border border-border/60 bg-gradient-to-br from-card/60 to-background p-5">
-                <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground mb-4">Score & Risco</h2>
-                <div className="flex items-center justify-center relative">
-                  <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
-                    <circle cx="70" cy="70" r={r} stroke="hsl(var(--border))" strokeWidth="10" fill="none" />
-                    <circle cx="70" cy="70" r={r} stroke={scoreColor} strokeWidth="10" fill="none"
-                      strokeDasharray={C} strokeDashoffset={C - (C * scorePct) / 100} strokeLinecap="round"
-                      style={{ transition: "stroke-dashoffset 0.8s ease" }} />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-4xl font-bold text-foreground" style={{ fontFamily: "'Sora', sans-serif", color: scoreColor }}>{score}</p>
-                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground">de {scoreMax}</p>
-                  </div>
-                </div>
-                <div className="mt-4 text-center">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${riskTone}`}>
-                    <ShieldCheck size={11} /> {riskLabel}
-                  </span>
-                </div>
-                <div className="mt-4 pt-4 border-t border-border/40">
-                  <AICreditScore clientId={id!} currentScore={score} onApplyScore={() => inv("client-detail")} />
-                </div>
-              </section>
-
-              {/* Estatísticas Rápidas */}
-              <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground mb-4">Estatísticas</h2>
-                <div className="space-y-3">
-                  {[
-                    { label: "Contratos totais", value: String(contracts.length), Icon: FileText },
-                    { label: "Parcelas pagas", value: `${kpis.paidInst.length}/${kpis.paidInst.length + kpis.overdueInst.length + kpis.pendingInst.length}`, Icon: CheckCircle },
-                    { label: "Taxa de atraso", value: `${kpis.latePayRate}%`, Icon: AlertTriangle, tone: kpis.latePayRate > 30 ? "text-rose-400" : kpis.latePayRate > 10 ? "text-amber-300" : "text-emerald-400" },
-                    { label: "Ticket médio", value: `R$ ${fmt(kpis.ticketMedio)}`, Icon: DollarSign },
-                    { label: "Cliente há", value: `${daysAsClient} dia(s)`, Icon: Calendar },
-                  ].map(s => (
-                    <div key={s.label} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <s.Icon size={13} />
-                        <span>{s.label}</span>
-                      </div>
-                      <span className={`font-bold ${s.tone || "text-foreground"}`}>{s.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Contratos Overview compacto */}
-              {contracts.length > 0 && (
+            {/* ===== ROW 3 — Contratos (destaque) + Timeline (sidebar) ===== */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 space-y-6">
+                {/* Contratos em destaque */}
                 <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Contratos</h2>
-                    <button onClick={() => { setActiveTab("contratos"); document.getElementById("sec-contratos")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
+                    {contracts.length > 0 && (
+                      <button onClick={() => { setActiveTab("contratos"); document.getElementById("sec-contratos")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver todos</button>
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    {contracts.slice(0, 3).map((c: any) => {
-                      const cInst = installments.filter((i: any) => i.contract_id === c.id);
-                      const cPaid = cInst.filter((i: any) => i.status === "paid").length;
-                      const pct = Math.round((cPaid / (c.num_installments || 1)) * 100);
-                      return (
-                        <button key={c.id} onClick={() => { setActiveTab("parcelas"); document.getElementById("sec-parcelas")?.scrollIntoView({ behavior: "smooth" }); }} className="w-full text-left rounded-xl border border-border/60 bg-background/40 p-3 hover:border-primary/40 transition-colors">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <p className="text-xs font-bold text-foreground">R$ {fmt(Number(c.capital))} · {c.num_installments}x</p>
-                            <Badge variant="outline" className={c.status === "active" ? "bg-success/10 text-success border-success/20 text-[9px]" : "bg-muted text-muted-foreground text-[9px]"}>{c.status === "active" ? "Ativo" : c.status}</Badge>
-                          </div>
-                          <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} /></div>
-                          <p className="text-[10px] text-muted-foreground mt-1">{cPaid}/{c.num_installments} · {pct}%</p>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {contracts.length === 0 ? (
+                    <EmptyState compact icon={FileText} title="Nenhum contrato" description="Crie um novo empréstimo para este cliente." />
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {contracts.slice(0, 4).map((c: any) => {
+                        const cInst = installments.filter((i: any) => i.contract_id === c.id);
+                        const cPaid = cInst.filter((i: any) => i.status === "paid").length;
+                        const cOverdue = cInst.filter((i: any) => i.status === "overdue").length;
+                        const pct = Math.round((cPaid / (c.num_installments || 1)) * 100);
+                        return (
+                          <button key={c.id} onClick={() => { setActiveTab("parcelas"); document.getElementById("sec-parcelas")?.scrollIntoView({ behavior: "smooth" }); }} className="text-left rounded-xl border border-border/60 bg-background/40 p-4 hover:border-primary/40 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-bold text-foreground">R$ {fmt(Number(c.capital))} · {c.num_installments}x</p>
+                              <Badge variant="outline" className={c.status === "active" ? "bg-success/10 text-success border-success/20 text-[9px]" : "bg-muted text-muted-foreground text-[9px]"}>{c.status === "active" ? "Ativo" : c.status}</Badge>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} /></div>
+                            <div className="flex items-center justify-between mt-2">
+                              <p className="text-[10px] text-muted-foreground">{cPaid}/{c.num_installments} · {pct}%</p>
+                              {cOverdue > 0 && <p className="text-[10px] font-bold text-rose-400">{cOverdue} atrasada(s)</p>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
-              )}
+
+                {/* Documentos & Anexos */}
+                <section className="rounded-2xl border border-border/60 bg-card/40 p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Documentos & Anexos</h2>
+                    <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/20 text-[11px] font-semibold cursor-pointer hover:bg-primary/20 transition-all ${docUploading ? "opacity-60 pointer-events-none" : ""}`}>
+                      <UploadCloud size={12} /> {docUploading ? "Enviando..." : "Anexar"}
+                      <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f); e.currentTarget.value = ""; }} />
+                    </label>
+                  </div>
+                  {clientDocs.length === 0 ? (
+                    <EmptyState compact icon={FileIcon} title="Nenhum documento anexado" description="RG, comprovante de renda, contrato assinado..." />
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {clientDocs.map((d: any) => {
+                        const isImg = /\.(png|jpe?g|gif|webp|heic)$/i.test(d.name);
+                        return (
+                          <div key={d.name} className="group relative flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border bg-background/40 hover:border-primary/40 transition-colors">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isImg ? "bg-violet-500/10 text-violet-400" : "bg-sky-500/10 text-sky-400"}`}>
+                              {isImg ? <ImageIcon size={14} /> : <FileIcon size={14} />}
+                            </div>
+                            <button onClick={() => signedUrl(d.name)} className="flex-1 min-w-0 text-left">
+                              <p className="text-[11px] text-foreground font-semibold truncate">{d.name.replace(/^\d+-/, "")}</p>
+                              <p className="text-[9px] text-muted-foreground">{d.metadata?.size ? `${Math.round(d.metadata.size / 1024)} KB` : ""}</p>
+                            </button>
+                            <button onClick={() => deleteDoc(d.name)} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-destructive/10 text-destructive transition-opacity" title="Remover">
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Timeline sidebar */}
+              <div className="lg:col-span-4">
+                <section className="rounded-2xl border border-border/60 bg-card/40 p-5 lg:sticky lg:top-24">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-[10px] font-bold tracking-[0.24em] uppercase text-muted-foreground">Timeline</h2>
+                    <button onClick={() => { setActiveTab("historico"); document.getElementById("sec-historico")?.scrollIntoView({ behavior: "smooth" }); }} className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">Ver tudo</button>
+                  </div>
+                  {sortedEvents.length === 0 ? (
+                    <EmptyState compact icon={Activity} title="Nenhuma atividade" description="As interações aparecerão aqui." />
+                  ) : (
+                    <div className="relative pl-5 space-y-3">
+                      <div className="absolute left-[9px] top-2 bottom-2 w-px bg-border" />
+                      {sortedEvents.slice(0, 8).map(ev => (
+                        <div key={ev.id} className="relative flex items-center gap-3">
+                          <div className={`absolute -left-[13px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full ${ev.tone.split(" ")[1]} border-2 border-background`} />
+                          <div className={`w-8 h-8 rounded-lg ${ev.tone} flex items-center justify-center shrink-0`}>
+                            <ev.icon size={13} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-foreground truncate font-medium">{ev.title}</p>
+                            <p className="text-[10px] text-muted-foreground">{formatBR(ev.date)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
             </div>
           </div>
         );
