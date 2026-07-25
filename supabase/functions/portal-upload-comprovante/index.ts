@@ -3,6 +3,7 @@
 // file land in the owner's storage folder.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { guard as rateLimit } from "../_shared/rate_limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,11 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  // Rate limit: portais anônimos, 10 uploads/min por IP
+  const rl = rateLimit(req, "portal-upload", 10, 10 / 60, corsHeaders);
+  if (rl) return rl;
+
+
 
   try {
     const form = await req.formData();
