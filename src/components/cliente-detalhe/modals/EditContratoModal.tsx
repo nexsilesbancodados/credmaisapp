@@ -11,6 +11,12 @@ type Props = {
   onSave: () => void;
 };
 
+const DAILY_MODES: { v: "mon-fri" | "mon-sat" | "mon-sun"; label: string }[] = [
+  { v: "mon-fri", label: "Seg → Sex" },
+  { v: "mon-sat", label: "Seg → Sáb" },
+  { v: "mon-sun", label: "Todos os dias" },
+];
+
 export default function EditContratoModal({ form, setForm, regen, setRegen, saving, onClose, onSave }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4" onClick={onClose}>
@@ -47,6 +53,23 @@ export default function EditContratoModal({ form, setForm, regen, setRegen, savi
               ))}
             </div>
           </div>
+          {form.frequency === "daily" && (
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Dias úteis do contrato</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {DAILY_MODES.map(d => {
+                  const active = form.daily_mode === d.v;
+                  return (
+                    <button key={d.v} type="button" onClick={() => setForm({ ...form, daily_mode: d.v })}
+                      className={`px-3 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5">Define em quais dias da semana as parcelas vão cair ao regenerar.</p>
+            </div>
+          )}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">1º Vencimento</label>
             <input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className={INPUT} />
