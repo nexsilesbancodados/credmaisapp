@@ -26,7 +26,8 @@ import {
   Calendar, Receipt, Activity, Search, X, Percent, Wallet, Printer, Camera,
   Wrench, Repeat, PhoneCall, StickyNote,
   Info, UploadCloud, File as FileIcon, ImageIcon, ShieldCheck, Sparkles, ChevronRight, MoreHorizontal,
-, ChevronDown, ChevronRight } from "lucide-react";
+  ChevronDown,
+} from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { formatBR } from "@/lib/dateUtils";
 import { useConfirm } from "@/components/ConfirmProvider";
