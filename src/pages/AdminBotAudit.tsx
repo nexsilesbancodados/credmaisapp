@@ -51,6 +51,7 @@ export default function AdminBotAudit() {
   const { user, loading: authLoading } = useAuth();
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [actions, setActions] = useState<BotAction[]>([]);
+  const [fsm, setFsm] = useState<Array<{ id: string; phone: string; agent_state: string | null; agent_state_updated_at: string | null; clients?: { name: string } | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [tone, setTone] = useState<"all" | "blocked" | "soft" | "corrected">("all");
