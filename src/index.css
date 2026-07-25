@@ -1378,3 +1378,46 @@ div[style*="Edit with Lovable"],
   [role="dialog"] { max-width: min(680px, calc(100vw - 3rem)) !important; }
 }
 
+/* ═══════════════ Mídia fluida e defesas universais ═══════════════ */
+@layer base {
+  /* Nenhuma imagem/vídeo/svg/canvas pode estourar seu container */
+  img, video, canvas, svg, iframe, embed, object {
+    max-width: 100%;
+    height: auto;
+  }
+  /* SVGs decorativos com dimensões fixas devem manter razão */
+  svg { height: auto; }
+
+  /* Strings longas (emails, IDs, URLs) quebram sem estourar */
+  p, span, div, li, td, th, dd, dt, h1, h2, h3, h4, h5, h6, a, label, button {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Inputs/selects/textarea sem zoom automático no iOS e largura fluida */
+  input, select, textarea {
+    max-width: 100%;
+    font-size: max(16px, 0.95rem);
+  }
+}
+
+/* Área de toque confortável no mobile para controles interativos */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 44px;
+  }
+  /* Botões-ícone (sem texto) mantêm alvo 44x44 */
+  button[aria-label]:not(:has(span)):not(:has(> :not(svg))) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Desktop wide (≥1440px) — respiro extra no container principal */
+@media (min-width: 1440px) {
+  main { padding-left: max(2rem, env(safe-area-inset-left)); padding-right: max(2rem, env(safe-area-inset-right)); }
+}
+
+
