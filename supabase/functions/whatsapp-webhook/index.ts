@@ -1339,7 +1339,7 @@ serve(async (req) => {
       { data: messageTemplates },
     ] = await Promise.all([
       supabase.from("contracts").select("id, capital, total_amount, start_date, status, loan_mode, frequency, interest_rate, num_installments").eq("client_id", client.id).eq("status", "active"),
-      supabase.from("contract_installments").select("id, amount, due_date, status, late_fee, installment_number, contract_id").eq("client_id", client.id).in("status", ["pending", "overdue"]).order("due_date", { ascending: true }),
+      supabase.from("contract_installments").select("id, amount, paid_amount, due_date, status, late_fee, installment_number, contract_id").eq("client_id", client.id).neq("status", "paid").order("due_date", { ascending: true }),
       supabase.from("audit_logs").select("action, created_at, details").eq("entity_id", client.id).eq("entity_type", "whatsapp_bot").order("created_at", { ascending: false }).limit(10),
       supabase.from("contract_installments").select("id").eq("client_id", client.id).eq("status", "paid"),
       supabase.from("contract_installments").select("amount, paid_amount, paid_at, installment_number, payment_method").eq("client_id", client.id).eq("status", "paid").order("paid_at", { ascending: false }).limit(5),
