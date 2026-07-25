@@ -472,90 +472,106 @@ export default function WhatsAppInbox() {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-16rem)] grid grid-cols-[340px_1fr] gap-3">
+      <div className="h-[calc(100vh-16rem)] grid grid-cols-[360px_1fr] gap-3">
         {/* Lista de conversas */}
-        <Card className="flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-border space-y-2">
-            <h2 className="font-semibold flex items-center gap-2">
-              <MessageCircle className="h-4 w-4" /> Conversas
-              <span className="ml-auto text-[10px] text-muted-foreground font-normal">↑↓ navega</span>
-            </h2>
+        <Card className="flex flex-col overflow-hidden rounded-2xl border-border/60">
+          <div className="p-3 border-b border-border/60 space-y-2.5 bg-gradient-to-b from-card to-card/50">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold flex items-center gap-2 text-sm">
+                <MessageCircle className="h-4 w-4 text-emerald-500" /> Conversas
+                <span className="text-[10px] text-muted-foreground font-normal">({filtered.length})</span>
+              </h2>
+              <span className="text-[10px] text-muted-foreground font-normal">↑↓ navega</span>
+            </div>
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar (nome, tag, msg)..." className="pl-8 h-9" />
+                placeholder="Buscar (nome, tag, msg)..." className="pl-8 h-9 text-sm rounded-xl" />
             </div>
             <div className="flex gap-1 flex-wrap">
               {([
-                ["all", "Todas"], ["unread", "Não lidas"], ["needs_human", "🆘"],
+                ["all", "Todas"], ["unread", "Não lidas"], ["needs_human", "🆘 Humano"],
                 ["bot", "Bot on"], ["blocked", "🚫"],
               ] as [FilterKind, string][]).map(([k, l]) => (
                 <button key={k} onClick={() => setFilter(k)}
-                  className={`text-[11px] px-2 py-0.5 rounded-full border transition ${
-                    filter === k ? "bg-primary text-primary-foreground border-primary"
-                                 : "border-border hover:bg-muted/40"}`}>{l}</button>
+                  className={`text-[11px] px-2.5 py-1 rounded-full border transition font-medium ${
+                    filter === k ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                 : "border-border/60 text-muted-foreground hover:bg-muted/40 hover:text-foreground"}`}>{l}</button>
               ))}
             </div>
           </div>
           <ScrollArea className="flex-1">
             {filtered.length === 0 && (
-              <div className="p-6 text-sm text-muted-foreground text-center">Nada por aqui.</div>
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-muted/40 flex items-center justify-center mx-auto mb-3">
+                  <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-0.5">Ajuste os filtros ou busca</p>
+              </div>
             )}
             {filtered.map((c) => {
               const intentBadge = c.last_intent && INTENT_LABEL[c.last_intent];
+              const name = c.contact_name || c.phone;
+              const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase() || "").join("") || "?";
+              const isActive = selectedId === c.id;
+              const urgent = c.bot_status === "handoff" || c.needs_human;
               return (
                 <button key={c.id} onClick={() => setSelectedId(c.id)}
-                  className={`w-full text-left px-3 py-3 border-b border-border/50 hover:bg-muted/40 transition ${
-                    selectedId === c.id ? "bg-muted/60" : ""
-                  } ${c.needs_human ? "border-l-2 border-l-destructive" : ""}`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-medium truncate">{c.contact_name || c.phone}</span>
-                        {c.bot_status === "handoff" && (
-                          <Badge variant="destructive" className="text-[9px] py-0 h-4 px-1.5 animate-pulse">
-                            🚨 humano
-                          </Badge>
-                        )}
-                        {c.bot_status !== "handoff" && c.needs_human && (
-                          <Badge variant="destructive" className="text-[9px] py-0 h-4 px-1.5">
-                            <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />humano
-                          </Badge>
-                        )}
-                        {c.bot_paused && c.bot_status !== "handoff" && !c.blocked && (
-                          <Badge variant="outline" className="text-[9px] py-0 h-4 px-1.5">bot off</Badge>
-                        )}
-                        {c.blocked && (
-                          <Badge variant="secondary" className="text-[9px] py-0 h-4 px-1.5">🚫</Badge>
-                        )}
-                      </div>
-                      {(c.tags?.length || intentBadge) && (
-                        <div className="flex items-center gap-1 mt-1 flex-wrap">
-                          {intentBadge && (
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${intentBadge.color}`}>
-                              {intentBadge.label}
-                            </span>
-                          )}
-                          {(c.tags || []).slice(0, 3).map(t => (
-                            <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                              #{t}
-                            </span>
-                          ))}
+                  className={`w-full text-left px-3 py-3 border-b border-border/40 transition-all relative ${
+                    isActive ? "bg-primary/10" : "hover:bg-muted/30"
+                  }`}>
+                  {urgent && <span className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-r-full" />}
+                  {isActive && !urgent && <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
+                  <div className="flex items-start gap-2.5">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                        urgent ? "bg-destructive/20 text-destructive border border-destructive/30"
+                               : isActive ? "bg-primary/20 text-primary border border-primary/30"
+                                          : "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400 border border-border"
+                      }`}>{initials}</div>
+                      {c.bot_status !== "handoff" && !c.bot_paused && !c.blocked && (
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary border-2 border-card flex items-center justify-center" title="Bot ativo">
+                          <Bot className="h-2 w-2 text-primary-foreground" />
                         </div>
                       )}
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {c.last_message_from === "bot" && "🤖 "}
-                        {c.last_message_from === "human" && "👤 "}
-                        {c.last_message_preview || "—"}
-                      </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-[10px] text-muted-foreground">
-                        {formatDistanceToNow(new Date(c.last_message_at), { addSuffix: false, locale: ptBR })}
-                      </span>
-                      {c.unread_count > 0 && (
-                        <Badge className="h-5 min-w-5 px-1.5 text-[10px]">{c.unread_count}</Badge>
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-sm truncate ${c.unread_count > 0 ? "font-bold text-foreground" : "font-semibold text-foreground/90"}`}>{name}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {formatDistanceToNow(new Date(c.last_message_at), { addSuffix: false, locale: ptBR })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        {c.bot_status === "handoff" && (
+                          <Badge variant="destructive" className="text-[9px] py-0 h-4 px-1.5 animate-pulse font-semibold">🚨 humano</Badge>
+                        )}
+                        {c.bot_status !== "handoff" && c.needs_human && (
+                          <Badge variant="destructive" className="text-[9px] py-0 h-4 px-1.5"><AlertTriangle className="h-2.5 w-2.5 mr-0.5" />precisa</Badge>
+                        )}
+                        {c.bot_paused && c.bot_status !== "handoff" && !c.blocked && (
+                          <Badge variant="outline" className="text-[9px] py-0 h-4 px-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400">bot off</Badge>
+                        )}
+                        {c.blocked && <Badge variant="secondary" className="text-[9px] py-0 h-4 px-1.5">🚫</Badge>}
+                        {intentBadge && !urgent && (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${intentBadge.color}`}>{intentBadge.label}</span>
+                        )}
+                        {(c.tags || []).slice(0, 2).map(t => (
+                          <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">#{t}</span>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <p className={`text-xs truncate flex-1 ${c.unread_count > 0 ? "text-foreground/80 font-medium" : "text-muted-foreground"}`}>
+                          {c.last_message_from === "bot" && <Bot className="inline h-2.5 w-2.5 mr-0.5 text-primary" />}
+                          {c.last_message_from === "human" && <User className="inline h-2.5 w-2.5 mr-0.5 text-emerald-500" />}
+                          {c.last_message_preview || "—"}
+                        </p>
+                        {c.unread_count > 0 && (
+                          <Badge className="h-5 min-w-5 px-1.5 text-[10px] rounded-full shrink-0">{c.unread_count}</Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -563,6 +579,7 @@ export default function WhatsAppInbox() {
             })}
           </ScrollArea>
         </Card>
+
 
         {/* Chat */}
         <Card className="flex flex-col overflow-hidden">
