@@ -697,6 +697,8 @@ export interface ReplyGuardrailInput {
   currentClient: { id: string; name?: string | null; cpf_cnpj?: string | null } | null;
   otherClientsSample?: Array<{ id: string; name?: string | null; cpf_cnpj?: string | null }>;
   allowedDueDates?: string[];
+  allowedAmounts?: number[]; // valores permitidos em reais (parcelas, totais, somas)
+  amountToleranceCents?: number; // default 5 centavos
   identityConfirmed?: boolean;
   hasMoney?: boolean;
 }
@@ -709,9 +711,26 @@ export interface ReplyGuardrailResult {
 
 const NEGOTIATION_RE = /\b(desconto|abatimento|abater|parcelar (a )?d[ií]vida|perdoar? (os )?juros|reduzir (o )?valor|acordo especial)/i;
 const DATE_BR_RE = /\b([0-3]?\d)[\/\-]([01]?\d)(?:[\/\-](\d{2,4}))?\b/g;
+// Captura "R$ 1.234,56" | "R$ 350,00" | "R$ 350" | "R$1234.56"
+const MONEY_RE = /R\$\s*([\d\.]+(?:,\d{1,2})?|\d+(?:\.\d{1,2}))/gi;
 
 function firstNameOf(full: string): string {
   return String(full || "").trim().split(/\s+/)[0]?.toLowerCase() || "";
+}
+
+function parseBRLToCents(raw: string): number | null {
+  if (!raw) return null;
+  const s = raw.trim();
+  if (/,/.test(s)) {
+    const norm = s.replace(/\./g, "").replace(",", ".");
+    const n = Number(norm);
+    return Number.isFinite(n) ? Math.round(n * 100) : null;
+  }
+  if (/^\d+\.\d{1,2}$/.test(s)) {
+    return Math.round(Number(s) * 100);
+  }
+  const n = Number(s.replace(/\./g, ""));
+  return Number.isFinite(n) ? n * 100 : null;
 }
 
 export function assertReplySafe(input: ReplyGuardrailInput): ReplyGuardrailResult {
@@ -756,6 +775,22 @@ export function assertReplySafe(input: ReplyGuardrailInput): ReplyGuardrailResul
 
   if (input.identityConfirmed === false && input.hasMoney) {
     reasons.push("value_before_identity");
+  }
+
+  // Valores permitidos — qualquer R$ citado precisa estar no conjunto (tolerância padrão 5¢).
+  if (input.allowedAmounts && input.allowedAmounts.length) {
+    const tol = Math.max(0, Number(input.amountToleranceCents ?? 5));
+    const allowedCents = input.allowedAmounts
+      .map((v) => Math.round(Number(v) * 100))
+      .filter((v) => Number.isFinite(v) && v > 0);
+    const invented: string[] = [];
+    for (const m of reply.matchAll(MONEY_RE)) {
+      const cents = parseBRLToCents(m[1]);
+      if (cents == null || cents <= 0) continue;
+      const ok = allowedCents.some((a) => Math.abs(a - cents) <= tol);
+      if (!ok) invented.push(m[0]);
+    }
+    if (invented.length) reasons.push(`invented_amount:${invented.slice(0, 3).join("|")}`);
   }
 
   return { block: reasons.length > 0, reasons, softHits };
