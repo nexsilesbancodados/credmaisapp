@@ -1047,13 +1047,12 @@ const ClienteDetalhe = () => {
   const scoreClr = (client.credit_score || 0) >= 700 ? "text-success" : (client.credit_score || 0) >= 400 ? "text-warning" : "text-destructive";
 
   const tabs = [
-    { key: "resumo" as const, label: "Informações", Icon: User },
-    
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
+    { key: "resumo" as const, label: "Informações", Icon: User },
     { key: "parcelas" as const, label: "Parcelas", Icon: Receipt },
     { key: "historico" as const, label: "Histórico", Icon: Clock },
-
   ];
+
 
   const toolGroups: ToolGroup[] = [
     {
@@ -1416,7 +1415,115 @@ const ClienteDetalhe = () => {
         </div>
       )}
 
-      {/* Section: Informações — Foco 100% em dados do cliente */}
+      {/* Barra sticky de navegação por seções */}
+      <div className="sticky top-2 z-20 flex gap-1 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
+        {tabs.map(tab => (
+          <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
+            <tab.Icon size={14} /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+
+      {/* Section: Contratos */}
+      <section id="sec-contratos" className="scroll-mt-24">{(
+
+
+        <div className="space-y-3">
+          <button onClick={() => navigate(`/clientes/novo?clientId=${id}`)} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-border text-sm font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors">
+            <Plus size={16} /> Novo Empréstimo
+          </button>
+          {contracts.length === 0 ? (
+            <EmptyState compact title="Nenhum contrato" description="Clique em Novo Empréstimo para começar." />
+          ) : contracts.map((c: any) => {
+            const cInsts = installments.filter((i: any) => i.contract_id === c.id);
+            const total = cInsts.length;
+            const paid = cInsts.filter((i: any) => i.status === "paid").length;
+            const overdue = cInsts.filter((i: any) => i.status === "overdue").length;
+            const isPaid = total > 0 && paid === total;
+            const status = isPaid
+              ? { label: "Quitado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
+              : overdue > 0
+              ? { label: `${overdue} em atraso`, cls: "bg-destructive/15 text-destructive border-destructive/30" }
+              : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
+            const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
+            const accent = isPaid ? "from-emerald-500/60 via-emerald-400/30" : overdue > 0 ? "from-destructive/60 via-destructive/30" : "from-primary/60 via-primary/20";
+            const barColor = isPaid ? "bg-emerald-500" : overdue > 0 ? "bg-destructive" : "bg-primary";
+            return (
+            <div key={c.id} className="group relative overflow-hidden bg-gradient-to-br from-card to-card/60 border border-border/60 rounded-2xl p-4 hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.3)] transition-all">
+              <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${accent} to-transparent`} />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <p className="text-lg font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>{status.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                    <span className="text-foreground/80 font-medium">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
+                    <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
+                  </p>
+                </div>
+                <div className="text-right cursor-pointer shrink-0" onClick={() => navigate(`/contratos/${c.id}`)}>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{formatBR(c.start_date)}</p>
+                  <p className="text-sm font-bold text-primary tabular-nums mt-0.5">+R$ {fmt(Number(c.total_interest))}</p>
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Lucro</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-border/40 flex-wrap justify-end">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
+                    title="Exportar contrato em PDF"
+                  >
+                    <Download size={13} /> PDF
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-medium transition-colors"
+                    title="Enviar contrato por WhatsApp"
+                  >
+                    <MessageSquare size={13} /> Enviar
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
+                    title="Editar empréstimo"
+                  >
+                    <Edit size={13} /> Editar
+                  </button>
+                  {c.status === "active" && !isPaid && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setRenegotiating(c); }}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-medium transition-colors"
+                      title="Renegociar contrato"
+                    >
+                      <Repeat size={13} /> Renegociar
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-medium transition-colors"
+                    title="Excluir empréstimo"
+                  >
+                    <Trash2 size={13} /> Excluir
+                  </button>
+                </div>
+              </div>
+              {total > 0 && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0">{pct}%</span>
+                </div>
+              )}
+            </div>
+            );
+          })}
+        </div>
+      )}</section>
+
+      {/* Section: Informações — Dados do cliente (2ª seção) */}
       <section id="sec-resumo" className="scroll-mt-24 space-y-5">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Contato & Endereço (2/3) */}
@@ -1530,116 +1637,8 @@ const ClienteDetalhe = () => {
         </section>
       </section>
 
-
-
-      {/* Barra sticky de navegação por seções — abaixo de Informações */}
-      <div className="sticky top-2 z-20 flex gap-1 glass-card rounded-2xl p-1.5 backdrop-blur-xl">
-        {tabs.map(tab => (
-          <button key={tab.key} onClick={() => { setActiveTab(tab.key); document.getElementById(`sec-${tab.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary/15 text-primary ring-1 ring-primary/30 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent/50"}`}>
-            <tab.Icon size={14} /> {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Section: Contratos */}
-      <section id="sec-contratos" className="scroll-mt-24">{(
-
-
-        <div className="space-y-3">
-          <button onClick={() => navigate(`/clientes/novo?clientId=${id}`)} className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-border text-sm font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors">
-            <Plus size={16} /> Novo Empréstimo
-          </button>
-          {contracts.length === 0 ? (
-            <EmptyState compact title="Nenhum contrato" description="Clique em Novo Empréstimo para começar." />
-          ) : contracts.map((c: any) => {
-            const cInsts = installments.filter((i: any) => i.contract_id === c.id);
-            const total = cInsts.length;
-            const paid = cInsts.filter((i: any) => i.status === "paid").length;
-            const overdue = cInsts.filter((i: any) => i.status === "overdue").length;
-            const isPaid = total > 0 && paid === total;
-            const status = isPaid
-              ? { label: "Quitado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" }
-              : overdue > 0
-              ? { label: `${overdue} em atraso`, cls: "bg-destructive/15 text-destructive border-destructive/30" }
-              : { label: `${paid}/${total} pagas`, cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" };
-            const pct = total > 0 ? Math.round((paid / total) * 100) : 0;
-            const accent = isPaid ? "from-emerald-500/60 via-emerald-400/30" : overdue > 0 ? "from-destructive/60 via-destructive/30" : "from-primary/60 via-primary/20";
-            const barColor = isPaid ? "bg-emerald-500" : overdue > 0 ? "bg-destructive" : "bg-primary";
-            return (
-            <div key={c.id} className="group relative overflow-hidden bg-gradient-to-br from-card to-card/60 border border-border/60 rounded-2xl p-4 hover:border-primary/40 hover:shadow-[0_8px_24px_-12px_hsl(var(--primary)/0.3)] transition-all">
-              <div className={`absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r ${accent} to-transparent`} />
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/contratos/${c.id}`)}>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-lg font-bold text-foreground tracking-tight tabular-nums">R$ {fmt(Number(c.capital))}</p>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${status.cls}`}>{status.label}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 truncate">
-                    <span className="text-foreground/80 font-medium">{c.num_installments}×</span> R$ {fmt(Number(c.installment_amount))}
-                    <span className="mx-1.5 opacity-40">·</span>{FREQ[c.frequency] || c.frequency}
-                  </p>
-                </div>
-                <div className="text-right cursor-pointer shrink-0" onClick={() => navigate(`/contratos/${c.id}`)}>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{formatBR(c.start_date)}</p>
-                  <p className="text-sm font-bold text-primary tabular-nums mt-0.5">+R$ {fmt(Number(c.total_interest))}</p>
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Lucro</p>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 pl-2 border-l border-border/40 flex-wrap justify-end">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); exportContractPDF(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
-                    title="Exportar contrato em PDF"
-                  >
-                    <Download size={13} /> PDF
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); sendContractWhatsApp(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-[11px] font-medium transition-colors"
-                    title="Enviar contrato por WhatsApp"
-                  >
-                    <MessageSquare size={13} /> Enviar
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openEditContract(c); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] font-medium transition-colors"
-                    title="Editar empréstimo"
-                  >
-                    <Edit size={13} /> Editar
-                  </button>
-                  {c.status === "active" && !isPaid && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setRenegotiating(c); }}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[11px] font-medium transition-colors"
-                      title="Renegociar contrato"
-                    >
-                      <Repeat size={13} /> Renegociar
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteContract(c.id); }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-medium transition-colors"
-                    title="Excluir empréstimo"
-                  >
-                    <Trash2 size={13} /> Excluir
-                  </button>
-                </div>
-              </div>
-              {total > 0 && (
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
-                    <div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground tabular-nums shrink-0">{pct}%</span>
-                </div>
-              )}
-            </div>
-            );
-          })}
-        </div>
-      )}</section>
-
       {/* Section: Parcelas */}
+
       <section id="sec-parcelas" className="scroll-mt-24">{(
 
         <div className="space-y-6">
