@@ -554,7 +554,8 @@ const Cobrancas = () => {
       agg.grossExpected += Number(inst.amount || 0);
       if (inst.status === "paid") {
         agg.paidCount += 1;
-        agg.paidAmount += Number(inst.paid_amount ?? inst.amount ?? 0);
+        // Usa o valor contratual da parcela (sem multa) para "recebido"
+        agg.paidAmount += Number(inst.amount || 0);
       }
       if (inst.status === "overdue") {
         agg.overdueCount += 1;
