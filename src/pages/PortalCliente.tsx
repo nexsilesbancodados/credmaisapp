@@ -915,14 +915,14 @@ const PortalCliente = () => {
       {/* ═══════════ MODAL DE AJUDA ═══════════ */}
       {helpOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/70 p-4 backdrop-blur-sm overflow-y-auto overscroll-contain"
           onClick={() => setHelpOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-labelledby="help-title"
         >
           <div
-            className="portal-card relative w-full max-w-md overflow-hidden rounded-3xl p-6 md:p-8"
+            className="portal-card relative w-full max-w-md my-auto overflow-hidden rounded-3xl p-6 md:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <button
