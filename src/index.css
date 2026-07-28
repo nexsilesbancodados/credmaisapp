@@ -238,11 +238,15 @@
     a, button, [role="button"] {
       -webkit-tap-highlight-color: transparent;
     }
-    /* Melhora scroll momentum em iOS */
-    html, body {
+    /* Melhora scroll momentum em iOS sem prender a rolagem em nenhum container */
+    html {
       -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
     }
+    body {
+      overscroll-behavior-y: auto;
+      touch-action: pan-y;
+    }
+
     /* Evita zoom automático em inputs no iOS quando fontsize<16px */
     input, textarea, select {
       font-size: 16px !important;
