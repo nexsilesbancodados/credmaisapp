@@ -174,7 +174,15 @@
     background-image: var(--gradient-mesh);
     background-attachment: fixed;
     overflow-x: hidden;
-    overflow-y: auto;
+    /* Deixa o scroll acontecer no <html> para evitar container duplo
+       (que trava a rolagem em iOS/Android WebView). */
+    overflow-y: visible;
+  }
+
+  /* background-attachment: fixed causa jank e às vezes trava scroll em mobile.
+     Em telas de toque, trocamos por scroll normal. */
+  @media (max-width: 1024px), (hover: none) {
+    body { background-attachment: scroll; }
   }
 
   #root {
@@ -205,7 +213,11 @@
     scroll-behavior: smooth;
     overflow-x: hidden;
     overflow-y: auto;
+    /* Momentum scroll nativo em iOS */
+    -webkit-overflow-scrolling: touch;
+    height: 100%;
   }
+
 
   /* Respeitar preferência de movimento reduzido */
   @media (prefers-reduced-motion: reduce) {
