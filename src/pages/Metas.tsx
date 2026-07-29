@@ -5,6 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { friendlyError } from "@/lib/friendlyError";
+import { SkeletonCards } from "@/components/feedback/Skeletons";
+import LoadingButton from "@/components/feedback/LoadingButton";
+
 
 const Metas = () => {
   const confirm = useConfirm();
@@ -156,20 +159,15 @@ const Metas = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={saving}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50 transition-all hover:shadow-lg"
-              style={{ background: "var(--gradient-button)" }}>
-              {saving ? "Salvando..." : "Criar Meta"}
-            </button>
+            <LoadingButton onClick={handleAdd} loading={saving} loadingText="Salvando…">Criar Meta</LoadingButton>
             <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[1,2].map(i => <div key={i} className="h-40 rounded-xl skeleton-shimmer" />)}
-        </div>
+        <SkeletonCards count={4} height="h-40" className="grid grid-cols-1 sm:grid-cols-2 gap-4" />
+
       ) : goals.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
