@@ -35,54 +35,42 @@ interface MenuSection {
 
 const sections: MenuSection[] = [
   {
-    title: "Início",
+    title: "Principal",
     items: [
       { label: "Hoje", icon: Sparkles, path: "/hoje", highlight: true },
       { label: "Painel", icon: LayoutDashboard, path: "/dashboard" },
-      { label: "Análises", icon: BarChart3, path: "/analises", module: "analises" },
-    ],
-  },
-  {
-    title: "Operação",
-    items: [
       { label: "Clientes", icon: Users, path: "/clientes" },
       { label: "Cobranças", icon: Receipt, path: "/cobrancas" },
-      { label: "Investidores", icon: Landmark, path: "/investidores" },
-      { label: "Carteira", icon: Wallet, path: "/carteira" },
+      { label: "Comunicação", icon: Bot, path: "/comunicacao" },
     ],
   },
   {
     title: "Financeiro",
     items: [
+      { label: "Análises", icon: BarChart3, path: "/analises", module: "analises" },
+      { label: "Carteira", icon: Wallet, path: "/carteira" },
+      { label: "Investidores", icon: Landmark, path: "/investidores" },
       { label: "Lucros", icon: TrendingUp, path: "/lucros", module: "lucros" },
       { label: "Gastos", icon: DollarSign, path: "/gastos", module: "gastos" },
       { label: "Relatórios", icon: FileText, path: "/relatorios", module: "relatorios" },
-      { label: "Histórico financeiro", icon: Archive, path: "/historico-financeiro" },
     ],
   },
   {
-    title: "Comunicação & Automações",
+    title: "Mais",
     collapsible: true,
-    defaultOpen: true,
+    defaultOpen: false,
     items: [
-      { label: "WhatsApp & Cobrança automática", icon: Bot, path: "/comunicacao" },
       { label: "Inbox WhatsApp", icon: MessageCircle, path: "/comunicacao/inbox", module: "comunicacao_inbox" },
       { label: "Chat interno", icon: MessageCircle, path: "/chat", module: "chat_interno" },
       { label: "Cobradores", icon: UserCheck, path: "/cobradores", module: "cobradores" },
       { label: "QR Code de acesso", icon: QrCode, path: "/qrcode", module: "portais" },
-    ],
-  },
-  {
-    title: "Ferramentas",
-    collapsible: true,
-    defaultOpen: false,
-    items: [
       { label: "Simulador", icon: Calculator, path: "/ferramentas/simulador", module: "simulador" },
       { label: "Metas", icon: Target, path: "/ferramentas/metas", module: "metas" },
       { label: "Tarefas", icon: CheckSquare, path: "/ferramentas/tarefas", module: "tarefas" },
       { label: "Anotações", icon: StickyNote, path: "/ferramentas/anotacoes", module: "anotacoes" },
       { label: "Planilha", icon: Table, path: "/ferramentas/planilha", module: "planilha" },
       { label: "Importar contratos", icon: Database, path: "/puxada-dados", module: "puxada_dados" },
+      { label: "Histórico financeiro", icon: Archive, path: "/historico-financeiro" },
     ],
   },
   {
