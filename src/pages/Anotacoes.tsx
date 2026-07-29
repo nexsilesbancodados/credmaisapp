@@ -17,6 +17,8 @@ const Anotacoes = () => {
   const { toast } = useToast();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [search, setSearch] = useState("");
@@ -24,8 +26,9 @@ const Anotacoes = () => {
   const [editTitle, setEditTitle] = useState("");
 
   const fetchNotes = async () => {
-    const { data } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
-    setNotes(data || []);
+    const { data, error } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
+    if (error) setLoadError(error);
+    else { setLoadError(null); setNotes(data || []); }
     setLoading(false);
   };
 
@@ -40,11 +43,14 @@ const Anotacoes = () => {
   }, [user]);
 
   const handleAdd = async () => {
-    if (!user || !title.trim()) return;
+    if (!user || !title.trim() || saving) return;
+    setSaving(true);
     const { error } = await supabase.from("notes").insert({ user_id: user.id, title: title.trim() });
+    setSaving(false);
     if (error) toast({ ...friendlyError(error), variant: "destructive" });
     else { toast({ title: "✓ Anotação criada!" }); setTitle(""); setShowForm(false); fetchNotes(); }
   };
+
 
   const handleDelete = async (id: string) => {
     if (!(await confirm("Excluir esta anotação?"))) return;
