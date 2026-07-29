@@ -6,6 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ConfirmProvider";
 import EmptyState from "@/components/EmptyState";
 import { friendlyError } from "@/lib/friendlyError";
+import { SkeletonCards } from "@/components/feedback/Skeletons";
+import ErrorState from "@/components/feedback/ErrorState";
+import LoadingButton from "@/components/feedback/LoadingButton";
+
 
 const Anotacoes = () => {
   const confirm = useConfirm();
@@ -13,6 +17,8 @@ const Anotacoes = () => {
   const { toast } = useToast();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [search, setSearch] = useState("");
@@ -20,8 +26,9 @@ const Anotacoes = () => {
   const [editTitle, setEditTitle] = useState("");
 
   const fetchNotes = async () => {
-    const { data } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
-    setNotes(data || []);
+    const { data, error } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
+    if (error) setLoadError(error);
+    else { setLoadError(null); setNotes(data || []); }
     setLoading(false);
   };
 
@@ -36,11 +43,14 @@ const Anotacoes = () => {
   }, [user]);
 
   const handleAdd = async () => {
-    if (!user || !title.trim()) return;
+    if (!user || !title.trim() || saving) return;
+    setSaving(true);
     const { error } = await supabase.from("notes").insert({ user_id: user.id, title: title.trim() });
+    setSaving(false);
     if (error) toast({ ...friendlyError(error), variant: "destructive" });
     else { toast({ title: "✓ Anotação criada!" }); setTitle(""); setShowForm(false); fetchNotes(); }
   };
+
 
   const handleDelete = async (id: string) => {
     if (!(await confirm("Excluir esta anotação?"))) return;
@@ -120,17 +130,18 @@ const Anotacoes = () => {
             <p className="text-[10px] text-muted-foreground mt-1">Cmd+Enter para salvar</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground" style={{ background: "var(--gradient-button)" }}>Salvar</button>
+            <LoadingButton onClick={handleAdd} loading={saving} loadingText="Salvando…">Salvar</LoadingButton>
             <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => <div key={i} className="h-28 rounded-xl skeleton-shimmer" />)}
-        </div>
+        <SkeletonCards count={6} height="h-28" />
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => { setLoadError(null); setLoading(true); fetchNotes(); }} />
       ) : filtered.length === 0 ? (
+
         <EmptyState
           icon={StickyNote}
           title={search ? `Nenhum resultado para "${search}"` : "Nenhuma anotação"}

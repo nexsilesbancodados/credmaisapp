@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { SkeletonCards } from "@/components/feedback/Skeletons";
+import ErrorState from "@/components/feedback/ErrorState";
+
 import { Badge } from "@/components/ui/badge";
 import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import { useConfirm } from "@/components/ConfirmProvider";
@@ -91,7 +94,7 @@ const Clientes = () => {
     [["clients", user?.id || ""]],
   );
 
-  const { data: clients = [], isLoading } = useQuery({
+  const { data: clients = [], isLoading, error: clientsError, refetch: refetchClients } = useQuery({
     queryKey: ["clients", user?.id],
     queryFn: async () => {
       const data = await fetchAll((f, t) => supabase.from("clients").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).range(f, t));
@@ -506,10 +509,15 @@ const Clientes = () => {
 
       {/* Content */}
       {isLoading ? (
-        <div className={viewMode === "cards" ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" : "space-y-2"}>
-          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`rounded-2xl bg-muted/20 animate-pulse ${viewMode === "cards" ? "h-44" : "h-16"}`} />)}
-        </div>
+        <SkeletonCards
+          count={8}
+          height={viewMode === "cards" ? "h-44" : "h-16"}
+          className={viewMode === "cards" ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" : "space-y-2"}
+        />
+      ) : clientsError ? (
+        <ErrorState error={clientsError} onRetry={() => refetchClients()} />
       ) : filtered.length === 0 ? (
+
         <div className="text-center py-20 rounded-3xl border border-dashed border-border/30 bg-card/10">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
             <Users size={28} className="text-muted-foreground/50" />

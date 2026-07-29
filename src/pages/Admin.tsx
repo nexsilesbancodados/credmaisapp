@@ -891,9 +891,8 @@ const AdminLogs = () => {
     default_trial_days: 3,
     allow_new_registrations: true,
     mercadopago_checkout_url: "",
-    hubla_checkout_url: "",
-    hubla_webhook_token: "",
     global_announcement: "",
+
   });
 
   useEffect(() => {
@@ -911,8 +910,6 @@ const AdminLogs = () => {
           default_trial_days: 3,
           allow_new_registrations: true,
           mercadopago_checkout_url: (data as any).mercadopago_checkout_url || "",
-          hubla_checkout_url: data.hubla_checkout_url || "",
-          hubla_webhook_token: data.hubla_webhook_token || "",
           global_announcement: "",
         });
       }
@@ -931,8 +928,6 @@ const AdminLogs = () => {
 
       const payload: any = {
         mercadopago_checkout_url: form.mercadopago_checkout_url,
-        hubla_checkout_url: form.hubla_checkout_url,
-        hubla_webhook_token: form.hubla_webhook_token,
       };
 
       if (currentSettings) {

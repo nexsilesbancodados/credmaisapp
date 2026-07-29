@@ -20,6 +20,8 @@ import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import CalendarView from "@/components/cobrancas/CalendarView";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
 import EmptyState from "@/components/EmptyState";
+import { SkeletonList } from "@/components/feedback/Skeletons";
+import ErrorState from "@/components/feedback/ErrorState";
 import CollectionMetrics from "@/components/cobrancas/CollectionMetrics";
 import { fetchAll } from "@/lib/fetchAll";
 
@@ -135,7 +137,7 @@ const Cobrancas = () => {
     [["cobrancas-installments", user?.id || ""]],
   );
 
-  const { data: installments = [], isLoading: loading } = useQuery({
+  const { data: installments = [], isLoading: loading, error: loadError, refetch: refetchInstallments } = useQuery({
     queryKey: ["cobrancas-installments", user?.id],
     queryFn: async () => {
       const clients = await fetchAll((f, t) => supabase.from("clients").select("id, name, phone, whatsapp, email").eq("user_id", user!.id).range(f, t));
@@ -1065,7 +1067,9 @@ const Cobrancas = () => {
       {/* List */}
       {view === "list" && (<>
       {loading ? (
-        <div className="space-y-3">{[1,2,3,4,5].map(i => <div key={i} className="h-16 rounded-xl skeleton-shimmer" />)}</div>
+        <SkeletonList rows={6} height="h-16" className="space-y-3" />
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => refetchInstallments()} />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Receipt}

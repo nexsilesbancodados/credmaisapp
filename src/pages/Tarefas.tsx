@@ -7,6 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { formatBR } from "@/lib/dateUtils";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { friendlyError } from "@/lib/friendlyError";
+import { SkeletonList } from "@/components/feedback/Skeletons";
+import ErrorState from "@/components/feedback/ErrorState";
+import LoadingButton from "@/components/feedback/LoadingButton";
+
 
 const Tarefas = () => {
   const confirm = useConfirm();
@@ -14,12 +18,15 @@ const Tarefas = () => {
   const { toast } = useToast();
   const [todos, setTodos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [saving, setSaving] = useState(false);
   const [newTask, setNewTask] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "done">("all");
 
   const fetchTodos = async () => {
-    const { data } = await supabase.from("todos").select("*").order("created_at", { ascending: false });
-    setTodos(data || []);
+    const { data, error } = await supabase.from("todos").select("*").order("created_at", { ascending: false });
+    if (error) setLoadError(error);
+    else { setLoadError(null); setTodos(data || []); }
     setLoading(false);
   };
 
@@ -34,8 +41,10 @@ const Tarefas = () => {
   }, [user]);
 
   const handleAdd = async () => {
-    if (!user || !newTask.trim()) return;
+    if (!user || !newTask.trim() || saving) return;
+    setSaving(true);
     const { error } = await supabase.from("todos").insert({ user_id: user.id, task: newTask.trim() });
+    setSaving(false);
     if (error) {
       toast({ ...friendlyError(error), variant: "destructive" });
     } else {
@@ -44,6 +53,7 @@ const Tarefas = () => {
       toast({ title: "✓ Tarefa adicionada!" });
     }
   };
+
 
   const handleToggle = async (id: string, current: boolean) => {
     await supabase.from("todos").update({ is_complete: !current }).eq("id", id);
@@ -120,11 +130,11 @@ const Tarefas = () => {
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           className="flex-1 px-4 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm input-enhanced"
         />
-        <button onClick={handleAdd}
-          className="px-4 py-3 rounded-xl text-sm font-semibold text-primary-foreground shrink-0 transition-all hover:shadow-lg hover:shadow-primary/20"
-          style={{ background: "var(--gradient-button)" }}>
-          <Plus size={18} />
-        </button>
+        <LoadingButton onClick={handleAdd} loading={saving} aria-label="Adicionar tarefa"
+          icon={<Plus size={18} />} className="px-4 shrink-0">
+          <span className="sr-only">Adicionar</span>
+        </LoadingButton>
+
       </div>
 
       {/* Clear done */}
@@ -137,9 +147,11 @@ const Tarefas = () => {
       )}
 
       {loading ? (
-        <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="h-14 rounded-xl skeleton-shimmer" />)}
-        </div>
+        <SkeletonList rows={4} height="h-14" />
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => { setLoadError(null); setLoading(true); fetchTodos(); }} />
+
+
       ) : displayed.length === 0 ? (
         <EmptyState
           icon={CheckSquare}

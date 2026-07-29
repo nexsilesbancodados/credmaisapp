@@ -6,6 +6,9 @@ import { fetchAll } from "@/lib/fetchAll";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { friendlyError } from "@/lib/friendlyError";
+import { SkeletonList } from "@/components/feedback/Skeletons";
+import { Loader2 } from "lucide-react";
+
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
@@ -372,7 +375,8 @@ const Gastos = () => {
 
       {/* List grouped by date */}
       {loading ? (
-        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-muted/30 animate-pulse" />)}</div>
+        <SkeletonList rows={5} height="h-16" />
+
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={TrendingDown}
@@ -481,10 +485,12 @@ const Gastos = () => {
           </div>
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={resetForm}>Cancelar</Button>
-            <Button disabled={saving || !desc.trim() || !amount} onClick={handleSubmit}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {saving ? "Salvando..." : editingId ? "Atualizar" : "Registrar"}
+            <Button disabled={saving || !desc.trim() || !amount} onClick={handleSubmit} aria-busy={saving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2">
+              {saving && <Loader2 size={15} className="animate-spin" />}
+              {saving ? "Salvando…" : editingId ? "Atualizar" : "Registrar"}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
