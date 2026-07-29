@@ -163,20 +163,30 @@ const Dashboard = () => {
     return ((cur - prev) / prev) * 100;
   }, [data]);
 
-  if (isLoading || !metrics) {
+  if (dashError && !data) {
     return (
-      <div className="space-y-6 max-w-[1400px] mx-auto animate-pulse">
-        <div className="h-32 rounded-3xl bg-white/5" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 rounded-2xl bg-white/5" />)}
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-36 rounded-2xl bg-white/5" />)}
-        </div>
-        <div className="h-72 rounded-3xl bg-white/5" />
+      <div className="max-w-[1400px] mx-auto">
+        <ErrorState error={dashError} onRetry={() => refetchDash()} />
       </div>
     );
   }
+
+  if (isLoading || !metrics) {
+    return (
+      <div role="status" aria-label="Carregando painel" className="space-y-6 max-w-[1400px] mx-auto animate-fade-in">
+        <div className="h-32 skeleton-shimmer rounded-3xl" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 skeleton-shimmer" />)}
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-36 skeleton-shimmer" />)}
+        </div>
+        <div className="h-72 skeleton-shimmer rounded-3xl" />
+        <span className="sr-only">Carregando…</span>
+      </div>
+    );
+  }
+
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const hour = currentTime.getHours();
