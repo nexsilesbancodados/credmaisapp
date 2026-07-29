@@ -35,14 +35,14 @@ const LandingPricing = () => {
 
 
   const features = [
-    "Clientes ilimitados",
-    "IA de Voz integrada",
-    "Automações WhatsApp",
-    "Relatórios avançados",
-    "Gestão de cobranças",
-    "Portal do Cliente",
-    "Suporte prioritário",
-    "Acesso PWA (Mobile App)",
+    "Clientes e contratos ilimitados",
+    "Cobrança automática no WhatsApp",
+    "Assistente com inteligência artificial",
+    "Relatórios de lucro e inadimplência",
+    "Controle de parcelas, juros e multas",
+    "Portal exclusivo para o seu cliente",
+    "Suporte prioritário no WhatsApp",
+    "App no celular, tablet e computador",
   ];
 
   return (
@@ -55,10 +55,10 @@ const LandingPricing = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-display font-bold text-white mb-6"
           >
-            Plano Único e <span className="text-gradient-gold">Completo</span>
+            Um plano. <span className="text-gradient-gold">Tudo liberado.</span>
           </motion.h2>
           <p className="text-white/40 max-w-xl mx-auto">
-            Acesso total a todas as ferramentas de gestão, automação e IA por um preço justo e transparente.
+            Sem taxa por cliente, sem surpresa na fatura e sem fidelidade. Uma mensalidade que costuma se pagar já na primeira parcela recuperada.
           </p>
         </div>
 
@@ -70,14 +70,14 @@ const LandingPricing = () => {
             className="relative p-10 md:p-16 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl flex flex-col md:flex-row gap-12 items-center"
           >
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-1.5 rounded-full bg-white text-black text-xs font-bold uppercase tracking-widest shadow-lg shadow-white/20">
-              OFERTA ESPECIAL
+              MAIS ESCOLHIDO
             </div>
 
             <div className="flex-1 space-y-8">
               <div>
-                <h3 className="text-3xl font-display font-bold text-white mb-4">Acesso Ilimitado</h3>
+                <h3 className="text-3xl font-display font-bold text-white mb-4">Acesso completo</h3>
                 <p className="text-white/40 leading-relaxed">
-                  Tenha em mãos a plataforma mais poderosa do mercado para gerenciar sua operação financeira com automação inteligente.
+                  Tudo o que o CredMais App oferece, liberado desde o primeiro dia: gestão, cobrança automática e inteligência artificial trabalhando pela sua carteira.
                 </p>
               </div>
 
@@ -95,25 +95,25 @@ const LandingPricing = () => {
 
             <div className="w-full md:w-[320px] p-8 rounded-3xl bg-white/[0.05] border border-white/10 text-center flex flex-col justify-center">
               <div className="mb-6">
-                <span className="text-white/40 text-sm block mb-2">Por apenas</span>
+                <span className="text-white/40 text-sm block mb-2">Apenas</span>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-white/40 text-lg">R$</span>
                   <span className="text-6xl font-bold text-white tracking-tight">79</span>
                   <span className="text-white/40 text-lg">,00</span>
                 </div>
-                <span className="text-white/30 text-xs mt-2 block italic">Pagamento Mensal</span>
+                <span className="text-white/30 text-xs mt-2 block italic">por mês, sem fidelidade</span>
               </div>
 
               <button
                 onClick={handleCheckout}
                 className="w-full py-5 rounded-2xl bg-white text-black font-bold text-base tracking-wide hover:bg-white/90 transition-all shadow-xl shadow-white/10 flex items-center justify-center gap-2 group"
               >
-                ASSINAR AGORA
+                COMEÇAR AGORA
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
 
               <p className="text-[10px] text-white/20 mt-4 leading-relaxed">
-                Pagamento seguro via Mercado Pago.<br />Cancele quando quiser.
+                Pagamento seguro via Mercado Pago.<br />Cancele quando quiser, sem multa.
               </p>
             </div>
           </motion.div>

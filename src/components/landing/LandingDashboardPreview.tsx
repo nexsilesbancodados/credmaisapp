@@ -11,10 +11,10 @@ const LandingDashboardPreview = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-display font-bold text-white mb-6"
           >
-            Visão Geral da sua <br /><span className="text-gradient-gold">Operação Financeira</span>
+            Toda a sua operação <br /><span className="text-gradient-gold">em uma única tela</span>
           </motion.h2>
           <p className="text-white/40 max-w-2xl mx-auto">
-            Tenha o controle total do seu negócio na palma da mão. Dados atualizados em tempo real para você decidir com confiança.
+            Quanto você tem na rua, quanto entra hoje e quanto está atrasado. Números atualizados em tempo real para você decidir em segundos.
           </p>
         </div>
 

@@ -3,33 +3,33 @@ import { Users, FileText, BarChart3, Bell, Shield, Smartphone } from "lucide-rea
 
 const features = [
   {
-    title: "Gestão de Clientes",
-    description: "Cadastre, edite e gerencie todos os seus clientes em um só lugar de forma intuitiva.",
+    title: "Cada cliente na palma da mão",
+    description: "Histórico, contratos, pagamentos e risco de calote em uma única ficha. Você sabe com quem está lidando antes de liberar o dinheiro.",
     icon: <Users size={24} className="text-white/60" />,
   },
   {
-    title: "Controle de Parcelas",
-    description: "Acompanhe parcelas, vencimentos, pagamentos e inadimplência de forma simples.",
+    title: "Nenhuma parcela esquecida",
+    description: "Vencimentos, pagamentos parciais, juros e multa calculados sozinhos. Abra o app e veja exatamente quem paga hoje e quem está atrasado.",
     icon: <FileText size={24} className="text-white/60" />,
   },
   {
-    title: "Relatórios Avançados",
-    description: "Dashboards completos com gráficos e indicadores para melhores decisões no seu negócio.",
+    title: "Saiba quanto está lucrando",
+    description: "Capital na rua, lucro realizado e inadimplência em tempo real. Decisões com número na mão, não no achismo.",
     icon: <BarChart3 size={24} className="text-white/60" />,
   },
   {
-    title: "Alertas e Lembretes",
-    description: "Receba avisos automáticos de vencimentos e parcelas em aberto diretamente no seu painel.",
+    title: "Cobrança que trabalha por você",
+    description: "Lembretes e cobranças automáticas no WhatsApp, com link de pagamento. Você recebe mais rápido sem desgastar a relação com o cliente.",
     icon: <Bell size={24} className="text-white/60" />,
   },
   {
-    title: "Segurança Total",
-    description: "Seus dados protegidos com criptografia e backup diário na nuvem com total privacidade.",
+    title: "Seus dados a salvo",
+    description: "Criptografia, acesso restrito e backup diário na nuvem. Sua carteira não depende mais de um caderno ou de um celular perdido.",
     icon: <Shield size={24} className="text-white/60" />,
   },
   {
-    title: "Acesso em Qualquer Lugar",
-    description: "Use o sistema de onde estiver, no computador, tablet ou celular com tecnologia PWA.",
+    title: "Sua operação onde você estiver",
+    description: "Funciona no celular, tablet e computador, como um aplicativo instalado. Feche contrato e receba pagamento na rua, sem voltar para o escritório.",
     icon: <Smartphone size={24} className="text-white/60" />,
   },
 ];
@@ -45,7 +45,7 @@ const LandingFeatures = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-display font-bold text-white mb-6"
           >
-            Gestão inteligente para <br /> sua <span className="text-gradient-gold">Produtividade</span>
+            Menos planilha, <br /> mais <span className="text-gradient-gold">dinheiro no caixa</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -54,7 +54,7 @@ const LandingFeatures = () => {
             transition={{ delay: 0.1 }}
             className="text-white/40 max-w-2xl mx-auto"
           >
-            Tudo o que você precisa para gerenciar sua carteira de empréstimos com eficiência e sem complicações.
+            Tudo o que você precisa para controlar sua carteira, cobrar no tempo certo e reduzir o calote — sem complicação e sem depender de ninguém.
           </motion.p>
         </div>
 
