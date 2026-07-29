@@ -1576,6 +1576,8 @@ export type Database = {
           favicon_url: string | null
           font_family: string | null
           footer_text: string | null
+          hubla_checkout_url: string | null
+          hubla_webhook_token: string | null
           id: string
           login_subtitle: string | null
           login_title: string | null
@@ -1637,6 +1639,8 @@ export type Database = {
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
+          hubla_checkout_url?: string | null
+          hubla_webhook_token?: string | null
           id?: string
           login_subtitle?: string | null
           login_title?: string | null
@@ -1698,6 +1702,8 @@ export type Database = {
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
+          hubla_checkout_url?: string | null
+          hubla_webhook_token?: string | null
           id?: string
           login_subtitle?: string | null
           login_title?: string | null
@@ -2356,6 +2362,8 @@ export type Database = {
           favicon_url: string | null
           font_family: string | null
           footer_text: string | null
+          hubla_checkout_url: string | null
+          hubla_webhook_token_configured: boolean | null
           id: string | null
           login_subtitle: string | null
           login_title: string | null
@@ -2416,6 +2424,8 @@ export type Database = {
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
+          hubla_checkout_url?: string | null
+          hubla_webhook_token_configured?: never
           id?: string | null
           login_subtitle?: string | null
           login_title?: string | null
@@ -2476,6 +2486,8 @@ export type Database = {
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
+          hubla_checkout_url?: string | null
+          hubla_webhook_token_configured?: never
           id?: string | null
           login_subtitle?: string | null
           login_title?: string | null

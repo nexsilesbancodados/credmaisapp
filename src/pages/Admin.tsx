@@ -891,11 +891,16 @@ const AdminLogs = () => {
     default_trial_days: 3,
     allow_new_registrations: true,
     mercadopago_checkout_url: "",
+    hubla_checkout_url: "",
+    hubla_webhook_token: "",
     global_announcement: "",
   });
 
   useEffect(() => {
     const fetchSettings = async () => {
+      // M4: filtra pelo mesmo user_id que o handleSave usa. Antes usava .single()
+      // sem filtro — com várias linhas em settings (é por usuário) isso dava
+      // PGRST116, o form ficava no default e mostrava um token diferente do salvo.
       if (!user?.id) return;
       const { data, error } = await supabase
         .from("settings").select("*").eq("user_id", user.id).maybeSingle();
@@ -906,6 +911,8 @@ const AdminLogs = () => {
           default_trial_days: 3,
           allow_new_registrations: true,
           mercadopago_checkout_url: (data as any).mercadopago_checkout_url || "",
+          hubla_checkout_url: data.hubla_checkout_url || "",
+          hubla_webhook_token: data.hubla_webhook_token || "",
           global_announcement: "",
         });
       }
@@ -924,6 +931,8 @@ const AdminLogs = () => {
 
       const payload: any = {
         mercadopago_checkout_url: form.mercadopago_checkout_url,
+        hubla_checkout_url: form.hubla_checkout_url,
+        hubla_webhook_token: form.hubla_webhook_token,
       };
 
       if (currentSettings) {
