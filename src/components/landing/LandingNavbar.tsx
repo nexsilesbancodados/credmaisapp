@@ -44,7 +44,7 @@ const LandingNavbar = () => {
               {brandTitle}
             </span>
             <span className="text-[8px] text-white/40 tracking-[0.2em] uppercase mt-0.5">
-              Sistema de Gestão
+              Gestão de Empréstimos
             </span>
           </div>
         </div>
@@ -83,7 +83,7 @@ const LandingNavbar = () => {
             to="/checkout"
             className="px-6 py-2.5 rounded-full text-sm font-bold bg-white text-black hover:bg-white/90 transition-all shadow-lg shadow-white/10"
           >
-            ASSINAR
+            ASSINAR AGORA
           </Link>
         </div>
 
@@ -140,7 +140,7 @@ const LandingNavbar = () => {
                   className="text-center py-3 rounded-xl bg-white text-black font-bold"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  ASSINAR
+                  ASSINAR AGORA
                 </Link>
               </div>
             </div>
