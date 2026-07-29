@@ -7,6 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { formatBR } from "@/lib/dateUtils";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { friendlyError } from "@/lib/friendlyError";
+import { SkeletonList } from "@/components/feedback/Skeletons";
+import ErrorState from "@/components/feedback/ErrorState";
+import LoadingButton from "@/components/feedback/LoadingButton";
+
 
 const Tarefas = () => {
   const confirm = useConfirm();
