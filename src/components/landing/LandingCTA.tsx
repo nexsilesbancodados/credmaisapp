@@ -20,8 +20,8 @@ const LandingCTA = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-display font-bold text-white mb-8"
           >
-            Pronto para transformar sua <br />
-            <span className="text-gradient-gold">gestão financeira?</span>
+            Pare de perder dinheiro <br />
+            <span className="text-gradient-gold">por falta de controle.</span>
           </motion.h2>
           
           <motion.p
@@ -31,7 +31,7 @@ const LandingCTA = () => {
             transition={{ delay: 0.1 }}
             className="text-white/40 mb-12 max-w-xl mx-auto leading-relaxed"
           >
-            Assine agora e descubra como o CredMais App pode levar seu negócio para o próximo nível com automação e IA.
+            Em poucos minutos sua carteira está organizada, suas cobranças rodando no automático e seus números na tela. Comece hoje e receba a próxima parcela em dia.
           </motion.p>
 
           <motion.div
@@ -45,7 +45,7 @@ const LandingCTA = () => {
               onClick={() => navigate("/checkout")}
               className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-black font-bold text-sm tracking-wide hover:bg-white/90 transition-all shadow-xl shadow-white/10"
             >
-              ASSINAR AGORA
+              COMEÇAR AGORA
             </button>
           </motion.div>
         </div>

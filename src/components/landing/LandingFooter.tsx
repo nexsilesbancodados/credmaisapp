@@ -18,7 +18,7 @@ const LandingFooter = () => {
               </span>
             </div>
             <p className="text-white/70 text-sm leading-relaxed">
-              O sistema completo para gestão de empréstimos, clientes, parcelas e cobranças. Mais controle, segurança e resultados para o seu negócio.
+              O sistema completo para quem empresta dinheiro: clientes, contratos, parcelas e cobrança automática. Mais controle, menos calote e mais lucro no fim do mês.
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
@@ -49,7 +49,7 @@ const LandingFooter = () => {
           <div>
             <h4 className="font-display font-bold text-white mb-6">Recursos</h4>
             <ul className="space-y-4">
-              {["Gestão de Clientes", "Controle de Parcelas", "Relatórios", "Alertas e Lembretes", "Segurança", "Integrações"].map((item) => (
+              {["Gestão de clientes", "Controle de parcelas", "Relatórios de lucro", "Cobrança automática", "Portal do cliente", "Segurança de dados"].map((item) => (
                 <li key={item}>
                   <a href="#" className="text-white/70 hover:text-white text-sm transition-colors">
                     {item}

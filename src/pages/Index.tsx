@@ -26,10 +26,10 @@ const Index = () => {
           <div className="container mx-auto px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
               {[
-                { label: "Operações Ativas", value: "2.500+" },
-                { label: "Clientes Gestão", value: "150k+" },
-                { label: "Recuperação Média", value: "32%" },
-                { label: "Segurança de Dados", value: "100%" },
+                { label: "Operações ativas", value: "2.500+" },
+                { label: "Clientes gerenciados", value: "150 mil+" },
+                { label: "Aumento na recuperação", value: "32%" },
+                { label: "Dados protegidos", value: "100%" },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <p className="text-3xl md:text-4xl font-display font-bold text-white mb-2 tracking-tight">
@@ -54,14 +54,14 @@ const Index = () => {
               <div className="flex flex-col lg:flex-row items-center gap-16">
                  <div className="flex-1">
                     <h2 className="text-4xl font-display font-bold mb-8">
-                       Por que escolher o <span className="text-gradient-gold">CredMais App?</span>
+                       Por que quem empresta escolhe o <span className="text-gradient-gold">CredMais App?</span>
                     </h2>
                     <div className="space-y-8">
                        {[
-                         { title: "Suporte Especializado", desc: "Atendimento rápido, humano e focado no seu sucesso." },
-                         { title: "Atualizações Gratuitas", desc: "Sistema sempre evoluindo com novas funcionalidades." },
-                         { title: "Ambiente 100% Seguro", desc: "Proteção avançada para seus dados e informações." },
-                         { title: "Foco em Resultados", desc: "Mais controle, menos perda e muito mais lucro." }
+                         { title: "Suporte que responde rápido", desc: "Gente de verdade no WhatsApp para destravar sua operação no mesmo dia." },
+                         { title: "Novidades sem custo extra", desc: "Toda melhoria e recurso novo já entra na sua conta, sem upgrade de plano." },
+                         { title: "Ambiente seguro de ponta a ponta", desc: "Seus contratos e dados de clientes protegidos com criptografia e backup diário." },
+                         { title: "Feito para dar resultado", desc: "Menos atraso, menos calote e um lucro que você acompanha parcela por parcela." }
                        ].map(item => (
                          <div key={item.title} className="flex gap-4">
                             <div className="w-1.5 h-1.5 rounded-full bg-white/40 mt-2 flex-shrink-0" />
@@ -82,7 +82,7 @@ const Index = () => {
                                 <span className="text-4xl">🚀</span>
                              </div>
                              <p className="text-xl font-display font-medium text-white/80">
-                                "O melhor investimento para quem quer profissionalizar sua carteira."
+                                "Profissionalize sua carteira: mais organização hoje, mais lucro no fim do mês."
                              </p>
                           </div>
                        </div>

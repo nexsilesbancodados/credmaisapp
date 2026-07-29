@@ -28,7 +28,7 @@ const LandingHero = () => {
             >
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               <span className="text-xs font-semibold text-white/60 tracking-wider uppercase">
-                O Sistema mais completo para sua operação
+                Feito para quem empresta e quer receber em dia
               </span>
             </motion.div>
 
@@ -38,9 +38,9 @@ const LandingHero = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="text-5xl md:text-8xl font-display font-bold text-white leading-[1.05] mb-8 tracking-tighter"
             >
-              Controle a sua <br />
-              operação de <br />
-              <span className="text-gradient-gold">Empréstimos.</span>
+              Empreste com <br />
+              controle. Receba <br />
+              <span className="text-gradient-gold">em dia.</span>
             </motion.h1>
 
             <motion.p
@@ -49,7 +49,7 @@ const LandingHero = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg text-white/50 mb-12 max-w-2xl mx-auto lg:mx-0 leading-relaxed"
             >
-              Gestão de empréstimos, clientes, parcelas e cobranças. Tudo o que você precisa para ter mais controle, segurança e resultados reais no seu negócio.
+              Do contrato à última parcela: clientes, prazos, juros e cobrança automática no WhatsApp em um só lugar. Você para de correr atrás de planilha e passa a enxergar cada real que tem a receber.
             </motion.p>
 
             <motion.div
@@ -62,7 +62,7 @@ const LandingHero = () => {
                 onClick={() => navigate("/checkout")}
                 className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-black font-bold text-sm tracking-wide hover:bg-white/90 transition-all flex items-center justify-center gap-2 group shadow-xl shadow-white/10"
               >
-                ASSINAR AGORA
+                QUERO ORGANIZAR MINHA CARTEIRA
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </motion.div>
@@ -75,15 +75,15 @@ const LandingHero = () => {
             >
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-white/70" />
-                <span className="text-xs text-white/70">Pagamento seguro</span>
+                <span className="text-xs text-white/70">Pagamento seguro via Mercado Pago</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-white/70" />
-                <span className="text-xs text-white/70">Setup em minutos</span>
+                <span className="text-xs text-white/70">Pronto para usar em minutos</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-white/70" />
-                <span className="text-xs text-white/70">Suporte especializado</span>
+                <span className="text-xs text-white/70">Suporte de gente de verdade</span>
               </div>
             </motion.div>
           </div>
@@ -105,7 +105,7 @@ const LandingHero = () => {
               transition={{ duration: 4, repeat: Infinity }}
               className="absolute -top-10 -left-10 p-6 glass border border-white/10 rounded-2xl hidden md:block"
             >
-              <p className="text-[10px] text-white/70 uppercase tracking-widest mb-1">Entradas Hoje</p>
+              <p className="text-[10px] text-white/70 uppercase tracking-widest mb-1">Recebido hoje</p>
               <p className="text-2xl font-bold text-white tracking-tight">R$ 15.420,00</p>
               <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-green-500 w-3/4" />
