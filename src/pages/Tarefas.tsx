@@ -137,9 +137,10 @@ const Tarefas = () => {
       )}
 
       {loading ? (
-        <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="h-14 rounded-xl skeleton-shimmer" />)}
-        </div>
+        <SkeletonList rows={4} height="h-14" />
+      ) : error ? (
+        <ErrorState error={error} onRetry={() => { setError(null); setLoading(true); fetchTodos(); }} />
+
       ) : displayed.length === 0 ? (
         <EmptyState
           icon={CheckSquare}
