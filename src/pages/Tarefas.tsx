@@ -18,12 +18,15 @@ const Tarefas = () => {
   const { toast } = useToast();
   const [todos, setTodos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [saving, setSaving] = useState(false);
   const [newTask, setNewTask] = useState("");
   const [filter, setFilter] = useState<"all" | "pending" | "done">("all");
 
   const fetchTodos = async () => {
-    const { data } = await supabase.from("todos").select("*").order("created_at", { ascending: false });
-    setTodos(data || []);
+    const { data, error } = await supabase.from("todos").select("*").order("created_at", { ascending: false });
+    if (error) setLoadError(error);
+    else { setLoadError(null); setTodos(data || []); }
     setLoading(false);
   };
 
@@ -38,8 +41,10 @@ const Tarefas = () => {
   }, [user]);
 
   const handleAdd = async () => {
-    if (!user || !newTask.trim()) return;
+    if (!user || !newTask.trim() || saving) return;
+    setSaving(true);
     const { error } = await supabase.from("todos").insert({ user_id: user.id, task: newTask.trim() });
+    setSaving(false);
     if (error) {
       toast({ ...friendlyError(error), variant: "destructive" });
     } else {
@@ -48,6 +53,7 @@ const Tarefas = () => {
       toast({ title: "✓ Tarefa adicionada!" });
     }
   };
+
 
   const handleToggle = async (id: string, current: boolean) => {
     await supabase.from("todos").update({ is_complete: !current }).eq("id", id);
