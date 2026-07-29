@@ -891,8 +891,8 @@ const AdminLogs = () => {
     default_trial_days: 3,
     allow_new_registrations: true,
     mercadopago_checkout_url: "",
-    hubla_checkout_url: "",
-    hubla_webhook_token: "",
+    global_announcement: "",
+
     global_announcement: "",
   });
 
