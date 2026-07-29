@@ -98,17 +98,19 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => (
   <SuspenseWatchdog>
-    <div className="min-h-[60vh] p-6 space-y-4 animate-pulse">
-      <div className="h-7 w-48 rounded-lg bg-muted/40" />
+    <div role="status" aria-label="Carregando página" className="min-h-[60vh] p-6 space-y-4 animate-fade-in">
+      <div className="h-7 w-48 skeleton-shimmer" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 rounded-2xl bg-muted/30 border border-border/20" />
+          <div key={i} className="h-24 skeleton-shimmer" style={{ animationDelay: `${i * 70}ms` }} />
         ))}
       </div>
-      <div className="h-[320px] rounded-2xl bg-muted/20 border border-border/20" />
+      <div className="h-[320px] skeleton-shimmer" />
+      <span className="sr-only">Carregando…</span>
     </div>
   </SuspenseWatchdog>
 );
+
 
 const idbPersister = createIDBPersister();
 
