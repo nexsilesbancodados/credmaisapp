@@ -130,17 +130,18 @@ const Anotacoes = () => {
             <p className="text-[10px] text-muted-foreground mt-1">Cmd+Enter para salvar</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground" style={{ background: "var(--gradient-button)" }}>Salvar</button>
+            <LoadingButton onClick={handleAdd} loading={saving} loadingText="Salvando…">Salvar</LoadingButton>
             <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => <div key={i} className="h-28 rounded-xl skeleton-shimmer" />)}
-        </div>
+        <SkeletonCards count={6} height="h-28" />
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => { setLoadError(null); setLoading(true); fetchNotes(); }} />
       ) : filtered.length === 0 ? (
+
         <EmptyState
           icon={StickyNote}
           title={search ? `Nenhum resultado para "${search}"` : "Nenhuma anotação"}
