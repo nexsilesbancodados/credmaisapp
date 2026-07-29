@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TERMS } from "@/lib/terms";
-import { CheckCircle2, Clock, AlertTriangle, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Loader2, XCircle, type LucideIcon } from "lucide-react";
 
 export type StatusKind =
   | "paid"
@@ -14,7 +14,7 @@ export type StatusKind =
 
 const CONFIG: Record<
   StatusKind,
-  { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; className: string }
+  { label: string; icon: LucideIcon; className: string }
 > = {
   paid:      { label: TERMS.statusPaid,      icon: CheckCircle2, className: "bg-emerald-500/10 text-emerald-400 ring-emerald-500/30" },
   due:       { label: TERMS.statusDue,       icon: Clock,        className: "bg-sky-500/10 text-sky-300 ring-sky-500/30" },
