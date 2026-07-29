@@ -506,10 +506,15 @@ const Clientes = () => {
 
       {/* Content */}
       {isLoading ? (
-        <div className={viewMode === "cards" ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" : "space-y-2"}>
-          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className={`rounded-2xl bg-muted/20 animate-pulse ${viewMode === "cards" ? "h-44" : "h-16"}`} />)}
-        </div>
+        <SkeletonCards
+          count={8}
+          height={viewMode === "cards" ? "h-44" : "h-16"}
+          className={viewMode === "cards" ? "grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3" : "space-y-2"}
+        />
+      ) : clientsError ? (
+        <ErrorState error={clientsError} onRetry={() => refetchClients()} />
       ) : filtered.length === 0 ? (
+
         <div className="text-center py-20 rounded-3xl border border-dashed border-border/30 bg-card/10">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
             <Users size={28} className="text-muted-foreground/50" />
