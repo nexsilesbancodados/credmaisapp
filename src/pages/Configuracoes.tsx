@@ -95,8 +95,6 @@ const Configuracoes = () => {
     portal_contact_phone: "",
     portal_contact_email: "",
     custom_contract_template: "",
-    hubla_checkout_url: "",
-    hubla_webhook_token: "",
     modules_enabled: { ...DEFAULT_MODULES } as Record<ModuleKey, boolean>,
   });
 
@@ -156,8 +154,6 @@ const Configuracoes = () => {
         portal_contact_phone: s.portal_contact_phone || "",
         portal_contact_email: s.portal_contact_email || "",
         custom_contract_template: s.custom_contract_template || "",
-        hubla_checkout_url: s.hubla_checkout_url || "",
-        hubla_webhook_token: "", // never loaded from server; type new value to replace
         modules_enabled: { ...DEFAULT_MODULES, ...(s.modules_enabled || {}) },
       }));
     }
@@ -266,8 +262,6 @@ const Configuracoes = () => {
       portal_contact_phone: form.portal_contact_phone,
       portal_contact_email: form.portal_contact_email,
       custom_contract_template: form.custom_contract_template?.trim() || null,
-      hubla_checkout_url: form.hubla_checkout_url ? form.hubla_checkout_url.trim() : null,
-      // hubla_webhook_token intentionally omitted — saved via edge function settings-set-secret
       modules_enabled: form.modules_enabled,
     };
     const { error } = settings
@@ -279,15 +273,12 @@ const Configuracoes = () => {
     if (form.whatsapp_api_key && form.whatsapp_api_key.trim().length > 0) {
       secretsPayload.whatsapp_api_key = form.whatsapp_api_key.trim();
     }
-    if (form.hubla_webhook_token && form.hubla_webhook_token.trim().length > 0) {
-      secretsPayload.hubla_webhook_token = form.hubla_webhook_token.trim();
-    }
     if (Object.keys(secretsPayload).length > 0) {
       const { error: secErr } = await supabase.functions.invoke("settings-set-secret", { body: secretsPayload });
       if (secErr) toast({ title: "Erro ao salvar segredos", description: secErr.message, variant: "destructive" });
       else {
         // Clear from local form so the masked placeholder reappears
-        setForm(prev => ({ ...prev, whatsapp_api_key: "", hubla_webhook_token: "" }));
+        setForm(prev => ({ ...prev, whatsapp_api_key: "" }));
       }
     }
 
