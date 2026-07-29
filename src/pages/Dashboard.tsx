@@ -9,6 +9,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
+import ErrorState from "@/components/feedback/ErrorState";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
@@ -36,7 +37,7 @@ const Dashboard = () => {
     [["dashboard-data", user?.id || ""]],
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: dashError, refetch: refetchDash } = useQuery({
     queryKey: ["dashboard-data", user?.id],
     queryFn: async () => {
       const [contracts, installments, clients, goals, profits] = await Promise.all([
