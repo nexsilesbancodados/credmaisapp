@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, ShieldCheck, Clock, MessageCircle, TrendingUp, TrendingDown } from "lucide-react";
+import heroTiger from "@/assets/hero-tiger.jpg";
+
 
 const heroChecks = [
   { icon: ShieldCheck, label: "Pagamento seguro via Mercado Pago" },
@@ -64,8 +66,22 @@ const LandingHero = () => {
 
           {/* Painel de prova do produto */}
           <div className="relative">
-            <div className="relative rounded-[2rem] border border-border bg-gradient-to-br from-secondary to-card p-5 sm:p-7">
+            <div className="relative rounded-[2rem] border border-border bg-gradient-to-br from-secondary to-card p-5 sm:p-7 space-y-5">
+              <div className="relative overflow-hidden rounded-2xl border border-border">
+                <img
+                  src={heroTiger}
+                  alt="Tigre representando força e controle na gestão de empréstimos"
+                  width={1280}
+                  height={1280}
+                  className="w-full h-[180px] sm:h-[220px] object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/10 to-transparent" />
+                <p className="absolute bottom-3 left-4 font-editorial text-sm sm:text-base font-bold text-foreground">
+                  Força e controle na sua carteira
+                </p>
+              </div>
               <div className="rounded-2xl bg-card border border-border p-5 sm:p-6 space-y-5">
+
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.16em] text-subtle font-semibold">
