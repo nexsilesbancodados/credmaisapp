@@ -1439,46 +1439,26 @@ div[style*="Edit with Lovable"],
 
 
 /* ============================================================
-   LANDING — escopo de tokens "Cloud White" (editorial premium)
-   Vale só para a landing pública; não afeta o app interno.
+   LANDING — usa o mesmo tema do app (Navy Trust / Midnight Indigo).
+   Nenhum token é sobrescrito: herda :root e .dark.
    ============================================================ */
-.landing,
-.dark .landing {
-  --background: 213 25% 98%;      /* #fafbfc */
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 217 91% 60%;         /* #3b82f6 */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 213 27% 93%;       /* #e8ecf1 */
-  --secondary-foreground: 222 47% 15%;
-  --muted: 213 27% 95%;
-  --muted-foreground: 215 20% 45%;
-  --subtle-foreground: 215 20% 65%; /* #94a3b8 */
-  --accent: 217 91% 60%;
-  --accent-foreground: 0 0% 100%;
-  --border: 213 27% 93%;
-  --input: 213 27% 90%;
-  --ring: 217 91% 60%;
-  --success: 152 60% 40%;
-
-  background-color: hsl(var(--background));
+.landing {
+  background: hsl(var(--background));
+  background-image: var(--gradient-mesh);
   color: hsl(var(--foreground));
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 .landing .font-editorial,
 .landing h1,
 .landing h2,
 .landing h3 {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 .landing .text-subtle {
-  color: hsl(var(--subtle-foreground));
+  color: hsl(var(--muted-foreground));
 }
 
 .landing .tnum {
@@ -1486,15 +1466,16 @@ div[style*="Edit with Lovable"],
 }
 
 .landing .paper-card {
-  background-color: hsl(var(--card));
+  background-image: var(--gradient-card);
   border: 1px solid hsl(var(--border));
-  border-radius: 1.5rem;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 .landing .paper-card:hover {
   transform: translateY(-2px);
-  border-color: hsl(var(--primary) / 0.35);
-  box-shadow: 0 18px 40px -24px hsl(222 47% 11% / 0.18);
+  border-color: hsl(var(--primary) / 0.4);
+  box-shadow: var(--shadow-elevated);
 }
 
 .landing .rule-grid {

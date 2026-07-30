@@ -8,8 +8,7 @@ import eagleLogo from "@/assets/eagle-logo.webp";
 const navLinks = [
   { name: "Início", href: "#home" },
   { name: "Recursos", href: "#features" },
-  { name: "Como funciona", href: "#how" },
-  { name: "Benefícios", href: "#benefits" },
+  { name: "Dúvidas", href: "#faq" },
   { name: "Planos", href: "#pricing" },
   { name: "Contato", href: "#contact" },
 ];
