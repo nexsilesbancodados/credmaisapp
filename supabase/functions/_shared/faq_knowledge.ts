@@ -185,7 +185,7 @@ export const FAQ: FaqEntry[] = [
     answer: (c) => `🔐 *Portal do Cliente*: ${c.portalLink || "digite *2* no menu"}\n\nLá você vê parcelas, comprovantes, contratos e ainda pode renegociar. Digite *2* pra receber um link com login automático!` },
   { id: "portal.password", category: "portal",
     patterns: rx("(esqueci a senha|nao lembro a senha|senha errada|nao consigo entrar|não consigo entrar|erro no login|login nao funciona)"),
-    answer: (c) => `Nosso portal não usa senha — o acesso é com *CPF + data de nascimento*. Ou digite *2* aqui que eu te mando um *link mágico* que já loga automático! 🪄` },
+    answer: (c) => `Nosso portal não usa senha — o acesso é só com o *seu CPF*. Ou digite *2* aqui que eu te mando um *link mágico* que já loga automático! 🪄` },
   { id: "portal.mobile", category: "portal",
     patterns: rx("(tem app|aplicativo|celular|baixar app|app da loja|play store|app store)"),
     answer: (c) => `Não precisa baixar nada! O portal roda direto no navegador do celular, é rápido e funciona igual app. 📱` },

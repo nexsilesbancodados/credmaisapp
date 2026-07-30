@@ -662,7 +662,7 @@ const NovoCliente = () => {
       `• ${calc.numParcelas}x de R$ ${calc.installmentAmount.toFixed(2)} (${freqLabel})\n` +
       `• Início: ${formatBR(startDate)}\n\n` +
       `Acesse seu portal para ver parcelas e pagar via PIX:\n${portalUrl}\n\n` +
-      `Login: CPF + data de nascimento.`;
+      `Login: apenas o seu CPF.`;
 
     const sendWhatsApp = () => {
       if (!phoneDigits) {

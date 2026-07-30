@@ -750,7 +750,7 @@ const ClienteDetalhe = () => {
     const phone = getPhone();
     if (!phone) { toast({ title: "Sem telefone", variant: "destructive" }); return; }
     const portalUrl = `${window.location.origin}/portal-cliente`;
-    const msg = encodeURIComponent(`Olá ${client?.name}, aqui está o link para o seu portal do cliente: ${portalUrl}\n\nLá você pode conferir suas parcelas, gerar PIX para pagamento e ver seu saldo devedor.\n\nBasta logar com seu CPF e data de nascimento.`);
+    const msg = encodeURIComponent(`Olá ${client?.name}, aqui está o link para o seu portal do cliente: ${portalUrl}\n\nLá você pode conferir suas parcelas, gerar PIX para pagamento e ver seu saldo devedor.\n\nBasta entrar com o seu CPF.`);
     window.open(`https://wa.me/${phone}?text=${msg}`, "_blank");
   };
 

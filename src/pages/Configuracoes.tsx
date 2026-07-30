@@ -1690,7 +1690,7 @@ const Configuracoes = () => {
                 </button>
               </div>
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Este link é único e pode ser compartilhado com todos os seus clientes. Eles acessarão os dados individuais usando o CPF e a data de nascimento cadastrados.
+                Este link é único e pode ser compartilhado com todos os seus clientes. Eles acessarão os dados individuais usando apenas o CPF cadastrado.
               </p>
             </div>
 
