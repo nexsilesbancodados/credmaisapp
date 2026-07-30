@@ -9,7 +9,7 @@ const LandingPricing = () => {
   return (
     <section id="pricing" className="py-20 lg:py-28 bg-card border-y border-border">
       <div className="container mx-auto px-5 sm:px-6">
-        <div className="max-w-2xl mb-12 lg:mb-16">
+        <div className="max-w-2xl mb-12 lg:mb-16" data-anim="up">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
             Planos
           </p>
@@ -22,11 +22,12 @@ const LandingPricing = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl" data-anim-group>
           {PLAN_LIST.map((plan) => (
             <article
               key={plan.tier}
-              className={`relative rounded-[2rem] border p-7 sm:p-9 flex flex-col ${
+              data-anim="scale"
+              className={`relative rounded-[2rem] border p-7 sm:p-9 flex flex-col transition-transform duration-300 hover:-translate-y-2 ${
                 plan.highlight
                   ? "border-primary bg-background shadow-xl shadow-primary/10"
                   : "border-border bg-background"
