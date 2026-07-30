@@ -13,8 +13,8 @@ const faqs = [
     a: "Sim. A assinatura é mensal e sem fidelidade. Cancele com 1 clique na sua área de perfil ou pelo Mercado Pago a qualquer momento.",
   },
   {
-    q: "O que está incluído no plano?",
-    a: "Tudo: clientes ilimitados, contratos, IA de cobrança, automações de WhatsApp, portal do cliente, portal do cobrador, relatórios avançados, app mobile (PWA) e suporte prioritário.",
+    q: "Qual a diferença entre os planos?",
+    a: "O plano Essencial (R$ 199) inclui clientes e contratos ilimitados, cobranças, portal do cliente, portal do cobrador, investidores e relatórios. O plano Completo (R$ 299) adiciona o agente de IA no WhatsApp, a cobrança automática, o inbox e as automações.",
   },
   {
     q: "Como recebo acesso após pagar?",
@@ -51,7 +51,7 @@ const Planos = () => {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.05] border border-white/10 text-xs text-white/60 uppercase tracking-widest mb-6"
           >
             <Sparkles size={12} className="text-amber-400" />
-            Plano único · sem complicação
+            Dois planos · sem fidelidade
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -59,8 +59,8 @@ const Planos = () => {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-6xl font-display font-bold mb-6 leading-tight"
           >
-            Escolha como quer <br />
-            <span className="text-gradient-gold">começar hoje</span>
+            Escolha o plano <br />
+            <span className="text-gradient-gold">ideal para você</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -68,7 +68,7 @@ const Planos = () => {
             transition={{ delay: 0.2 }}
             className="text-white/50 text-lg leading-relaxed"
           >
-            Assine agora e tenha acesso imediato a todas as ferramentas.
+            Essencial por R$ 199/mês para gerir toda a carteira, ou Completo por R$ 299/mês com agente de IA e automações de cobrança.
           </motion.p>
         </div>
       </section>
