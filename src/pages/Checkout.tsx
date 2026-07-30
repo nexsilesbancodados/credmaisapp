@@ -7,14 +7,6 @@ import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { toast } from "sonner";
 import { PLANS, PLAN_LIST, normalizeTier, type PlanTier } from "@/lib/plans";
 
-const FEATURES: { title: string; desc: string }[] = [
-  { title: "Clientes e contratos ilimitados", desc: "Sem tetos por plano, escale sua carteira sem custo extra." },
-  { title: "Agente de IA no WhatsApp", desc: "Cobrança automática 24/7 com respostas humanizadas." },
-  { title: "Cálculo automático de multas e juros", desc: "Regras aplicadas todo dia sem trabalho manual." },
-  { title: "Portal do Cliente white-label", desc: "Área do cliente com sua marca, sem menção externa." },
-  { title: "Relatórios financeiros avançados", desc: "Lucro gerado, fluxo, inadimplência em tempo real." },
-  { title: "Suporte prioritário", desc: "Time dedicado por WhatsApp em horário comercial." },
-];
 
 const MP_SDK_SRC = "https://sdk.mercadopago.com/js/v2";
 const MP_SECURITY_SRC = "https://www.mercadopago.com/v2/security.js";
