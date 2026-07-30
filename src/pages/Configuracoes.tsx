@@ -59,7 +59,7 @@ const Configuracoes = () => {
     primary_color: "#4a86c8", accent_color: "#6ba3d6", theme_mode: "dark",
     sidebar_style: "default", login_title: "", login_subtitle: "",
     footer_text: "", border_radius: "16", font_family: "default",
-    default_interest_rate: "10", default_late_fee: "2", default_daily_interest: "0.33", default_frequency: "monthly",
+    default_interest_rate: "10", default_late_fee: "0", default_daily_interest: "4", default_frequency: "monthly",
     whatsapp_api_url: "", whatsapp_api_key: "",
     n8n_webhook_url: "", push_notifications_enabled: false,
     pix_key: "", pix_key_type: "cpf", billing_message: "",
@@ -119,8 +119,8 @@ const Configuracoes = () => {
         border_radius: s.border_radius || "16",
         font_family: s.font_family || "default",
         default_interest_rate: String(s.default_interest_rate || 10),
-        default_late_fee: String(s.default_late_fee || 2),
-        default_daily_interest: String(s.default_daily_interest || 0.33),
+        default_late_fee: "0",
+        default_daily_interest: String(s.default_daily_interest || 4),
         default_frequency: s.default_frequency || "monthly",
         whatsapp_api_url: s.whatsapp_api_url || "",
         whatsapp_api_key: "", // never loaded from server; type new value to replace
@@ -229,7 +229,7 @@ const Configuracoes = () => {
       border_radius: form.border_radius,
       font_family: form.font_family,
       default_interest_rate: parseFloat(form.default_interest_rate),
-      default_late_fee: parseFloat(form.default_late_fee),
+      default_late_fee: 0,
       default_daily_interest: parseFloat(form.default_daily_interest),
       default_frequency: form.default_frequency,
       whatsapp_api_url: form.whatsapp_api_url || null,
@@ -1316,24 +1316,26 @@ const Configuracoes = () => {
               <h2 className="font-semibold text-foreground">Valores Padrão para Novos Contratos</h2>
             </div>
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground leading-relaxed">
-              <p className="font-semibold text-foreground mb-1">Como as multas funcionam</p>
+              <p className="font-semibold text-foreground mb-1">Como funciona o atraso</p>
               <p>
-                <span className="text-foreground font-medium">Multa de atraso</span>: aplicada <span className="text-foreground">uma única vez</span> sobre o valor da parcela assim que ela fica atrasada.<br/>
-                <span className="text-foreground font-medium">Juros diário</span>: somado <span className="text-foreground">a cada dia</span> de atraso sobre o valor da parcela.
+                Existe <span className="text-foreground font-medium">apenas uma cobrança de atraso</span>: o
+                <span className="text-foreground font-medium"> juros diário</span>, aplicado a cada dia sobre o
+                <span className="text-foreground font-medium"> valor já acumulado</span> (juros composto).
               </p>
-              <p className="mt-1.5 italic">Ex.: parcela R$ 100 com multa 10% → R$ 110 no 1º dia. Com juros 0,33%/dia, no 5º dia: 110 + (100 × 0,33% × 5) = R$ 111,65.</p>
+              <p className="mt-1.5 italic">Ex.: parcela R$ 100 com 4% ao dia → 1º dia R$ 104 · 2º dia R$ 108,16 · 3º dia R$ 112,49.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-label mb-1.5 block">Multa de atraso (% sobre a parcela)</label>
-                <input type="number" step="0.01" value={form.default_late_fee} onChange={(e) => setForm({ ...form, default_late_fee: e.target.value })} className={inputCls} />
-                <p className="text-[10px] text-muted-foreground mt-1">Aplicada 1x quando a parcela vence sem pagamento.</p>
+                <label className="text-label mb-1.5 block">Juros de atraso (% ao dia)</label>
+                <input type="number" step="0.01" value={form.default_daily_interest} onChange={(e) => setForm({ ...form, default_daily_interest: e.target.value })} className={inputCls} />
+                <p className="text-[10px] text-muted-foreground mt-1">Composto sobre o valor acumulado. Padrão: 4% ao dia.</p>
               </div>
               <div>
-                <label className="text-label mb-1.5 block">Juros diário (% por dia atrasado)</label>
-                <input type="number" step="0.01" value={form.default_daily_interest} onChange={(e) => setForm({ ...form, default_daily_interest: e.target.value })} className={inputCls} />
-                <p className="text-[10px] text-muted-foreground mt-1">Acumulativo: % × dias × valor da parcela.</p>
+                <label className="text-label mb-1.5 block">Multa fixa</label>
+                <input type="number" value="0" disabled className={inputCls + " opacity-60"} />
+                <p className="text-[10px] text-muted-foreground mt-1">Desativada — agora só existe o juros diário.</p>
               </div>
+
               <div className="col-span-2">
                 <label className="text-label mb-1.5 block">Frequência Padrão</label>
                 <select value={form.default_frequency} onChange={(e) => setForm({ ...form, default_frequency: e.target.value })} className={inputCls}>
