@@ -2507,6 +2507,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_chat_topic: {
+        Args: { _topic: string; _user_id: string }
+        Returns: boolean
+      }
       delete_client_cascade: {
         Args: { _client_id: string }
         Returns: undefined
