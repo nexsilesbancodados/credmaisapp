@@ -6,12 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PLAN = {
-  id: "credmais-mensal",
-  title: "CredMais App — Acesso Ilimitado (Mensal)",
-  price: 99.9,
-  currency: "BRL",
-};
+const PLANS = {
+  essencial: { id: "credmais-essencial", title: "CredMais App — Plano Essencial (Mensal)", price: 199, currency: "BRL" },
+  completo: { id: "credmais-completo", title: "CredMais App — Plano Completo (Mensal)", price: 299, currency: "BRL" },
+} as const;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -28,6 +26,8 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const email: string | undefined = body.email;
     const name: string | undefined = body.name;
+    const planTier: "essencial" | "completo" = body.planTier === "essencial" ? "essencial" : "completo";
+    const PLAN = PLANS[planTier];
     const origin = req.headers.get("origin") ?? "https://credmaisapp.lovable.app";
 
     const preference = {
@@ -35,7 +35,7 @@ serve(async (req) => {
         {
           id: PLAN.id,
           title: PLAN.title,
-          description: "Assinatura mensal do CredMais App — gestão profissional de empréstimos.",
+          description: `Assinatura mensal do CredMais App — plano ${planTier}.`,
           quantity: 1,
           currency_id: PLAN.currency,
           unit_price: PLAN.price,
@@ -49,7 +49,7 @@ serve(async (req) => {
       },
       auto_return: "approved",
       statement_descriptor: "CREDMAIS",
-      metadata: { plan: PLAN.id, email: email ?? null },
+      metadata: { plan: PLAN.id, plan_tier: planTier, email: email ?? null },
       notification_url: `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/mercadopago-webhook`,
     };
 

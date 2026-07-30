@@ -8,11 +8,21 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const PLAN = {
-  id: "credmais-mensal",
-  title: "CredMais App — Acesso Ilimitado (Mensal)",
-  amount: 99.9,
-};
+// Valores SEMPRE fixados no servidor. O cliente só escolhe o tier.
+const PLANS = {
+  essencial: {
+    id: "credmais-essencial",
+    title: "CredMais App — Plano Essencial (Mensal)",
+    amount: 199,
+  },
+  completo: {
+    id: "credmais-completo",
+    title: "CredMais App — Plano Completo (Mensal)",
+    amount: 299,
+  },
+} as const;
+
+type PlanTier = keyof typeof PLANS;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,6 +54,8 @@ serve(async (req) => {
   const extraDocType: string | undefined = payload?.docType; // "CPF" | "CNPJ"
   const extraDoc: string | undefined = payload?.doc; // digits only
   const extraWhats: string | undefined = payload?.whatsapp; // digits only
+  const planTier: PlanTier = payload?.planTier === "essencial" ? "essencial" : "completo";
+  const PLAN = PLANS[planTier];
 
   if (!formData) return json({ error: "missing_form_data" }, 400);
 
@@ -61,14 +73,14 @@ serve(async (req) => {
   const body: Record<string, unknown> = {
     // SEGURANÇA (C3): o valor é SEMPRE fixado no servidor. Nunca usar
     // formData.transaction_amount (controlado pelo cliente) — senão qualquer um
-    // pagaria R$ 0,01 pelo plano de R$ 99,90 e ativaria a assinatura.
+    // pagaria R$ 0,01 pelo plano e ativaria a assinatura.
     transaction_amount: PLAN.amount,
     description: PLAN.title,
     external_reference: PLAN.id,
     statement_descriptor: "CREDMAIS",
     binary_mode: false,
     capture: true,
-    metadata: { plan: PLAN.id, email: payerEmail || null, whatsapp: extraWhats || null, doc_type: extraDocType || null, doc: extraDoc || null },
+    metadata: { plan: PLAN.id, plan_tier: planTier, email: payerEmail || null, whatsapp: extraWhats || null, doc_type: extraDocType || null, doc: extraDoc || null },
     notification_url: `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/mercadopago-webhook`,
     // additional_info aumenta a taxa de aprovação (docs MP)
     additional_info: {
