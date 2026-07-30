@@ -175,12 +175,9 @@ export default function RenegociarModal({ contract, installments, clientName, on
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Juros de atraso (% ao dia)</label>
-            <input type="number" value={dailyFee ?? ""} onChange={e => setLateFee(lateFee)} className={INPUT} step="0.01" disabled />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Juros diários (%)</label>
             <input type="number" value={dailyFee} onChange={e => setDailyFee(e.target.value)} className={INPUT} step="0.01" />
           </div>
+
         </div>
 
         <div>
