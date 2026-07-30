@@ -10,6 +10,9 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { isSuperAdminEmail } from "@/lib/admin";
+import { usePlan } from "@/hooks/usePlan";
+
+const PRO_PATHS = ["/comunicacao", "/comunicacao/inbox", "/agente-ia", "/automacoes", "/bot-performance"];
 
 const mobileIconColor: Record<string, string> = {
   "/hoje": "text-amber-400",
@@ -112,6 +115,7 @@ const MobileBottomNav = () => {
   const [showMore, setShowMore] = useState(false);
   const [showFab, setShowFab] = useState(false);
   const isSuperAdmin = isSuperAdminEmail(user?.email);
+  const { hasAutomations } = usePlan();
 
   const fabActions = [
     { label: "Novo cliente", icon: UserPlus, onClick: () => navigate("/clientes/novo") },
@@ -161,7 +165,7 @@ const MobileBottomNav = () => {
                     </p>
                     <div className="grid grid-cols-4 gap-2">
                       {group.items
-                        .filter((i) => i.path !== "/admin" || isSuperAdmin)
+                        .filter((i) => (i.path !== "/admin" || isSuperAdmin) && (hasAutomations || !PRO_PATHS.includes(i.path)))
                         .map((item) => {
                           const active = isActive(item.path);
                           return (

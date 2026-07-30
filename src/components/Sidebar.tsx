@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { isSuperAdminEmail } from "@/lib/admin";
 import { useChatUnread } from "@/hooks/useChatUnread";
+import { usePlan } from "@/hooks/usePlan";
 
 import type { ModuleKey } from "@/contexts/WhiteLabelContext";
 
@@ -24,6 +25,8 @@ interface MenuItem {
   badge?: number;
   highlight?: boolean;
   module?: ModuleKey;
+  /** Disponível somente no plano Completo (R$299) */
+  pro?: boolean;
 }
 
 interface MenuSection {
@@ -65,8 +68,8 @@ const sections: MenuSection[] = [
     collapsible: true,
     defaultOpen: true,
     items: [
-      { label: "WhatsApp & Cobrança automática", icon: Bot, path: "/comunicacao" },
-      { label: "Inbox WhatsApp", icon: MessageCircle, path: "/comunicacao/inbox", module: "comunicacao_inbox" },
+      { label: "WhatsApp & Cobrança automática", icon: Bot, path: "/comunicacao", pro: true },
+      { label: "Inbox WhatsApp", icon: MessageCircle, path: "/comunicacao/inbox", module: "comunicacao_inbox", pro: true },
       { label: "Chat interno", icon: MessageCircle, path: "/chat", module: "chat_interno" },
       { label: "Cobradores", icon: UserCheck, path: "/cobradores", module: "cobradores" },
       { label: "QR Code de acesso", icon: QrCode, path: "/qrcode", module: "portais" },
@@ -115,6 +118,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
   const chatUnread = useChatUnread();
 
   const modules = config.modulesEnabled;
+  const { hasAutomations } = usePlan();
 
   const visibleSections = useMemo(() =>
     sections.map((s) => ({
@@ -122,10 +126,11 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
       items: s.items.filter((i) => {
         if (i.path === "/admin") return isSuperAdmin;
         if (["/auditoria", "/historico"].includes(i.path)) return profile?.is_admin;
+        if (i.pro && !hasAutomations) return false;
         if (i.module && modules && modules[i.module] === false) return false;
         return true;
       }),
-    })).filter(s => s.items.length > 0), [isSuperAdmin, profile?.is_admin, modules]);
+    })).filter(s => s.items.length > 0), [isSuperAdmin, profile?.is_admin, modules, hasAutomations]);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + "/");

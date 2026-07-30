@@ -1,49 +1,12 @@
 import { motion } from "framer-motion";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { PLAN_LIST } from "@/lib/plans";
 
 const LandingPricing = () => {
   const navigate = useNavigate();
 
-  const { data: settings } = useQuery({
-    queryKey: ["settings-checkout"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("settings")
-        .select("mercadopago_checkout_url")
-        .not("mercadopago_checkout_url", "is", null)
-        .limit(1)
-        .maybeSingle();
-      if (error) {
-        console.error("Error fetching checkout URL:", error);
-        return null;
-      }
-      return data;
-    },
-  });
-
-  const handleCheckout = () => {
-    const url = (settings as any)?.mercadopago_checkout_url;
-    if (url) {
-      window.location.href = url;
-    } else {
-      navigate("/checkout");
-    }
-  };
-
-
-  const features = [
-    "Clientes e contratos ilimitados",
-    "Cobrança automática no WhatsApp",
-    "Assistente com inteligência artificial",
-    "Relatórios de lucro e inadimplência",
-    "Controle de parcelas, juros e multas",
-    "Portal exclusivo para o seu cliente",
-    "Suporte prioritário no WhatsApp",
-    "App no celular, tablet e computador",
-  ];
+  const goCheckout = (tier: string) => navigate(`/checkout?plan=${tier}`);
 
   return (
     <section id="pricing" className="py-24 bg-black/50 relative overflow-hidden">
@@ -55,71 +18,87 @@ const LandingPricing = () => {
             viewport={{ once: true }}
             className="text-4xl md:text-5xl font-display font-bold text-white mb-6"
           >
-            Um plano. <span className="text-gradient-gold">Tudo liberado.</span>
+            Dois planos. <span className="text-gradient-gold">Zero complicação.</span>
           </motion.h2>
           <p className="text-white/40 max-w-xl mx-auto">
-            Sem taxa por cliente, sem surpresa na fatura e sem fidelidade. Uma mensalidade que costuma se pagar já na primeira parcela recuperada.
+            Comece com a gestão completa da sua carteira. Quando quiser cobrar no automático com
+            inteligência artificial, é só subir de plano — sem fidelidade.
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative p-10 md:p-16 rounded-[3rem] bg-white/[0.03] border border-white/10 backdrop-blur-xl flex flex-col md:flex-row gap-12 items-center"
-          >
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-1.5 rounded-full bg-white text-black text-xs font-bold uppercase tracking-widest shadow-lg shadow-white/20">
-              MAIS ESCOLHIDO
-            </div>
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+          {PLAN_LIST.map((plan, i) => (
+            <motion.div
+              key={plan.tier}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={`relative p-8 md:p-10 rounded-[2.5rem] border backdrop-blur-xl flex flex-col ${
+                plan.highlight
+                  ? "bg-white/[0.06] border-white/25 shadow-2xl shadow-blue-500/10"
+                  : "bg-white/[0.03] border-white/10"
+              }`}
+            >
+              {plan.highlight && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-white text-black text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-white/20 whitespace-nowrap">
+                  MAIS ESCOLHIDO
+                </div>
+              )}
 
-            <div className="flex-1 space-y-8">
-              <div>
-                <h3 className="text-3xl font-display font-bold text-white mb-4">Acesso completo</h3>
-                <p className="text-white/40 leading-relaxed">
-                  Tudo o que o CredMais App oferece, liberado desde o primeiro dia: gestão, cobrança automática e inteligência artificial trabalhando pela sua carteira.
-                </p>
+              <div className="mb-6">
+                <h3 className="text-2xl font-display font-bold text-white mb-2">{plan.name}</h3>
+                <p className="text-sm text-white/40 leading-relaxed min-h-[40px]">{plan.tagline}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <div className="mb-8">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-white/40 text-lg">R$</span>
+                  <span className="text-5xl font-bold text-white tracking-tight">{plan.priceLabel}</span>
+                  <span className="text-white/40 text-sm">,00/mês</span>
+                </div>
+                <span className="text-white/30 text-xs mt-1 block italic">sem fidelidade, cancele quando quiser</span>
+              </div>
+
+              <div className="space-y-3 flex-1">
+                {plan.features.map((feature) => (
+                  <div key={feature} className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Check size={12} className="text-blue-400" />
                     </div>
                     <span className="text-sm text-white/70">{feature}</span>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            <div className="w-full md:w-[320px] p-8 rounded-3xl bg-white/[0.05] border border-white/10 text-center flex flex-col justify-center">
-              <div className="mb-6">
-                <span className="text-white/40 text-sm block mb-2">Apenas</span>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-white/40 text-lg">R$</span>
-                  <span className="text-6xl font-bold text-white tracking-tight">79</span>
-                  <span className="text-white/40 text-lg">,00</span>
-                </div>
-                <span className="text-white/30 text-xs mt-2 block italic">por mês, sem fidelidade</span>
+                {plan.missing?.map((feature) => (
+                  <div key={feature} className="flex items-start gap-3 opacity-40">
+                    <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <X size={12} className="text-white/50" />
+                    </div>
+                    <span className="text-sm text-white/50 line-through">{feature}</span>
+                  </div>
+                ))}
               </div>
 
               <button
-                onClick={handleCheckout}
-                className="w-full py-5 rounded-2xl bg-white text-black font-bold text-base tracking-wide hover:bg-white/90 transition-all shadow-xl shadow-white/10 flex items-center justify-center gap-2 group"
+                onClick={() => goCheckout(plan.tier)}
+                className={`mt-8 w-full py-4 rounded-2xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 group ${
+                  plan.highlight
+                    ? "bg-white text-black hover:bg-white/90 shadow-xl shadow-white/10"
+                    : "bg-white/[0.06] text-white border border-white/15 hover:bg-white/[0.12]"
+                }`}
               >
-                COMEÇAR AGORA
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                ASSINAR {plan.name.toUpperCase()}
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </button>
 
-              <p className="text-[10px] text-white/20 mt-4 leading-relaxed">
-                Pagamento seguro via Mercado Pago.<br />Cancele quando quiser, sem multa.
+              <p className="text-[10px] text-white/20 mt-4 text-center leading-relaxed">
+                Pagamento seguro via Mercado Pago · Pix, cartão ou boleto
               </p>
-            </div>
-          </motion.div>
+            </motion.div>
+          ))}
         </div>
       </div>
-      
+
       {/* Decorative Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-blue-500/[0.03] rounded-full blur-[120px] -z-10" />
     </section>

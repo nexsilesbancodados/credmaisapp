@@ -7,6 +7,7 @@ import {
   BarChart3, Receipt, Bot, Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePlan } from "@/hooks/usePlan";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import ErrorState from "@/components/feedback/ErrorState";
@@ -196,11 +197,15 @@ const Dashboard = () => {
   const dateStr = currentTime.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
   const firstName = profile?.name?.split(" ")[0] || "Usuário";
 
+  const { hasAutomations } = usePlan();
+
   const quickActions = [
     { label: "Novo cliente",    icon: Users,    path: "/clientes/novo", tone: "from-primary/25 to-primary/5",       ring: "ring-primary/30",    iconColor: "text-primary" },
     { label: "Nova cobrança",   icon: Receipt,  path: "/cobrancas",     tone: "from-success/25 to-success/5",       ring: "ring-success/30",    iconColor: "text-success" },
     { label: "Ver carteira",    icon: Wallet,   path: "/carteira",      tone: "from-indigo-500/25 to-indigo-500/5", ring: "ring-indigo-500/30", iconColor: "text-indigo-400" },
-    { label: "Agente IA",       icon: Bot,      path: "/agente-ia",     tone: "from-violet-500/25 to-violet-500/5", ring: "ring-violet-500/30", iconColor: "text-violet-400" },
+    ...(hasAutomations
+      ? [{ label: "Agente IA", icon: Bot, path: "/agente-ia", tone: "from-violet-500/25 to-violet-500/5", ring: "ring-violet-500/30", iconColor: "text-violet-400" }]
+      : [{ label: "Relatórios", icon: Receipt, path: "/relatorios", tone: "from-violet-500/25 to-violet-500/5", ring: "ring-violet-500/30", iconColor: "text-violet-400" }]),
   ];
 
   const urgencyCards = [
