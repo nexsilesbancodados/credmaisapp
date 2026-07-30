@@ -65,7 +65,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
           </div>
           {fee.multa > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Multa{fee.multaPct ? ` (${fee.multaPct}%)` : ""}</span>
+              <span className="text-muted-foreground">Multa</span>
               <span className="text-destructive font-medium">+ R$ {fmt(fee.multa)}</span>
             </div>
           )}

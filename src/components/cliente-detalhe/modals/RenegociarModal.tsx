@@ -55,7 +55,7 @@ export default function RenegociarModal({ contract, installments, clientName, on
   });
   const [interestRate, setInterestRate] = useState(String(contract.interest_rate ?? 10));
   const [lateFee, setLateFee] = useState("0");
-  const [dailyFee, setDailyFee] = useState(String(contract.daily_interest_percent ?? 0.33));
+  const [dailyFee, setDailyFee] = useState(String(contract.daily_interest_percent || 4));
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
