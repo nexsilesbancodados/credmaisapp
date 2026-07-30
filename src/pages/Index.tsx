@@ -1,9 +1,6 @@
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingFeatures from "@/components/landing/LandingFeatures";
-import LandingSteps from "@/components/landing/LandingSteps";
-import LandingDashboardPreview from "@/components/landing/LandingDashboardPreview";
-import LandingBenefits from "@/components/landing/LandingBenefits";
 import LandingPricing from "@/components/landing/LandingPricing";
 import LandingFAQ from "@/components/landing/LandingFAQ";
 import LandingCTA from "@/components/landing/LandingCTA";
@@ -16,9 +13,6 @@ const Index = () => {
       <main>
         <LandingHero />
         <LandingFeatures />
-        <LandingSteps />
-        <LandingDashboardPreview />
-        <LandingBenefits />
         <LandingPricing />
         <LandingFAQ />
         <LandingCTA />
