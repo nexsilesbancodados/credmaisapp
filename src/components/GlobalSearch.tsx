@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { usePlan } from "@/hooks/usePlan";
 import {
   Search, X, FileSignature, Users, LayoutDashboard, CornerDownLeft,
   UserPlus, Receipt, TrendingUp, Wrench, Calculator, ListTodo,
