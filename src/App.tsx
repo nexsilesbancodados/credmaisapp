@@ -10,6 +10,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WhiteLabelProvider } from "@/contexts/WhiteLabelContext";
+import PlanGuard from "@/components/PlanGuard";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
 import OfflineIndicator from "./components/OfflineIndicator";
@@ -178,9 +179,9 @@ const App = () => (
                     <Route path="/configuracoes" element={<ErrorBoundary><Configuracoes /></ErrorBoundary>} />
                     <Route path="/cobradores" element={<ErrorBoundary><Cobradores /></ErrorBoundary>} />
                     <Route path="/qrcode" element={<QRCodePage />} />
-                    <Route path="/comunicacao" element={<ErrorBoundary><CentralBot /></ErrorBoundary>} />
+                    <Route path="/comunicacao" element={<PlanGuard><ErrorBoundary><CentralBot /></ErrorBoundary></PlanGuard>} />
                     <Route path="/central" element={<Navigate to="/comunicacao" replace />} />
-                    <Route path="/comunicacao/inbox" element={<ErrorBoundary><WhatsAppInbox /></ErrorBoundary>} />
+                    <Route path="/comunicacao/inbox" element={<PlanGuard><ErrorBoundary><WhatsAppInbox /></ErrorBoundary></PlanGuard>} />
                     <Route path="/agente-ia" element={<Navigate to="/comunicacao?tab=agente" replace />} />
                     <Route path="/bot-performance" element={<Navigate to="/comunicacao?tab=performance" replace />} />
                     <Route path="/automacoes" element={<Navigate to="/comunicacao?tab=automacoes" replace />} />
