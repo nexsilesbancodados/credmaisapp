@@ -1385,6 +1385,7 @@ export type Database = {
           onboarding_completed_at: string | null
           pix_key: string | null
           pix_key_type: string | null
+          plan_tier: string
           profit_balance: number
           subscription_expires_at: string | null
           subscription_type: string | null
@@ -1405,6 +1406,7 @@ export type Database = {
           onboarding_completed_at?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          plan_tier?: string
           profit_balance?: number
           subscription_expires_at?: string | null
           subscription_type?: string | null
@@ -1425,6 +1427,7 @@ export type Database = {
           onboarding_completed_at?: string | null
           pix_key?: string | null
           pix_key_type?: string | null
+          plan_tier?: string
           profit_balance?: number
           subscription_expires_at?: string | null
           subscription_type?: string | null
@@ -1769,6 +1772,7 @@ export type Database = {
           id: string
           mercadopago_payment_id: string | null
           plan_name: string | null
+          plan_tier: string | null
           provider: string | null
           status: string
           updated_at: string | null
@@ -1784,6 +1788,7 @@ export type Database = {
           id?: string
           mercadopago_payment_id?: string | null
           plan_name?: string | null
+          plan_tier?: string | null
           provider?: string | null
           status?: string
           updated_at?: string | null
@@ -1799,6 +1804,7 @@ export type Database = {
           id?: string
           mercadopago_payment_id?: string | null
           plan_name?: string | null
+          plan_tier?: string | null
           provider?: string | null
           status?: string
           updated_at?: string | null
