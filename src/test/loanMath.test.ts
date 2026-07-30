@@ -51,7 +51,8 @@ describe("calculateLoan", () => {
     expect(r.installmentAmount).toBeCloseTo(162.7454, 2);
     expect(r.totalAmount).toBeCloseTo(1627.454, 1);
     expect(r.schedule).toHaveLength(10);
-    expect(r.schedule[0]).toBeCloseTo(r.schedule[9]);
+    // a última parcela absorve o arredondamento (centavos)
+    expect(r.schedule[0]).toBeCloseTo(r.schedule[9], 1);
   });
 
   it("price com taxa 0% = capital/n", () => {
