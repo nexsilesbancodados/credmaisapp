@@ -115,6 +115,7 @@ const MobileBottomNav = () => {
   const [showMore, setShowMore] = useState(false);
   const [showFab, setShowFab] = useState(false);
   const isSuperAdmin = isSuperAdminEmail(user?.email);
+  const { hasAutomations } = usePlan();
 
   const fabActions = [
     { label: "Novo cliente", icon: UserPlus, onClick: () => navigate("/clientes/novo") },
