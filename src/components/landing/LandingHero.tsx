@@ -9,7 +9,7 @@ const heroChecks = [
 
 const LandingHero = () => {
   return (
-    <section id="home" className="relative overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-28">
+    <section id="home" className="relative overflow-hidden pt-28 pb-14 lg:pt-36 lg:pb-24">
       <div className="absolute inset-0 rule-grid opacity-[0.5] pointer-events-none" aria-hidden />
       <div
         className="absolute -top-40 right-0 w-[520px] h-[520px] rounded-full bg-primary/10 blur-3xl pointer-events-none"
@@ -83,7 +83,7 @@ const LandingHero = () => {
                     <p className="text-[10px] uppercase tracking-wider text-subtle font-semibold">
                       Recebido hoje
                     </p>
-                    <p className="tnum text-xl font-bold text-foreground mt-1">R$ 15.420,00</p>
+                    <p className="tnum text-lg sm:text-xl font-bold text-foreground mt-1 whitespace-nowrap">R$ 15.420,00</p>
                     <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
                       <div className="h-full w-[72%] bg-primary" />
                     </div>
@@ -111,7 +111,7 @@ const LandingHero = () => {
                         <p className="text-[11px] text-subtle truncate">{row.info}</p>
                       </div>
                       <span
-                        className={`tnum text-sm font-semibold ${
+                        className={`tnum text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
                           row.ok ? "text-foreground" : "text-destructive"
                         }`}
                       >
@@ -126,7 +126,7 @@ const LandingHero = () => {
                     <TrendingUp size={14} className="text-primary" />
                     Agente de IA no WhatsApp
                   </span>
-                  <span className="tnum text-xs font-bold text-foreground">142 mensagens · 98,2%</span>
+                  <span className="tnum text-xs font-bold text-foreground whitespace-nowrap">142 mensagens · 98,2%</span>
                 </div>
               </div>
             </div>
