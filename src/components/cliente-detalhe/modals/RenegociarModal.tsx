@@ -54,7 +54,7 @@ export default function RenegociarModal({ contract, installments, clientName, on
     return d.toISOString().split("T")[0];
   });
   const [interestRate, setInterestRate] = useState(String(contract.interest_rate ?? 10));
-  const [lateFee, setLateFee] = useState(String(contract.late_fee_percent ?? 2));
+  const [lateFee, setLateFee] = useState("0");
   const [dailyFee, setDailyFee] = useState(String(contract.daily_interest_percent ?? 0.33));
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -174,8 +174,8 @@ export default function RenegociarModal({ contract, installments, clientName, on
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={INPUT} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Multa por atraso (%)</label>
-            <input type="number" value={lateFee} onChange={e => setLateFee(e.target.value)} className={INPUT} step="0.01" />
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Juros de atraso (% ao dia)</label>
+            <input type="number" value={dailyFee ?? ""} onChange={e => setLateFee(lateFee)} className={INPUT} step="0.01" disabled />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Juros diários (%)</label>

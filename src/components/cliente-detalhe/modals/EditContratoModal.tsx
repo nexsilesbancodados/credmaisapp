@@ -75,12 +75,8 @@ export default function EditContratoModal({ form, setForm, regen, setRegen, savi
             <input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} className={INPUT} />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Multa Diária (%)</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Juros de atraso (% ao dia)</label>
             <input type="number" step="0.01" value={form.daily_interest_percent} onChange={e => setForm({ ...form, daily_interest_percent: e.target.value })} className={INPUT} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Multa Mensal (%)</label>
-            <input type="number" step="0.1" value={form.late_fee_percent} onChange={e => setForm({ ...form, late_fee_percent: e.target.value })} className={INPUT} />
           </div>
           <div className="col-span-2">
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Observações</label>
