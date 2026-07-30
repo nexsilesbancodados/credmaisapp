@@ -5,6 +5,15 @@ import { Menu, X } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import eagleLogo from "@/assets/eagle-logo.webp";
 
+const navLinks = [
+  { name: "Início", href: "#home" },
+  { name: "Recursos", href: "#features" },
+  { name: "Como funciona", href: "#how" },
+  { name: "Benefícios", href: "#benefits" },
+  { name: "Planos", href: "#pricing" },
+  { name: "Contato", href: "#contact" },
+];
+
 const LandingNavbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,142 +21,117 @@ const LandingNavbar = () => {
   const { config } = useWhiteLabel();
 
   const logoSrc = config.companyLogo || eagleLogo;
-  const brandTitle = config.companyName || "CREDMAIS APP";
+  const brandTitle = config.companyName || "CredMais App";
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setIsScrolled(window.scrollY > 16);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const navLinks = [
-    { name: "Início", href: "#home" },
-    { name: "Recursos", href: "#features" },
-    { name: "Benefícios", href: "#benefits" },
-    { name: "Planos", href: "/planos", internal: true },
-    { name: "Contato", href: "#contact" },
-  ];
-
   return (
-    <nav
+    <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-black/60 backdrop-blur-xl py-3 shadow-lg border-b border-white/5" : "bg-transparent py-6"
+        isScrolled
+          ? "bg-background/85 backdrop-blur-xl py-3 border-b border-border"
+          : "bg-transparent py-5"
       }`}
     >
-      <div className="container mx-auto px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
-          <img src={logoSrc} alt={brandTitle} className="w-10 h-10 rounded-full" />
-          <div className="flex flex-col">
-            <span className="font-display text-lg font-bold tracking-widest text-gradient-gold leading-none">
+      <div className="container mx-auto px-5 sm:px-6 flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-3 text-left"
+          aria-label={brandTitle}
+        >
+          <img src={logoSrc} alt={brandTitle} className="w-9 h-9 rounded-xl border border-border" />
+          <span className="flex flex-col leading-none">
+            <span className="font-editorial text-base sm:text-lg font-bold text-foreground">
               {brandTitle}
             </span>
-            <span className="text-[8px] text-white/40 tracking-[0.2em] uppercase mt-0.5">
-              Gestão de Empréstimos
+            <span className="text-[9px] text-subtle tracking-[0.18em] uppercase mt-1">
+              Gestão de empréstimos
             </span>
-          </div>
-        </div>
+          </span>
+        </button>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
+        <nav className="hidden lg:flex items-center gap-7">
           {navLinks.map((link) => (
-            link.internal ? (
-              <Link
-                key={link.name}
-                to={link.href}
-                className="text-sm font-medium text-white/70 hover:text-white transition-colors"
-              >
-                {link.name}
-              </Link>
-            ) : (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-sm font-medium text-white/70 hover:text-white transition-colors"
-              >
-                {link.name}
-              </a>
-            )
+            <a
+              key={link.name}
+              href={link.href}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {link.name}
+            </a>
           ))}
-        </div>
+        </nav>
 
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3">
           <Link
             to="/login"
-            className="text-sm font-medium text-white/70 hover:text-white transition-colors"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
           >
             Entrar
           </Link>
           <Link
             to="/checkout"
-            className="px-6 py-2.5 rounded-full text-sm font-bold bg-white text-black hover:bg-white/90 transition-all shadow-lg shadow-white/10"
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-lg shadow-primary/20"
           >
-            ASSINAR AGORA
+            Assinar agora
           </Link>
         </div>
 
-        {/* Mobile Toggle */}
         <button
-          className="md:hidden text-white p-2"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          type="button"
+          className="md:hidden text-foreground p-2 -mr-2"
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-black/95 border-b border-white/10 overflow-hidden"
+            className="md:hidden bg-background border-b border-border overflow-hidden"
           >
-            <div className="flex flex-col p-6 gap-6">
+            <div className="flex flex-col p-6 gap-5">
               {navLinks.map((link) => (
-                link.internal ? (
-                  <Link
-                    key={link.name}
-                    to={link.href}
-                    className="text-lg font-medium text-white/70"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {link.name}
-                  </Link>
-                ) : (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    className="text-lg font-medium text-white/70"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {link.name}
-                  </a>
-                )
+                <a
+                  key={link.name}
+                  href={link.href}
+                  className="text-base font-medium text-muted-foreground"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.name}
+                </a>
               ))}
-              <div className="flex flex-col gap-4 pt-4 border-t border-white/10">
+              <div className="flex flex-col gap-3 pt-4 border-t border-border">
                 <Link
                   to="/login"
-                  className="text-center py-3 text-white/70 font-medium"
+                  className="text-center py-3 rounded-xl border border-border text-foreground font-semibold"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Entrar
                 </Link>
                 <Link
                   to="/checkout"
-                  className="text-center py-3 rounded-xl bg-white text-black font-bold"
+                  className="text-center py-3 rounded-xl bg-primary text-primary-foreground font-semibold"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  ASSINAR AGORA
+                  Assinar agora
                 </Link>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </header>
   );
 };
 

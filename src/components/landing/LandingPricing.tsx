@@ -1,106 +1,90 @@
-import { motion } from "framer-motion";
-import { Check, ArrowRight, X } from "lucide-react";
+import { Check, X, ArrowRight, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PLAN_LIST } from "@/lib/plans";
 
 const LandingPricing = () => {
   const navigate = useNavigate();
-
   const goCheckout = (tier: string) => navigate(`/checkout?plan=${tier}`);
 
   return (
-    <section id="pricing" className="py-24 bg-black/50 relative overflow-hidden">
-      <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-display font-bold text-white mb-6"
-          >
-            Dois planos. <span className="text-gradient-gold">Zero complicação.</span>
-          </motion.h2>
-          <p className="text-white/40 max-w-xl mx-auto">
+    <section id="pricing" className="py-20 lg:py-28 bg-card border-y border-border">
+      <div className="container mx-auto px-5 sm:px-6">
+        <div className="max-w-2xl mb-12 lg:mb-16">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
+            Planos
+          </p>
+          <h2 className="text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-tight">
+            Dois planos. Zero complicação.
+          </h2>
+          <p className="text-muted-foreground mt-4 leading-relaxed">
             Comece com a gestão completa da sua carteira. Quando quiser cobrar no automático com
             inteligência artificial, é só subir de plano — sem fidelidade.
           </p>
         </div>
 
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-          {PLAN_LIST.map((plan, i) => (
-            <motion.div
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl">
+          {PLAN_LIST.map((plan) => (
+            <article
               key={plan.tier}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={`relative p-8 md:p-10 rounded-[2.5rem] border backdrop-blur-xl flex flex-col ${
+              className={`relative rounded-[2rem] border p-7 sm:p-9 flex flex-col ${
                 plan.highlight
-                  ? "bg-white/[0.06] border-white/25 shadow-2xl shadow-blue-500/10"
-                  : "bg-white/[0.03] border-white/10"
+                  ? "border-primary bg-background shadow-xl shadow-primary/10"
+                  : "border-border bg-background"
               }`}
             >
               {plan.highlight && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full bg-white text-black text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-white/20 whitespace-nowrap">
-                  MAIS ESCOLHIDO
-                </div>
+                <span className="absolute -top-3 left-7 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.14em]">
+                  Mais escolhido
+                </span>
               )}
 
-              <div className="mb-6">
-                <h3 className="text-2xl font-display font-bold text-white mb-2">{plan.name}</h3>
-                <p className="text-sm text-white/40 leading-relaxed min-h-[40px]">{plan.tagline}</p>
+              <h3 className="font-editorial text-2xl font-bold text-foreground">{plan.name}</h3>
+              <p className="text-sm text-muted-foreground mt-2">{plan.tagline}</p>
+
+              <div className="flex items-end gap-1.5 mt-7 mb-7">
+                <span className="text-sm font-semibold text-muted-foreground mb-2">R$</span>
+                <span className="tnum font-editorial text-[3rem] leading-none font-bold text-foreground">
+                  {plan.priceLabel}
+                </span>
+                <span className="text-sm text-subtle mb-2">/mês</span>
               </div>
 
-              <div className="mb-8">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-white/40 text-lg">R$</span>
-                  <span className="text-5xl font-bold text-white tracking-tight">{plan.priceLabel}</span>
-                  <span className="text-white/40 text-sm">,00/mês</span>
-                </div>
-                <span className="text-white/30 text-xs mt-1 block italic">sem fidelidade, cancele quando quiser</span>
-              </div>
-
-              <div className="space-y-3 flex-1">
-                {plan.features.map((feature) => (
-                  <div key={feature} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Check size={12} className="text-blue-400" />
-                    </div>
-                    <span className="text-sm text-white/70">{feature}</span>
-                  </div>
+              <ul className="space-y-3 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
+                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                    <span>{f}</span>
+                  </li>
                 ))}
-                {plan.missing?.map((feature) => (
-                  <div key={feature} className="flex items-start gap-3 opacity-40">
-                    <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <X size={12} className="text-white/50" />
-                    </div>
-                    <span className="text-sm text-white/50 line-through">{feature}</span>
-                  </div>
+                {plan.missing?.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5 text-sm text-subtle">
+                    <X size={16} className="mt-0.5 flex-shrink-0" />
+                    <span className="line-through">{f}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
               <button
+                type="button"
                 onClick={() => goCheckout(plan.tier)}
-                className={`mt-8 w-full py-4 rounded-2xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 group ${
+                className={`mt-8 inline-flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl font-semibold transition-all ${
                   plan.highlight
-                    ? "bg-white text-black hover:bg-white/90 shadow-xl shadow-white/10"
-                    : "bg-white/[0.06] text-white border border-white/15 hover:bg-white/[0.12]"
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-90"
+                    : "border border-border text-foreground hover:border-primary/40"
                 }`}
               >
-                ASSINAR {plan.name.toUpperCase()}
-                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                Assinar {plan.name}
+                <ArrowRight size={16} />
               </button>
-
-              <p className="text-[10px] text-white/20 mt-4 text-center leading-relaxed">
-                Pagamento seguro via Mercado Pago · Pix, cartão ou boleto
-              </p>
-            </motion.div>
+            </article>
           ))}
         </div>
-      </div>
 
-      {/* Decorative Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-blue-500/[0.03] rounded-full blur-[120px] -z-10" />
+        <p className="flex items-center gap-2 text-xs text-subtle mt-6">
+          <ShieldCheck size={14} className="text-primary" />
+          Pagamento processado pelo Mercado Pago · cancele quando quiser
+        </p>
+      </div>
     </section>
   );
 };

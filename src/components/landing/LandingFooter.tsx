@@ -1,90 +1,108 @@
+import { Link } from "react-router-dom";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import eagleLogo from "@/assets/eagle-logo.webp";
-import { Mail, Phone, MapPin, Globe, Share2, Info } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 
 const LandingFooter = () => {
   const { config } = useWhiteLabel();
-  const brandTitle = config.companyName || "CREDMAIS APP";
+  const brandTitle = config.companyName || "CredMais App";
+  const year = new Date().getFullYear();
 
   return (
-    <footer id="contact" className="pt-20 pb-10 bg-black border-t border-white/5">
-      <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          <div className="space-y-6">
+    <footer id="contact" className="pt-16 pb-10 bg-background border-t border-border">
+      <div className="container mx-auto px-5 sm:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 mb-12">
+          <div className="space-y-5">
             <div className="flex items-center gap-3">
-              <img src={config.companyLogo || eagleLogo} alt={brandTitle} className="w-10 h-10 rounded-full" />
-              <span className="font-display text-xl font-bold tracking-widest text-gradient-gold">
-                {brandTitle}
-              </span>
+              <img
+                src={config.companyLogo || eagleLogo}
+                alt={brandTitle}
+                className="w-9 h-9 rounded-xl border border-border"
+              />
+              <span className="font-editorial text-lg font-bold text-foreground">{brandTitle}</span>
             </div>
-            <p className="text-white/70 text-sm leading-relaxed">
-              O sistema completo para quem empresta dinheiro: clientes, contratos, parcelas e cobrança automática. Mais controle, menos calote e mais lucro no fim do mês.
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O sistema completo para quem empresta dinheiro: clientes, contratos, parcelas e cobrança
+              automática. Mais controle, menos calote e mais lucro no fim do mês.
             </p>
-            <div className="flex items-center gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                <Globe size={18} className="text-white/60" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                <Share2 size={18} className="text-white/60" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
-                <Info size={18} className="text-white/60" />
-              </a>
-            </div>
           </div>
 
-          <div>
-            <h4 className="font-display font-bold text-white mb-6">Navegação</h4>
-            <ul className="space-y-4">
-              {["Início", "Recursos", "Benefícios", "Planos", "Depoimentos", "Contato"].map((item) => (
-                <li key={item}>
-                  <a href={`#${item.toLowerCase()}`} className="text-white/70 hover:text-white text-sm transition-colors">
-                    {item}
+          <nav aria-label="Navegação do rodapé">
+            <h3 className="text-sm font-bold text-foreground mb-4">Navegação</h3>
+            <ul className="space-y-3">
+              {[
+                { label: "Início", href: "#home" },
+                { label: "Recursos", href: "#features" },
+                { label: "Como funciona", href: "#how" },
+                { label: "Benefícios", href: "#benefits" },
+                { label: "Planos", href: "#pricing" },
+                { label: "Dúvidas", href: "#faq" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <a
+                    href={item.href}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {item.label}
                   </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div>
+            <h3 className="text-sm font-bold text-foreground mb-4">Acesso</h3>
+            <ul className="space-y-3">
+              {[
+                { label: "Entrar no painel", to: "/login" },
+                { label: "Portal do cliente", to: "/portal" },
+                { label: "Portal do investidor", to: "/portal-investidor" },
+                { label: "Assinar", to: "/checkout" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link
+                    to={item.to}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {item.label}
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h4 className="font-display font-bold text-white mb-6">Recursos</h4>
-            <ul className="space-y-4">
-              {["Gestão de clientes", "Controle de parcelas", "Relatórios de lucro", "Cobrança automática", "Portal do cliente", "Segurança de dados"].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-white/70 hover:text-white text-sm transition-colors">
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-display font-bold text-white mb-6">Fale Conosco</h4>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Phone size={16} className="text-white/60" />
-                (11) 99999-9999
+            <h3 className="text-sm font-bold text-foreground mb-4">Contato</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2.5">
+                <Phone size={15} className="text-primary mt-0.5 flex-shrink-0" />
+                <a href="https://wa.me/5511964541758" className="hover:text-foreground transition-colors">
+                  (11) 96454-1758
+                </a>
               </li>
-              <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Mail size={16} className="text-white/60" />
-                contato@credmaisapp.com.br
+              <li className="flex items-start gap-2.5">
+                <Mail size={15} className="text-primary mt-0.5 flex-shrink-0" />
+                <span>contato@credmaisapp.com</span>
               </li>
-              <li className="flex items-center gap-3 text-white/70 text-sm">
-                <MapPin size={16} className="text-white/60" />
-                São Paulo - SP
+              <li className="flex items-start gap-2.5">
+                <MapPin size={15} className="text-primary mt-0.5 flex-shrink-0" />
+                <span>São Paulo · SP · Brasil</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] text-white/60 tracking-wider">
-            © 2025 {brandTitle} — TODOS OS DIREITOS RESERVADOS.
+        <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-subtle">
+            © {year} {brandTitle}. Todos os direitos reservados.
           </p>
-          <div className="flex gap-6">
-            <a href="/privacidade" className="text-[10px] text-white/60 hover:text-white transition-colors">Política de Privacidade</a>
-            <a href="/privacidade" className="text-[10px] text-white/60 hover:text-white transition-colors">Termos de Uso</a>
+          <div className="flex items-center gap-5">
+            <Link to="/termos" className="text-xs text-subtle hover:text-foreground transition-colors">
+              Termos de uso
+            </Link>
+            <Link to="/privacidade" className="text-xs text-subtle hover:text-foreground transition-colors">
+              Privacidade
+            </Link>
           </div>
         </div>
       </div>

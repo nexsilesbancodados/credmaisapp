@@ -1,53 +1,42 @@
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { ArrowRight, MessageCircle } from "lucide-react";
 
 const LandingCTA = () => {
-  const navigate = useNavigate();
-
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-white/[0.02] -z-10" />
-      <div className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto rounded-[3rem] bg-gradient-to-br from-white/[0.08] to-transparent border border-white/10 p-12 md:p-20 text-center relative overflow-hidden">
-          {/* Decorative Glow */}
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-[80px]" />
-
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-display font-bold text-white mb-8"
-          >
-            Pare de perder dinheiro <br />
-            <span className="text-gradient-gold">por falta de controle.</span>
-          </motion.h2>
-          
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-white/40 mb-12 max-w-xl mx-auto leading-relaxed"
-          >
-            Em poucos minutos sua carteira está organizada, suas cobranças rodando no automático e seus números na tela. Comece hoje e receba a próxima parcela em dia.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6"
-          >
-            <button
-              onClick={() => navigate("/checkout")}
-              className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-black font-bold text-sm tracking-wide hover:bg-white/90 transition-all shadow-xl shadow-white/10"
-            >
-              COMEÇAR AGORA
-            </button>
-          </motion.div>
+    <section className="py-20 lg:py-28 bg-card border-t border-border">
+      <div className="container mx-auto px-5 sm:px-6">
+        <div className="relative overflow-hidden rounded-[2rem] border border-border bg-background px-7 py-12 sm:px-12 sm:py-16">
+          <div
+            className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none"
+            aria-hidden
+          />
+          <div className="relative max-w-2xl">
+            <h2 className="text-[clamp(1.75rem,3.8vw,2.75rem)] font-bold text-foreground leading-tight">
+              Comece hoje e receba a próxima parcela em dia.
+            </h2>
+            <p className="text-muted-foreground mt-4 leading-relaxed">
+              Leve seus contratos para um lugar onde nada se perde: cada parcela cobrada, cada real
+              registrado e o lucro sempre visível.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 mt-8">
+              <Link
+                to="/checkout"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 hover:opacity-90 transition-all"
+              >
+                Assinar agora
+                <ArrowRight size={17} />
+              </Link>
+              <a
+                href="https://wa.me/5511964541758"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl border border-border font-semibold text-foreground hover:border-primary/40 transition-all"
+              >
+                <MessageCircle size={17} />
+                Falar no WhatsApp
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -1,127 +1,136 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Play, CheckCircle2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
-import { supabase } from "@/integrations/supabase/client";
-import eagleLogo from "@/assets/eagle-logo.webp";
+import { Link } from "react-router-dom";
+import { ArrowRight, ShieldCheck, Clock, MessageCircle, TrendingUp, TrendingDown } from "lucide-react";
+
+const heroChecks = [
+  { icon: ShieldCheck, label: "Pagamento seguro via Mercado Pago" },
+  { icon: Clock, label: "Pronto para usar em minutos" },
+  { icon: MessageCircle, label: "Suporte de gente de verdade" },
+];
 
 const LandingHero = () => {
-  const navigate = useNavigate();
-  const { config } = useWhiteLabel();
-  const brandTitle = config.companyName || "CREDMAIS APP";
-
   return (
-    <section id="home" className="relative min-h-dvh pt-32 pb-20 overflow-hidden flex items-center">
-      {/* Background Elements */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] bg-blue-500/[0.05] rounded-full blur-3xl -z-10" />
-      <div className="absolute -top-[10%] -right-[10%] w-[500px] h-[500px] bg-blue-600/[0.08] rounded-full blur-[120px] -z-10" />
-      
-      <div className="container mx-auto px-6">
-        <div className="flex flex-col lg:flex-row items-center gap-16">
-          {/* Left Content */}
-          <div className="flex-1 text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.05] border border-white/10 mb-8"
-            >
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-semibold text-white/60 tracking-wider uppercase">
-                Feito para quem empresta e quer receber em dia
+    <section id="home" className="relative overflow-hidden pt-28 pb-14 lg:pt-36 lg:pb-24">
+      <div className="absolute inset-0 rule-grid opacity-[0.5] pointer-events-none" aria-hidden />
+      <div
+        className="absolute -top-40 right-0 w-[520px] h-[520px] rounded-full bg-primary/10 blur-3xl pointer-events-none"
+        aria-hidden
+      />
+
+      <div className="container mx-auto px-5 sm:px-6 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Coluna editorial */}
+          <div className="space-y-7 max-w-xl">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-[11px] font-semibold text-primary uppercase tracking-[0.14em]">
+                Cobrança automática ativa
               </span>
-            </motion.div>
+            </span>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-5xl md:text-8xl font-display font-bold text-white leading-[1.05] mb-8 tracking-tighter"
-            >
-              Empreste com <br />
-              controle. Receba <br />
-              <span className="text-gradient-gold">em dia.</span>
-            </motion.h1>
+            <h1 className="text-[clamp(2.25rem,5vw,3.75rem)] font-bold leading-[1.08] text-foreground">
+              Gestão de empréstimos <span className="text-primary">inteligente</span> para o seu negócio.
+            </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg text-white/50 mb-12 max-w-2xl mx-auto lg:mx-0 leading-relaxed"
-            >
-              Do contrato à última parcela: clientes, prazos, juros e cobrança automática no WhatsApp em um só lugar. Você para de correr atrás de planilha e passa a enxergar cada real que tem a receber.
-            </motion.p>
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+              Do contrato à última parcela: clientes, prazos, juros e cobrança automática no WhatsApp em um
+              só lugar. Você para de correr atrás de planilha e passa a enxergar cada real que tem a receber.
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center gap-6 justify-center lg:justify-start"
-            >
-              <button
-                onClick={() => navigate("/checkout")}
-                className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-black font-bold text-sm tracking-wide hover:bg-white/90 transition-all flex items-center justify-center gap-2 group shadow-xl shadow-white/10"
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Link
+                to="/checkout"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 hover:opacity-90 transition-all"
               >
-                QUERO ORGANIZAR MINHA CARTEIRA
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </button>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.8 }}
-              className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-8"
-            >
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-white/70" />
-                <span className="text-xs text-white/70">Pagamento seguro via Mercado Pago</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-white/70" />
-                <span className="text-xs text-white/70">Pronto para usar em minutos</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-white/70" />
-                <span className="text-xs text-white/70">Suporte de gente de verdade</span>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right Visual */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, rotateY: -10 }}
-            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className="flex-1 relative lg:block hidden"
-          >
-            <div className="relative z-10 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-[0_0_100px_-20px_rgba(59,130,246,0.2)] overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.02] to-transparent pointer-events-none" />
+                Começar agora
+                <ArrowRight size={17} />
+              </Link>
+              <a
+                href="#pricing"
+                className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-card border border-border font-semibold text-foreground hover:border-primary/40 transition-all"
+              >
+                Ver planos e preços
+              </a>
             </div>
 
-            {/* Floating elements */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute -top-10 -left-10 p-6 glass border border-white/10 rounded-2xl hidden md:block"
-            >
-              <p className="text-[10px] text-white/70 uppercase tracking-widest mb-1">Recebido hoje</p>
-              <p className="text-2xl font-bold text-white tracking-tight">R$ 15.420,00</p>
-              <div className="mt-2 h-1 w-full bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-3/4" />
-              </div>
-            </motion.div>
+            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3 pt-4">
+              {heroChecks.map(({ icon: Icon, label }) => (
+                <li key={label} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <Icon size={15} className="text-primary flex-shrink-0" />
+                  <span>{label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
-              className="absolute -bottom-10 -right-10 p-6 glass border border-white/10 rounded-2xl hidden md:block"
-            >
-              <p className="text-[10px] text-white/70 uppercase tracking-widest mb-1">Inadimplência</p>
-              <p className="text-2xl font-bold text-red-400 tracking-tight">2.4%</p>
-              <p className="text-[10px] text-green-400 mt-1">↓ 0.8% este mês</p>
-            </motion.div>
-          </motion.div>
+          {/* Painel de prova do produto */}
+          <div className="relative">
+            <div className="relative rounded-[2rem] border border-border bg-gradient-to-br from-secondary to-card p-5 sm:p-7">
+              <div className="rounded-2xl bg-card border border-border p-5 sm:p-6 space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-subtle font-semibold">
+                      Painel do dia
+                    </p>
+                    <p className="font-editorial text-lg font-bold text-foreground mt-1">Sua carteira hoje</p>
+                  </div>
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                    Tempo real
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-border p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-subtle font-semibold">
+                      Recebido hoje
+                    </p>
+                    <p className="tnum text-lg sm:text-xl font-bold text-foreground mt-1 whitespace-nowrap">R$ 15.420,00</p>
+                    <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
+                      <div className="h-full w-[72%] bg-primary" />
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-border p-4">
+                    <p className="text-[10px] uppercase tracking-wider text-subtle font-semibold">
+                      Inadimplência
+                    </p>
+                    <p className="tnum text-xl font-bold text-foreground mt-1">2,4%</p>
+                    <p className="flex items-center gap-1 text-[11px] text-primary mt-3 font-medium">
+                      <TrendingDown size={12} /> 0,8% este mês
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border divide-y divide-border">
+                  {[
+                    { name: "João Silva", info: "Parcela 3/10 · vence hoje", value: "R$ 1.200,00", ok: true },
+                    { name: "Maria Souza", info: "Parcela 6/12 · pago", value: "R$ 850,00", ok: true },
+                    { name: "Carlos Lima", info: "Parcela 2/8 · 3 dias em atraso", value: "R$ 1.040,00", ok: false },
+                  ].map((row) => (
+                    <div key={row.name} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{row.name}</p>
+                        <p className="text-[11px] text-subtle truncate">{row.info}</p>
+                      </div>
+                      <span
+                        className={`tnum text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
+                          row.ok ? "text-foreground" : "text-destructive"
+                        }`}
+                      >
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl bg-secondary px-4 py-3">
+                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                    <TrendingUp size={14} className="text-primary" />
+                    Agente de IA no WhatsApp
+                  </span>
+                  <span className="tnum text-xs font-bold text-foreground whitespace-nowrap">142 mensagens · 98,2%</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
