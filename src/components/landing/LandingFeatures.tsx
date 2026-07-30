@@ -1,79 +1,85 @@
-import { motion } from "framer-motion";
-import { Users, FileText, BarChart3, Bell, Shield, Smartphone } from "lucide-react";
+import {
+  Users,
+  FileText,
+  Bell,
+  BarChart3,
+  Smartphone,
+  Bot,
+  ShieldCheck,
+  Wallet,
+} from "lucide-react";
 
 const features = [
   {
-    title: "Cada cliente na palma da mão",
-    description: "Histórico, contratos, pagamentos e risco de calote em uma única ficha. Você sabe com quem está lidando antes de liberar o dinheiro.",
-    icon: <Users size={24} className="text-white/60" />,
+    icon: Users,
+    title: "Clientes organizados",
+    desc: "Cadastro completo em etapas, documentos, histórico e score de risco em uma ficha só.",
   },
   {
-    title: "Nenhuma parcela esquecida",
-    description: "Vencimentos, pagamentos parciais, juros e multa calculados sozinhos. Abra o app e veja exatamente quem paga hoje e quem está atrasado.",
-    icon: <FileText size={24} className="text-white/60" />,
+    icon: FileText,
+    title: "Contratos flexíveis",
+    desc: "Parcelado ou por porcentagem, diário, semanal ou mensal — com dias úteis e renegociação.",
   },
   {
-    title: "Saiba quanto está lucrando",
-    description: "Capital na rua, lucro realizado e inadimplência em tempo real. Decisões com número na mão, não no achismo.",
-    icon: <BarChart3 size={24} className="text-white/60" />,
+    icon: Bell,
+    title: "Cobrança que acontece",
+    desc: "Mensagens curtas no WhatsApp com PIX e link do portal, disparadas na hora certa.",
   },
   {
-    title: "Cobrança que trabalha por você",
-    description: "Lembretes e cobranças automáticas no WhatsApp, com link de pagamento. Você recebe mais rápido sem desgastar a relação com o cliente.",
-    icon: <Bell size={24} className="text-white/60" />,
+    icon: Bot,
+    title: "Agente de IA 24h",
+    desc: "Responde dúvidas, negocia dentro das suas regras e devolve o cliente ao pagamento.",
   },
   {
-    title: "Seus dados a salvo",
-    description: "Criptografia, acesso restrito e backup diário na nuvem. Sua carteira não depende mais de um caderno ou de um celular perdido.",
-    icon: <Shield size={24} className="text-white/60" />,
+    icon: BarChart3,
+    title: "Lucro sem achismo",
+    desc: "Capital na rua, recebido, a receber e ROI real de cada contrato, parcela por parcela.",
   },
   {
-    title: "Sua operação onde você estiver",
-    description: "Funciona no celular, tablet e computador, como um aplicativo instalado. Feche contrato e receba pagamento na rua, sem voltar para o escritório.",
-    icon: <Smartphone size={24} className="text-white/60" />,
+    icon: Wallet,
+    title: "Carteira de investidores",
+    desc: "Aportes, rendimento e extrato em PDF, com portal próprio para cada investidor.",
+  },
+  {
+    icon: Smartphone,
+    title: "Portal do cliente",
+    desc: "Seu cliente entra com CPF, vê as parcelas e paga sozinho — sem te ligar.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Seguro por padrão",
+    desc: "Dados isolados por conta, criptografia, backup diário e conformidade com a LGPD.",
   },
 ];
 
 const LandingFeatures = () => {
   return (
-    <section id="features" className="py-24 relative overflow-hidden bg-black">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-20">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-display font-bold text-white mb-6"
-          >
-            Menos planilha, <br /> mais <span className="text-gradient-gold">dinheiro no caixa</span>
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-white/40 max-w-2xl mx-auto"
-          >
-            Tudo o que você precisa para controlar sua carteira, cobrar no tempo certo e reduzir o calote — sem complicação e sem depender de ninguém.
-          </motion.p>
+    <section id="features" className="py-20 lg:py-28">
+      <div className="container mx-auto px-5 sm:px-6">
+        <div className="max-w-2xl mb-12 lg:mb-16">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
+            Recursos
+          </p>
+          <h2 className="text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-tight">
+            Tudo que a sua operação precisa, sem nada que atrapalhe.
+          </h2>
+          <p className="text-muted-foreground mt-4 leading-relaxed">
+            Cada recurso existe para responder uma pergunta prática: quem me deve, quanto, quando e o que
+            fazer agora.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="p-8 rounded-3xl bg-white/[0.02] border border-white/5 backdrop-blur-sm hover:bg-white/[0.04] hover:border-blue-500/30 transition-all group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                {feature.icon}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+          {features.map(({ icon: Icon, title, desc }) => (
+            <article key={title} className="paper-card p-6 flex flex-col gap-4">
+              <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Icon size={19} className="text-primary" />
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-foreground mb-2">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
               </div>
-              <h3 className="text-xl font-display font-bold text-white mb-4">{feature.title}</h3>
-              <p className="text-white/40 text-sm leading-relaxed">{feature.description}</p>
-            </motion.div>
+            </article>
           ))}
         </div>
       </div>
