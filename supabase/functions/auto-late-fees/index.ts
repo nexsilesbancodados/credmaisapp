@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const DEFAULT_DAILY_LATE_RATE = 4; // % ao dia (juros composto)
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -94,16 +96,18 @@ serve(async (req) => {
 
       const baseAmount = Number(inst.amount) || 0;
 
-      // Aplica config do contrato; se faltar, cai para o padrão do credor.
+      // POLÍTICA ÚNICA: juros diário COMPOSTO (padrão 4% a.d.).
+      // Não existe mais multa fixa/mensal. O percentual incide sobre o valor
+      // acumulado: 100 -> 104 -> 108,16 -> 112,49 ...
       const defaults = settingsMap.get(config.user_id) || { late_fee: 0, daily_interest: 0 };
-      const lateFeePct = config.late_fee_percent > 0 ? config.late_fee_percent : defaults.late_fee;
-      const dailyPct = config.daily_interest_percent > 0 ? config.daily_interest_percent : defaults.daily_interest;
+      const dailyPct = config.daily_interest_percent > 0
+        ? config.daily_interest_percent
+        : (defaults.daily_interest > 0 ? defaults.daily_interest : DEFAULT_DAILY_LATE_RATE);
+      const lateFeePct = 0;
 
-      // Multa (aplicada 1x) + juros diários acumulados sobre o valor da parcela.
-      // Vale para qualquer tipo de empréstimo — cada parcela tem seu próprio `amount`.
-      const multa = baseAmount * (lateFeePct / 100);
-      const juros = baseAmount * (dailyPct / 100) * daysOverdue;
-      const totalLateFee = Math.round((multa + juros) * 100) / 100;
+      const totalLateFee = Math.round(
+        baseAmount * (Math.pow(1 + dailyPct / 100, daysOverdue) - 1) * 100,
+      ) / 100;
 
       const patch: Record<string, unknown> = {};
       const currentFee = Number(inst.late_fee) || 0;
