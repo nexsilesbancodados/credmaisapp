@@ -140,6 +140,8 @@ serve(async (req) => {
       subscriptionStatus = statusFromMP(payment?.status, payment?.status_detail);
       amountPaid = Number(payment?.transaction_amount ?? 0);
       planName = payment?.description ?? payment?.additional_info?.items?.[0]?.title;
+      const metaTier = payment?.metadata?.plan_tier;
+      planTier = metaTier === "essencial" || metaTier === "completo" ? metaTier : tierFromAmount(amountPaid);
       orderId = String(payment?.id ?? dataId);
     } else if ((topic === "subscription_preapproval" || topic === "preapproval") && dataId) {
       const res = await fetch(`https://api.mercadopago.com/preapproval/${dataId}`, {
@@ -161,6 +163,7 @@ serve(async (req) => {
       else if (s === "cancelled") subscriptionStatus = "canceled";
       amountPaid = Number(sub?.auto_recurring?.transaction_amount ?? 0);
       planName = sub?.reason;
+      planTier = tierFromAmount(amountPaid);
       orderId = String(sub?.id ?? dataId);
     } else {
       console.log("Unhandled MP topic, acknowledging:", topic);
@@ -171,9 +174,8 @@ serve(async (req) => {
     }
 
     // SEGURANÇA (C3): nunca ativar assinatura por um pagamento abaixo do preço
-    // do plano. Fecha o bypass "pagar R$ 0,01 pelo plano de R$ 99,90". O valor
-    // esperado pode ser ajustado via env PLAN_MONTHLY_PRICE sem mudar código.
-    const EXPECTED_AMOUNT = Number(Deno.env.get("PLAN_MONTHLY_PRICE") ?? "99.9");
+    // do plano contratado. Fecha o bypass "pagar R$ 0,01 e ativar a assinatura".
+    const EXPECTED_AMOUNT = PLAN_PRICES[planTier];
     if (subscriptionStatus === "active" && !(Number(amountPaid) >= EXPECTED_AMOUNT - 0.01)) {
       console.warn(
         `Underpayment ignored: paid=${amountPaid} < expected=${EXPECTED_AMOUNT} (order=${orderId}, email=${email ?? "-"})`,
@@ -205,6 +207,7 @@ serve(async (req) => {
           status: subscriptionStatus,
           mercadopago_payment_id: orderId,
           plan_name: planName,
+          plan_tier: planTier,
           amount_paid: amountPaid,
           provider: "mercadopago",
           updated_at: new Date().toISOString(),
@@ -213,6 +216,15 @@ serve(async (req) => {
       );
 
     if (subError) throw subError;
+
+    // Mantém o plano do perfil sincronizado (define o acesso a IA/automações)
+    if (subscriptionStatus === "active" && userData?.id) {
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .update({ plan_tier: planTier })
+        .eq("id", userData.id);
+      if (profErr) console.error("profile plan_tier update failed:", profErr);
+    }
 
     // Send activation email
     if (subscriptionStatus === "active") {
