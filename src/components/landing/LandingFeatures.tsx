@@ -56,7 +56,7 @@ const LandingFeatures = () => {
   return (
     <section id="features" className="py-20 lg:py-28">
       <div className="container mx-auto px-5 sm:px-6">
-        <div className="max-w-2xl mb-12 lg:mb-16">
+        <div className="max-w-2xl mb-12 lg:mb-16" data-anim="up">
           <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
             Recursos
           </p>
@@ -69,9 +69,13 @@ const LandingFeatures = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5" data-anim-group>
           {features.map(({ icon: Icon, title, desc }) => (
-            <article key={title} className="paper-card p-6 flex flex-col gap-4">
+            <article
+              key={title}
+              data-anim="up"
+              className="paper-card p-6 flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1.5"
+            >
               <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Icon size={19} className="text-primary" />
               </span>

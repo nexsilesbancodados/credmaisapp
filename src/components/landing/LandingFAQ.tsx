@@ -34,8 +34,8 @@ const LandingFAQ = () => {
   return (
     <section id="faq" className="py-20 lg:py-28">
       <div className="container mx-auto px-5 sm:px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16">
-          <div>
+        <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16" data-anim-group>
+          <div data-anim="up">
             <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
               Dúvidas
             </p>
@@ -54,7 +54,7 @@ const LandingFAQ = () => {
             </p>
           </div>
 
-          <div className="divide-y divide-border border-y border-border">
+          <div className="divide-y divide-border border-y border-border" data-anim="up">
             {faqs.map((item, i) => {
               const isOpen = open === i;
               return (
