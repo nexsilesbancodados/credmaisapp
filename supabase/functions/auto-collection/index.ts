@@ -80,11 +80,22 @@ serve(async (req) => {
       });
     }
 
+    // Plano Essencial (R$199) não inclui automações/IA — pula esses usuários.
+    const { data: essencialProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("plan_tier", "essencial");
+    const essencialIds = new Set((essencialProfiles ?? []).map((p: any) => p.id));
+
     let totalSent = 0, totalEmail = 0, totalSkipped = 0;
     const results: any[] = [];
 
     for (const settings of allSettings) {
       const userId = settings.user_id;
+      if (essencialIds.has(userId)) {
+        results.push({ user_id: userId, sent: 0, skipped: 1, errors: ["Plano Essencial: automações desativadas"] });
+        continue;
+      }
       const errors: string[] = [];
       let sent = 0, emailSent = 0, skipped = 0;
 
