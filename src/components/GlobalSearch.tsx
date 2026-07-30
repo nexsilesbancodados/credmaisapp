@@ -21,7 +21,7 @@ interface SearchResult {
   shortcut?: string;
 }
 
-const ACTIONS: SearchResult[] = [
+const ALL_ACTIONS: SearchResult[] = [
   { id: "a-novo-cliente", group: "Ações", title: "Novo cliente", subtitle: "Cadastrar e criar contrato", path: "/clientes/novo", Icon: UserPlus, keywords: "cadastrar adicionar criar novo", shortcut: "n c" },
   { id: "a-cobrancas", group: "Ações", title: "Registrar pagamento", subtitle: "Abrir cobranças do dia", path: "/cobrancas", Icon: Receipt, keywords: "pagamento receber baixar parcela" },
   { id: "a-lucro", group: "Ações", title: "Lançar lucro", subtitle: "Registrar entrada de lucro", path: "/lucros", Icon: TrendingUp, keywords: "lucro receita entrada" },
@@ -30,7 +30,7 @@ const ACTIONS: SearchResult[] = [
   { id: "a-simulador", group: "Ações", title: "Simular empréstimo", subtitle: "Calcular juros e parcelas", path: "/ferramentas/simulador", Icon: Calculator, keywords: "simular calcular juros" },
 ];
 
-const PAGES: SearchResult[] = [
+const ALL_PAGES: SearchResult[] = [
   { id: "p-hoje", group: "Páginas", title: "Hoje", subtitle: "Tarefas, cobranças e alertas do dia", path: "/hoje", Icon: Zap, shortcut: "g h", keywords: "hoje agenda agora" },
   { id: "p-dashboard", group: "Páginas", title: "Painel", path: "/dashboard", Icon: LayoutDashboard, shortcut: "g d" },
   { id: "p-clientes", group: "Páginas", title: "Clientes", path: "/clientes", Icon: Users, shortcut: "g c" },
@@ -56,6 +56,8 @@ const PAGES: SearchResult[] = [
   { id: "p-planilha", group: "Páginas", title: "Planilha", path: "/ferramentas/planilha", Icon: FileSignature },
   { id: "p-puxada", group: "Páginas", title: "Puxada de Dados", path: "/puxada-dados", Icon: BarChart3 },
 ];
+
+const PRO_PATHS = ["/comunicacao", "/comunicacao/inbox", "/agente-ia", "/automacoes", "/bot-performance"];
 
 const RECENT_KEY = "lov_palette_recent_v1";
 const loadRecents = (): string[] => {
@@ -123,7 +125,12 @@ const GlobalSearch = ({ open, onClose }: { open: boolean; onClose: () => void })
     return () => clearTimeout(timer);
   }, [query, user]);
 
+  const { hasAutomations } = usePlan();
+
   const results = useMemo<SearchResult[]>(() => {
+    const allowed = (r: SearchResult) => hasAutomations || !PRO_PATHS.includes(r.path);
+    const ACTIONS = ALL_ACTIONS.filter(allowed);
+    const PAGES = ALL_PAGES.filter(allowed);
     const q = query.trim().toLowerCase();
     if (!q) {
       const recents = recentIds
@@ -140,7 +147,7 @@ const GlobalSearch = ({ open, onClose }: { open: boolean; onClose: () => void })
     const actions = ACTIONS.filter(match);
     const pages = PAGES.filter(match);
     return [...actions, ...pages, ...dynamicResults];
-  }, [query, dynamicResults, recentIds]);
+  }, [query, dynamicResults, recentIds, hasAutomations]);
 
   useEffect(() => { setSelectedIndex(0); }, [results.length]);
 
