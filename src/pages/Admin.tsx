@@ -35,6 +35,7 @@ type UserRow = {
   is_blocked: boolean;
   is_chat_blocked: boolean;
   subscription_type: string | null;
+  plan_tier?: string | null;
   subscription_expires_at: string | null;
   trial_ends_at: string | null;
   created_at: string;
@@ -182,6 +183,13 @@ const Admin = () => {
     }).eq("id", userId);
     if (error) { toast({ ...friendlyError(error, "Não foi possível atualizar a assinatura."), variant: "destructive" }); return; }
     toast({ title: "Assinatura atualizada" });
+  };
+
+  const handleSetPlanTier = async (userId: string, tier: string) => {
+    const { error } = await supabase.from("profiles").update({ plan_tier: tier } as any).eq("id", userId);
+    if (error) { toast({ ...friendlyError(error, "Não foi possível atualizar o plano."), variant: "destructive" }); return; }
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, plan_tier: tier } : u)));
+    toast({ title: tier === "essencial" ? "Plano Essencial aplicado" : "Plano Completo aplicado" });
   };
 
   const handleExtendSubscription = async (userId: string, days: number) => {
@@ -523,6 +531,15 @@ const Admin = () => {
                           <option value="monthly">Mensal</option>
                           <option value="yearly">Anual</option>
                         </select>
+                        <select
+                          value={u.plan_tier || "completo"}
+                          onChange={(e) => handleSetPlanTier(u.id, e.target.value)}
+                          className="mt-1 text-xs px-2 py-1 rounded-md bg-input border border-border text-foreground"
+                          title="Plano contratado (define acesso a IA e automações)"
+                        >
+                          <option value="essencial">Essencial R$199</option>
+                          <option value="completo">Completo R$299</option>
+                        </select>
                       </td>
                       <td className="px-4 py-3">
                         {u.subscription_expires_at ? (
@@ -659,7 +676,7 @@ const Admin = () => {
           {detailUser && (
             <div className="space-y-3 text-sm">
               <DetailRow label="ID" value={detailUser.id} mono />
-              <DetailRow label="Plano" value={detailUser.subscription_type === "yearly" ? "Anual" : "Mensal"} />
+              <DetailRow label="Plano" value={`${detailUser.subscription_type === "yearly" ? "Anual" : "Mensal"} · ${detailUser.plan_tier === "essencial" ? "Essencial (R$199)" : "Completo (R$299)"}`} />
               <DetailRow
                 label="Expira em"
                 value={
