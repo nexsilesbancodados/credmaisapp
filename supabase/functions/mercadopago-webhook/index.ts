@@ -56,6 +56,16 @@ async function verifySignature(
   return hex === v1;
 }
 
+const PLAN_PRICES: Record<"essencial" | "completo", number> = {
+  essencial: Number(Deno.env.get("PLAN_ESSENCIAL_PRICE") ?? "199"),
+  completo: Number(Deno.env.get("PLAN_COMPLETO_PRICE") ?? "299"),
+};
+type PlanTier = keyof typeof PLAN_PRICES;
+
+function tierFromAmount(amount?: number): PlanTier {
+  return Number(amount ?? 0) >= PLAN_PRICES.completo - 0.01 ? "completo" : "essencial";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -115,6 +125,7 @@ serve(async (req) => {
     let orderId: string | undefined = dataId ?? undefined;
     let planName: string | undefined;
     let amountPaid: number | undefined;
+    let planTier: PlanTier = "completo";
 
     // Fetch full resource from MP API to trust its state
     if (topic === "payment" && dataId) {
