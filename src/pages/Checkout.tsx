@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, User, CreditCard, PartyPopper, Mail, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { toast } from "sonner";
+import { PLANS, PLAN_LIST, normalizeTier, type PlanTier } from "@/lib/plans";
 
 const FEATURES: { title: string; desc: string }[] = [
   { title: "Clientes e contratos ilimitados", desc: "Sem tetos por plano, escale sua carteira sem custo extra." },
@@ -15,7 +16,6 @@ const FEATURES: { title: string; desc: string }[] = [
   { title: "Suporte prioritário", desc: "Time dedicado por WhatsApp em horário comercial." },
 ];
 
-const PLAN_AMOUNT = 99.9;
 const MP_SDK_SRC = "https://sdk.mercadopago.com/js/v2";
 const MP_SECURITY_SRC = "https://www.mercadopago.com/v2/security.js";
 
@@ -54,8 +54,13 @@ type Step = 1 | 2 | 3;
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { config } = useWhiteLabel();
   const brand = config.companyName || "CredMais App";
+
+  const [planTier, setPlanTier] = useState<PlanTier>(normalizeTier(searchParams.get("plan")));
+  const selectedPlan = PLANS[planTier];
+  const PLAN_AMOUNT = selectedPlan.price;
 
   const [step, setStep] = useState<Step>(1);
   const [email, setEmail] = useState("");
@@ -197,7 +202,7 @@ export default function Checkout() {
             try {
               const deviceId = window.MP_DEVICE_SESSION_ID;
               const { data, error } = await supabase.functions.invoke("mercadopago-process-payment", {
-                body: { selectedPaymentMethod, formData, email, name, deviceId, docType, doc: onlyDigits(doc), whatsapp: onlyDigits(whatsapp) },
+                body: { selectedPaymentMethod, formData, email, name, deviceId, docType, doc: onlyDigits(doc), whatsapp: onlyDigits(whatsapp), planTier },
               });
               if (error) throw error;
               if ((data as any)?.error) throw new Error((data as any)?.message || "Pagamento recusado");
@@ -388,25 +393,61 @@ export default function Checkout() {
                     <span className="text-2xl font-bold tracking-tight text-white" style={heading}>{brand}</span>
                   </div>
 
-                  <p className="font-semibold uppercase tracking-widest text-[11px] mb-2" style={{ color: c.goldSoft }}>Você está assinando</p>
-                  <h1 className="text-3xl md:text-4xl font-bold text-white mb-4" style={heading}>Acesso Ilimitado</h1>
+                  <p className="font-semibold uppercase tracking-widest text-[11px] mb-3" style={{ color: c.goldSoft }}>Escolha seu plano</p>
+
+                  <div className="grid grid-cols-2 gap-2 mb-5">
+                    {PLAN_LIST.map((p) => {
+                      const active = p.tier === planTier;
+                      return (
+                        <button
+                          key={p.tier}
+                          type="button"
+                          onClick={() => setPlanTier(p.tier)}
+                          disabled={step === 2}
+                          className="rounded-2xl px-3 py-3 text-left transition-all border disabled:opacity-60"
+                          style={{
+                            backgroundColor: active ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)",
+                            borderColor: active ? c.gold : "rgba(255,255,255,0.12)",
+                          }}
+                        >
+                          <span className="block text-[11px] uppercase tracking-widest font-bold" style={{ color: active ? c.gold : c.goldSoft }}>
+                            {p.name}
+                          </span>
+                          <span className="block text-lg font-bold text-white" style={heading}>R$ {p.priceLabel}</span>
+                          <span className="block text-[10px] text-white/60 leading-tight mt-1">
+                            {p.tier === "completo" ? "com IA e automações" : "sem IA e automações"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <h1 className="text-2xl md:text-3xl font-bold text-white mb-2" style={heading}>Plano {selectedPlan.name}</h1>
                   <div className="flex items-baseline gap-1">
                     <span className="text-lg font-medium opacity-80">R$</span>
-                    <span className="text-5xl font-bold" style={{ ...heading, color: c.gold }}>99,90</span>
+                    <span className="text-5xl font-bold" style={{ ...heading, color: c.gold }}>{selectedPlan.priceLabel},00</span>
                     <span className="text-lg font-medium opacity-80">/mês</span>
                   </div>
                   <p className="text-sm mt-3 leading-relaxed" style={{ color: c.goldSoft }}>
-                    Cobrança mensal · Cancele quando quiser
+                    {selectedPlan.tagline} · Cancele quando quiser
                   </p>
                 </div>
 
                 <div className="relative z-10 space-y-4 flex-grow">
-                  {FEATURES.slice(0, 5).map((f) => (
-                    <div key={f.title} className="flex gap-3 items-start">
+                  {selectedPlan.features.slice(0, 6).map((f) => (
+                    <div key={f} className="flex gap-3 items-start">
                       <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: c.gold }}>
                         <Check size={12} strokeWidth={3} style={{ color: c.ink }} />
                       </div>
-                      <p className="font-medium text-white/90 text-[14px]">{f.title}</p>
+                      <p className="font-medium text-white/90 text-[14px]">{f}</p>
+                    </div>
+                  ))}
+                  {selectedPlan.missing?.map((f) => (
+                    <div key={f} className="flex gap-3 items-start opacity-50">
+                      <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border border-white/30">
+                        <span className="text-[11px] leading-none text-white/70">–</span>
+                      </div>
+                      <p className="font-medium text-white/70 text-[13px] line-through">{f}</p>
                     </div>
                   ))}
                 </div>
