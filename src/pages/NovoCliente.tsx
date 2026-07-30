@@ -142,7 +142,7 @@ const NovoCliente = () => {
   const [startDate, setStartDate] = useState(todayLocalISO());
   const [firstDueDate, setFirstDueDate] = useState("");
   const [autoFirstDue, setAutoFirstDue] = useState(true);
-  const [lateFeePercent, setLateFeePercent] = useState("2");
+  const [lateFeePercent, setLateFeePercent] = useState("0");
   const [dailyInterestPercent, setDailyInterestPercent] = useState("0.33");
   const [notes, setNotes] = useState("");
   const [gracePeriods, setGracePeriods] = useState("2");
@@ -302,7 +302,7 @@ const NovoCliente = () => {
       setInstallmentValue(d.installmentValue || ""); setInstallmentValueDisplay(d.installmentValueDisplay || "");
       if (d.startDate) setStartDate(d.startDate);
       setFirstDueDate(d.firstDueDate || ""); setAutoFirstDue(d.autoFirstDue !== false);
-      setLateFeePercent(d.lateFeePercent || "2"); setDailyInterestPercent(d.dailyInterestPercent || "0.33");
+      setLateFeePercent("0"); setDailyInterestPercent(d.dailyInterestPercent || "4");
       setNotes(d.notes || ""); setGracePeriods(d.gracePeriods || "2"); setGraceDays(d.graceDays || "0");
       if (d.paymentMethod) setPaymentMethod(d.paymentMethod);
       if (d.step) setStep(d.step);
@@ -1342,7 +1342,7 @@ const NovoCliente = () => {
                   </div>
                 )}
               </div>
-            {/* Multas movidas para "Condições Avançadas" — defaults sensatos (0,33%/dia + 2%/mês) */}
+            {/* Multas movidas para "Condições Avançadas" — padrão: 4% ao dia, composto */}
 
             {/* Opções extras movidas para "Condições Avançadas" abaixo, evitando duplicação */}
 
@@ -1469,13 +1469,13 @@ const NovoCliente = () => {
                   <p className="text-[10px] text-muted-foreground mt-1">Máx. % do capital em juros</p>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Multa Diária (%)</label>
+                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Juros de atraso (% ao dia)</label>
                   <input type="number" step="0.01" value={dailyInterestPercent} onChange={(e) => setDailyInterestPercent(e.target.value)} placeholder="0.33" className={INPUT} />
                   <p className="text-[10px] text-muted-foreground mt-1">Padrão: 0,33%/dia em atraso</p>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Multa Mensal (%)</label>
-                  <input type="number" value={lateFeePercent} onChange={(e) => setLateFeePercent(e.target.value)} placeholder="2" className={INPUT} />
+                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Multa fixa (desativada)</label>
+                  <input type="number" value="0" disabled className={INPUT + " opacity-60"} />
                   <p className="text-[10px] text-muted-foreground mt-1">Padrão: 2%/mês de atraso</p>
                 </div>
               </div>
@@ -1685,7 +1685,7 @@ const NovoCliente = () => {
                 items.push({ label: "Data de Início", value: formatBR(startDate) });
                 items.push({ label: "1º Vencimento", value: effectiveFirstDue });
                 items.push({ label: "Total a Receber", value: `R$ ${fmt(calc.totalAmount)}` });
-                items.push({ label: "Multa Diária", value: `${dailyInterestPercent}%` });
+                items.push({ label: "Juros de atraso", value: `${dailyInterestPercent}% ao dia` });
                 return items.map(i => (
                   <div key={i.label} className="bg-muted/30 rounded-xl p-3">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{i.label}</p>

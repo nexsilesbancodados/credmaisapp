@@ -123,8 +123,8 @@ const InstallmentRowInner = ({
           <span className="text-[15px] font-bold text-foreground tabular-nums">R$ {fmt(Number(inst.amount))}</span>
           {showFee && (
             <>
-              <span className="text-[11px] text-destructive font-semibold tabular-nums" title={`Multa R$ ${fmt(fee.multa)} · Juros R$ ${fmt(fee.juros)}${fee.daysLate ? ` (${fee.daysLate}d)` : ""}`}>
-                + R$ {fmt(fee.total)} multa/juros
+              <span className="text-[11px] text-destructive font-semibold tabular-nums" title={`Juros de atraso ${fee.jurosPct}% ao dia (composto)${fee.daysLate ? ` · ${fee.daysLate}d` : ""}`}>
+                + R$ {fmt(fee.total)} juros atraso
               </span>
               <span className="text-[13px] font-black text-destructive tabular-nums">= R$ {fmt(fee.withFees)}</span>
             </>

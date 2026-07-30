@@ -1,5 +1,9 @@
-// Calcula multa + juros diários em tempo real, sem depender do cron diário.
-// Fallback: se não houver config de multa/juros, usa o valor `late_fee` já salvo.
+// Política única de atraso: JUROS DIÁRIO COMPOSTO de 4% ao dia (padrão),
+// aplicado sobre o valor acumulado (parcela + juros já acumulados).
+// Ex.: parcela 100 → 1 dia = 104 → 2 dias = 108,16 → 3 dias = 112,49...
+// Não existe mais "multa mensal/fixa": apenas o percentual diário.
+export const DEFAULT_DAILY_LATE_RATE = 4; // % ao dia
+
 export interface LateFeeInput {
   amount: number | string | null | undefined;
   due_date: string | null | undefined;
@@ -10,36 +14,39 @@ export interface LateFeeInput {
   paid_at?: string | null;
 }
 
+/** Dias inteiros de atraso (0 se ainda não venceu). */
+export function daysLateOf(inst: LateFeeInput, now: Date = new Date()): number {
+  if (!inst?.due_date) return 0;
+  const due = new Date(inst.due_date);
+  if (isNaN(due.getTime())) return 0;
+  const d0 = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime();
+  const n0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return Math.max(0, Math.floor((n0 - d0) / 86400000));
+}
+
+/** Taxa diária efetiva do contrato (fallback 4% a.d.). */
+export function dailyRateOf(inst: LateFeeInput): number {
+  const pct = Number(inst?.daily_interest_percent || 0);
+  return pct > 0 ? pct : DEFAULT_DAILY_LATE_RATE;
+}
+
+/** Juros de atraso acumulados (composto diário). */
 export function computeLateFee(inst: LateFeeInput, now: Date = new Date()): number {
   if (!inst) return 0;
   const stored = Number(inst.late_fee || 0);
 
-  // Se já foi paga, mostra a multa que foi cobrada (persistida)
+  // Já paga/cancelada: mostra o valor que foi efetivamente cobrado.
   if (inst.status === "paid" || inst.status === "cancelled") return stored;
 
   const base = Number(inst.amount || 0);
-  if (!base || !inst.due_date) return stored;
+  if (!base) return stored;
 
-  const due = new Date(inst.due_date);
-  if (isNaN(due.getTime())) return stored;
+  const days = daysLateOf(inst, now);
+  if (days <= 0) return 0;
 
-  const msDay = 86400000;
-  const days = Math.floor((now.getTime() - due.getTime()) / msDay);
-  if (days <= 0) return stored;
-
-  const multaPct = Number(inst.late_fee_percent || 0);
-  const jurosPct = Number(inst.daily_interest_percent || 0);
-
-  // Sem configuração de multa/juros no contrato — mantém o valor já persistido
-  // (o cron auto-late-fees aplica o fallback dos defaults do credor).
-  if (multaPct <= 0 && jurosPct <= 0) return stored;
-
-  const multa = base * (multaPct / 100);
-  const juros = base * (jurosPct / 100) * days;
-  const total = Math.round((multa + juros) * 100) / 100;
-
-  // Sempre mostra o maior entre o computado agora e o já persistido
-  return Math.max(total, stored);
+  const rate = dailyRateOf(inst) / 100;
+  const total = Math.round((base * (Math.pow(1 + rate, days) - 1)) * 100) / 100;
+  return total;
 }
 
 export function totalDue(inst: LateFeeInput, now?: Date): number {
@@ -49,33 +56,27 @@ export function totalDue(inst: LateFeeInput, now?: Date): number {
 export interface LateFeeBreakdown {
   daysLate: number;
   base: number;
-  multaPct: number;
-  jurosPct: number;
-  multa: number;
-  juros: number;
-  total: number;   // multa + juros (o mesmo que computeLateFee)
-  withFees: number; // base + total
+  multaPct: number;   // mantido por compatibilidade (sempre 0)
+  jurosPct: number;   // % ao dia
+  multa: number;      // sempre 0 — não há mais multa fixa
+  juros: number;      // = total
+  total: number;
+  withFees: number;
 }
 
 export function computeLateFeeBreakdown(inst: LateFeeInput, now: Date = new Date()): LateFeeBreakdown {
   const base = Number(inst?.amount || 0);
   const total = computeLateFee(inst, now);
-  const due = inst?.due_date ? new Date(inst.due_date) : null;
-  const daysLate = due && !isNaN(due.getTime()) ? Math.max(0, Math.floor((now.getTime() - due.getTime()) / 86400000)) : 0;
-  const multaPct = Number(inst?.late_fee_percent || 0);
-  const jurosPct = Number(inst?.daily_interest_percent || 0);
-  let multa = base * (multaPct / 100);
-  let juros = base * (jurosPct / 100) * daysLate;
-  // Se o total veio do valor persistido (fallback) e não bate com o cálculo, distribui proporcionalmente.
-  const computed = multa + juros;
-  if (computed > 0 && Math.abs(computed - total) > 0.01) {
-    const ratio = total / computed;
-    multa = Math.round(multa * ratio * 100) / 100;
-    juros = Math.round(juros * ratio * 100) / 100;
-  } else if (computed === 0 && total > 0) {
-    // sem config: exibe tudo como "multa" (fallback persistido)
-    multa = total;
-    juros = 0;
-  }
-  return { daysLate, base, multaPct, jurosPct, multa, juros, total, withFees: base + total };
+  const daysLate = daysLateOf(inst, now);
+  const jurosPct = dailyRateOf(inst);
+  return {
+    daysLate,
+    base,
+    multaPct: 0,
+    jurosPct,
+    multa: 0,
+    juros: total,
+    total,
+    withFees: base + total,
+  };
 }
