@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const TAGS = [
   "DATA INTELLIGENCE",
