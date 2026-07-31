@@ -9,7 +9,7 @@ const plans = [
     highlight: false,
     items: [
       { label: "Clientes e contratos ilimitados", on: true },
-      { label: "Parcelas com juros diários de 4%", on: true },
+      { label: "Juros de atraso calculados automaticamente", on: true },
       { label: "Portal do cliente e do investidor", on: true },
       { label: "Relatórios e painel financeiro", on: true },
       { label: "Automações de cobrança", on: false },
