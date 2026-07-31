@@ -310,10 +310,10 @@ export default function App() {
                   <Link to="/checkout" className="relative group overflow-hidden rounded-sm bg-black/60 backdrop-blur-3xl px-6 py-3 text-xs font-medium tracking-wide transition-all hover:bg-black/80 md:px-8 md:py-4 md:text-sm text-white border border-white/30">
                     <div className="absolute top-0 right-0 h-4 w-4 border-t-2 border-r-2 border-white/60 transition-transform group-hover:scale-110" />
                     <div className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-white/60 transition-transform group-hover:scale-110" />
-                    <span className="relative z-10 uppercase tracking-widest">Comece a lucrar hoje</span>
+                    <span className="relative z-10 uppercase tracking-widest">Quero cobrar no automático</span>
                   </Link>
                   <Link to="/login" className="text-xs font-medium tracking-wide text-white transition-colors hover:opacity-70 md:text-sm">
-                    Já sou cliente — acessar painel
+                    Acessar meu painel
                   </Link>
 
                </motion.div>
