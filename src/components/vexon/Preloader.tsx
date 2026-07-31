@@ -6,11 +6,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const TAGS = [
-  "DATA INTELLIGENCE",
-  "NEURAL WORKFLOWS",
-  "SYSTEM AUTOMATION",
-  "SCALABLE SIGNALS",
-  "VEXON®"
+  "CONTROLE DE CARTEIRA",
+  "COBRANÇA AUTOMÁTICA",
+  "JUROS EM TEMPO REAL",
+  "PORTAL DO CLIENTE",
+  "CREDMAIS®"
 ];
 
 export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
@@ -211,7 +211,7 @@ export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
             animate={{ y: 0, opacity: 1 }}
             className="flex w-full items-center justify-between font-mono text-xs tracking-[0.4em] text-white/40"
           >
-            <span>[ SYSTEM_READY ]</span>
+            <span>[ SISTEMA_PRONTO ]</span>
             <span className="text-white">{progress.toString().padStart(3, '0')}%</span>
           </motion.div>
 
@@ -234,7 +234,7 @@ export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
             </motion.div>
             
             <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/20">
-              Initializing Secure Environment
+              Preparando ambiente seguro
             </div>
           </div>
         </motion.div>
