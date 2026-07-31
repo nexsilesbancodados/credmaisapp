@@ -12,6 +12,7 @@ import { CursorProvider, CursorFollow } from "@/components/vexon/ui/cursor";
 import { Preloader } from "@/components/vexon/Preloader";
 import { ParticleOrb } from "@/components/vexon/ParticleOrb";
 import { TextEffect } from "@/components/vexon/ui/text-effect";
+import { PLAN_LIST } from "@/lib/plans";
 import Lenis from "lenis";
 
 const DiamondStar = ({ className }: { className?: string }) => (
