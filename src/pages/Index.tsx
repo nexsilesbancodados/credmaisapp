@@ -203,7 +203,7 @@ export default function App() {
           className="flex flex-col gap-6 md:gap-10"
         >
           <div className="font-logo text-2xl font-bold tracking-tighter md:text-3xl text-white">
-            VEXON
+            CREDMAIS
           </div>
           <div className="hidden font-mono text-[11px] tracking-[0.2em] text-[#E6E6E6] md:block uppercase opacity-50">
             [ V.01.3.N ]
@@ -215,16 +215,16 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-end gap-2"
         >
-          <a href="#ai-intelligence" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
-            AI INTELLIGENCE
+          <a href="#inteligencia" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
+            INTELIGÊNCIA DE COBRANÇA
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </a>
-          <a href="#about-vexon" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
-            ABOUT VEXON
+          <a href="#sobre" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
+            SOBRE O CREDMAIS
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </a>
-          <a href="#mission-intelligence" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
-            MISSION INTELLIGENCE
+          <a href="#missao" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
+            NOSSA MISSÃO
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </a>
         </motion.div>
@@ -232,7 +232,7 @@ export default function App() {
 
       <div className="relative z-10">
         {/* Section 1: Hero */}
-        <section id="ai-intelligence" className="flex min-h-screen items-center px-6 pt-32 pb-40 md:px-10 md:pt-20 md:pb-20">
+        <section id="inteligencia" className="flex min-h-screen items-center px-6 pt-32 pb-40 md:px-10 md:pt-20 md:pb-20">
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -243,7 +243,7 @@ export default function App() {
             {/* Left Column - Big Headline */}
             <div className="flex flex-col justify-center lg:col-span-8">
               <motion.div variants={itemVariants} className="mb-6 font-mono text-[10px] tracking-[0.2em] text-[#E6E6E6] md:text-[11px]">
-                [ AI INTELLIGENCE ]
+                [ INTELIGÊNCIA DE COBRANÇA ]
               </motion.div>
               
               <motion.h1 
@@ -257,7 +257,7 @@ export default function App() {
                     as="div"
                     className="[mask-image:linear-gradient(to_right,rgba(0,0,0,0.15),white_85%)] inline-block text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                   >
-                    WHERE RAW DATA
+                    COBRANÇA QUE
                   </TextEffect>
                 </div>
                 <div className="flex items-center gap-4 text-[#E6E6E6] md:gap-8">
@@ -271,7 +271,7 @@ export default function App() {
                     as="span" 
                     className="text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
                   >
-                    BECOMES YOUR
+                    TRABALHA NO
                   </TextEffect>
                 </div>
                 <div className="flex items-center gap-4">
@@ -282,7 +282,7 @@ export default function App() {
                     as="div"
                     className="[mask-image:linear-gradient(to_right,white_15%,rgba(0,0,0,0.15))] inline-block text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                   >
-                    UNFAIR ADVANTAGE
+                    SEU LUGAR
                   </TextEffect>
                 </div>
               </motion.h1>
@@ -303,7 +303,7 @@ export default function App() {
                 variants={itemVariants}
                 className="max-w-xs text-xs leading-relaxed text-[#E6E6E6] md:text-sm"
                >
-                  Vexon AI unifies data, workflows, and signals into one intelligence system so SaaS teams can automate decisions and scale smarter.
+                  O CredMais organiza contratos, calcula juros de atraso e cobra cada cliente no WhatsApp automaticamente — para você receber em dia sem planilha.
                </motion.p>
 
                <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 md:gap-6">
@@ -322,7 +322,7 @@ export default function App() {
         </section>
 
         {/* Section 2: About / Cards */}
-        <section id="about-vexon" className="bg-black/40 flex min-h-screen flex-col justify-center px-6 py-20 backdrop-blur-3xl md:px-10 border-t border-white/5">
+        <section id="sobre" className="bg-black/40 flex min-h-screen flex-col justify-center px-6 py-20 backdrop-blur-3xl md:px-10 border-t border-white/5">
           <motion.div
             variants={containerVariants}
             initial="hidden"
@@ -332,7 +332,7 @@ export default function App() {
           >
             <div className="lg:col-span-4">
               <motion.div variants={itemVariants} className="font-mono text-[11px] tracking-[0.2em] text-[#E6E6E6] opacity-50 uppercase">
-                / about vexon
+                / sobre o credmais
               </motion.div>
             </div>
             <div className="lg:col-span-8">
@@ -342,13 +342,13 @@ export default function App() {
                 per="word"
                 className="font-display mb-8 text-3xl font-medium leading-tight text-white md:text-5xl lg:max-w-4xl tracking-tight"
               >
-                Our technology analyzes subtle data cues, emotional patterns, and visual energy signatures to generate a personalized reading just for you.
+                Nossa tecnologia acompanha cada parcela, cada atraso e cada pagamento para mostrar exatamente quem deve, quanto deve e o que fazer agora.
               </TextEffect>
               <motion.p 
                 variants={itemVariants}
                 className="max-w-2xl text-sm leading-relaxed text-[#E6E6E6] opacity-60 md:text-base font-light"
               >
-                Think of it as a mirror for your inner world—revealing the colors, moods, and energy you project into the universe. Whether you're here for self-discovery, spiritual curiosity, or just for fun.
+                É como ter um gerente financeiro trabalhando 24 horas por dia: ele lembra o cliente, envia o PIX, registra o pagamento e mantém sua carteira sempre sob controle.
               </motion.p>
             </div>
           </motion.div>
@@ -374,12 +374,12 @@ export default function App() {
                 </CursorFollow>
                 <HoverCardImage 
                   src="https://lh3.googleusercontent.com/d/1AmTkr4HCx8i3d_u4Tn9wo7tJpmEdmJsA" 
-                  alt="Digital Architecture"
+                  alt="Contratos organizados"
                 />
                 <div className="absolute inset-x-0 bottom-0 z-10 h-1/2 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end pointer-events-none">
-                  <div className="font-display text-2xl font-medium text-white tracking-tight">Signal Capture</div>
+                  <div className="font-display text-2xl font-medium text-white tracking-tight">Controle total</div>
                   <div className="mt-2 text-sm leading-relaxed text-[#E6E6E6] opacity-70 font-light">
-                    Every click, churn signal, and revenue event — ingested in real time. No SQL. No data team required.
+                    Cada contrato, parcela e pagamento registrado em tempo real. Sem planilha, sem cálculo manual.
                   </div>
                 </div>
               </CursorProvider>
@@ -399,12 +399,12 @@ export default function App() {
                 </CursorFollow>
                 <HoverCardImage 
                   src="https://lh3.googleusercontent.com/d/1BP_La8v_6o2vK6gt8IbR7bOJktOrhJrS" 
-                  alt="Perception Network"
+                  alt="Análise de risco"
                 />
                 <div className="absolute inset-x-0 bottom-0 z-10 h-1/2 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end pointer-events-none">
-                  <div className="font-display text-2xl font-medium text-white tracking-tight">Pattern Engine</div>
+                  <div className="font-display text-2xl font-medium text-white tracking-tight">Risco na hora</div>
                   <div className="mt-2 text-sm leading-relaxed text-[#E6E6E6] opacity-70 font-light">
-                    AI surfaces what matters: who's about to convert, who's about to leave, and why — before it happens.
+                    A IA mostra quem vai atrasar, quem já atrasou e quanto cobrar — antes do prejuízo aparecer.
                   </div>
                 </div>
               </CursorProvider>
@@ -424,12 +424,12 @@ export default function App() {
                 </CursorFollow>
                 <HoverCardImage 
                   src="https://lh3.googleusercontent.com/d/11FnLKGrE5ttRp6whRdkpM7VWbIlcxfxH" 
-                  alt="Energy Background"
+                  alt="Automação de cobrança"
                 />
                 <div className="absolute inset-x-0 bottom-0 z-10 h-1/2 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end pointer-events-none">
-                  <div className="font-display text-2xl font-medium text-white tracking-tight">Action Layer</div>
+                  <div className="font-display text-2xl font-medium text-white tracking-tight">Cobrança automática</div>
                   <div className="mt-2 text-sm leading-relaxed text-[#E6E6E6] opacity-70 font-light">
-                    Triggers that fire automatically. Slack alerts, CRM updates, onboarding flows — driven by data, not gut feeling.
+                    Mensagens no WhatsApp com PIX e link do portal, disparadas sozinhas nos dias certos.
                   </div>
                 </div>
               </CursorProvider>
@@ -438,22 +438,22 @@ export default function App() {
         </section>
 
         {/* Section 3: About Us Modular Grid */}
-        <section id="mission-intelligence" className="relative z-10 border-t border-white/5 bg-black font-sans">
+        <section id="missao" className="relative z-10 border-t border-white/5 bg-black font-sans">
           <div className="grid grid-cols-1 border-b border-white/5 md:grid-cols-4">
             {/* Box 1: Brand/Context */}
             <div className="flex min-h-[200px] flex-col justify-between border-b border-white/5 p-8 md:border-b-0">
               <div className="font-logo text-xl font-bold tracking-tighter text-white opacity-80">
-                VEXON®
+                CREDMAIS®
               </div>
               <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-white opacity-40">
-                [ established 2024 ]
+                [ desde 2024 ]
               </div>
             </div>
 
             {/* Box 2: Big Interactive Catchphrase */}
             <div className="flex flex-col justify-center p-8 md:col-span-3 lg:p-12 border-b border-white/5">
               <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.4em] text-white opacity-30">
-                / mission intelligence:
+                / nossa missão:
               </div>
               <h3 className="font-display text-[12vw] font-bold leading-[0.9] uppercase tracking-tight md:text-[8vw] lg:text-[7vw] text-white">
                 <span className="flex flex-wrap items-center gap-x-4">
@@ -462,7 +462,7 @@ export default function App() {
                     per="char" 
                     className="inline-block text-white"
                   >
-                    Figures for any
+                    Receba em
                   </TextEffect>
                   <TextEffect 
                     preset="blur" 
@@ -470,7 +470,7 @@ export default function App() {
                     delay={0.5}
                     className="[mask-image:linear-gradient(to_right,rgba(0,0,0,0.15),white_85%)] inline-block text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                   >
-                    innovation
+                    dia
                   </TextEffect>
                   <span className="relative inline-flex items-center">
                     <DiamondStar className="h-[0.8em] w-[0.8em] text-white" />
@@ -494,14 +494,14 @@ export default function App() {
                 <div className="h-1 w-1 rounded-full animate-pulse bg-white" />
               </div>
               <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-white opacity-40">
-                propulsion systems for modern workflows.
+                tecnologia de cobrança para quem empresta.
               </div>
             </div>
 
             {/* Box 5: Long Text Description */}
             <div className="flex flex-col justify-center p-8 md:col-span-2 lg:p-12">
               <p className="max-w-xl text-sm font-light leading-relaxed text-white opacity-60 md:text-base">
-                Transform your raw data signatures into high-fidelity patent figures and technical schemas. Our rendering engine produces clean, publication-ready visuals across complex diagrams, UI architecture, and neural mapping patterns.
+                Transforme sua operação em uma empresa de crédito organizada: contratos padronizados, juros diários calculados automaticamente, portal para o cliente pagar sozinho e relatórios claros de lucro.
               </p>
               <div className="mt-8 flex items-center gap-4">
                 <button className="group flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-70">
@@ -528,8 +528,8 @@ export default function App() {
               }}
             >
               {[
-                "Medium", "Outreach", "Adobe", "Framer", "Amazon", "GitHub", "Hopin", "Notion", "Linear", "Vercel",
-                "Medium", "Outreach", "Adobe", "Framer", "Amazon", "GitHub", "Hopin", "Notion", "Linear", "Vercel"
+                "Contratos", "Parcelas", "Juros diários", "WhatsApp", "Portal", "PIX", "Relatórios", "Investidores", "Agente de IA", "Renegociação",
+                "Contratos", "Parcelas", "Juros diários", "WhatsApp", "Portal", "PIX", "Relatórios", "Investidores", "Agente de IA", "Renegociação"
               ].map((company, idx) => (
                 <span 
                   key={idx} 
