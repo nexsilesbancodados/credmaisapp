@@ -4,8 +4,9 @@
  */
 
 import React, { useEffect } from "react";
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValue, useSpring, type Variants } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { CursorFollower } from "@/components/vexon/ui/cursor-follower";
 import { CursorProvider, CursorFollow } from "@/components/vexon/ui/cursor";
 import { Preloader } from "@/components/vexon/Preloader";
@@ -132,7 +133,7 @@ export default function App() {
   const { scrollY } = useScroll();
   const videoScale = useTransform(scrollY, [0, 800], [1, 1.2]);
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -143,7 +144,7 @@ export default function App() {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 100, opacity: 0, rotateX: 15, scale: 0.9, filter: "blur(10px)" },
     visible: { 
       y: 0, 
@@ -153,12 +154,12 @@ export default function App() {
       filter: "blur(0px)",
       transition: { 
         duration: 0.8, 
-        ease: [0.16, 1, 0.3, 1] 
+        ease: [0.16, 1, 0.3, 1] as const 
       } 
     },
   };
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { y: 100, opacity: 0, rotateX: 15, scale: 0.9, filter: "blur(10px)" },
     visible: { 
       y: 0, 
@@ -168,7 +169,7 @@ export default function App() {
       filter: "blur(0px)",
       transition: { 
         duration: 1.6, 
-        ease: [0.16, 1, 0.3, 1] 
+        ease: [0.16, 1, 0.3, 1] as const 
       } 
     },
   };
