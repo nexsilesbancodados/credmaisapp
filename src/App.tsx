@@ -20,6 +20,10 @@ import { ConfirmProvider } from "./components/ConfirmProvider";
 import PortalSessionGuard from "./components/PortalSessionGuard";
 
 import Index from "./pages/Index";
+const SiteInteligencia = lazy(() => import("./pages/site/Inteligencia"));
+const SiteSobre = lazy(() => import("./pages/site/SobreCredmais"));
+const SiteMissao = lazy(() => import("./pages/site/Missao"));
+const SitePlanos = lazy(() => import("./pages/site/PlanosSite"));
 
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
