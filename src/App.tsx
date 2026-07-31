@@ -140,7 +140,11 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/planos" element={<Planos />} />
+                  <Route path="/planos" element={<SitePlanos />} />
+                  <Route path="/assinatura" element={<Planos />} />
+                  <Route path="/inteligencia" element={<SiteInteligencia />} />
+                  <Route path="/sobre-credmais" element={<SiteSobre />} />
+                  <Route path="/missao" element={<SiteMissao />} />
                   <Route path="/checkout" element={<Checkout />} />
                   <Route path="/checkout/sucesso" element={<CheckoutSucesso />} />
                   <Route path="/checkout/erro" element={<CheckoutErro />} />
