@@ -216,22 +216,22 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-end gap-2"
         >
-          <a href="#inteligencia" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
+          <Link to="/inteligencia" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
             INTELIGÊNCIA DE COBRANÇA
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </a>
-          <a href="#sobre" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
+          </Link>
+          <Link to="/sobre-credmais" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
             SOBRE O CREDMAIS
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </a>
-          <a href="#missao" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
+          </Link>
+          <Link to="/missao" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-[#8E9299] transition-colors hover:text-white uppercase">
             NOSSA MISSÃO
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </a>
-          <a href="#planos" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-white transition-colors hover:opacity-70 uppercase">
+          </Link>
+          <Link to="/planos" className="group flex items-center gap-1 text-[11px] font-medium tracking-widest text-white transition-colors hover:opacity-70 uppercase">
             PLANOS
             <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </a>
+          </Link>
         </motion.div>
       </nav>
 
