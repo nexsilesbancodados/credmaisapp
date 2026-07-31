@@ -1,89 +1,104 @@
-import { Check, X, ArrowRight, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { PLAN_LIST } from "@/lib/plans";
+import { Link } from "react-router-dom";
+import { Check, Minus } from "lucide-react";
+
+const plans = [
+  {
+    name: "Essencial",
+    price: "199",
+    tagline: "Para quem quer sair da planilha hoje.",
+    highlight: false,
+    items: [
+      { label: "Clientes e contratos ilimitados", on: true },
+      { label: "Parcelas com juros diários de 4%", on: true },
+      { label: "Portal do cliente e do investidor", on: true },
+      { label: "Relatórios e painel financeiro", on: true },
+      { label: "Automações de cobrança", on: false },
+      { label: "Agente de IA no WhatsApp", on: false },
+    ],
+  },
+  {
+    name: "Completo",
+    price: "299",
+    tagline: "Operação no automático, do lembrete à quitação.",
+    highlight: true,
+    items: [
+      { label: "Tudo do plano Essencial", on: true },
+      { label: "Réguas de cobrança automáticas", on: true },
+      { label: "Agente de IA no WhatsApp 24h", on: true },
+      { label: "Disparos e follow-up inteligentes", on: true },
+      { label: "Análises e briefing diário por IA", on: true },
+      { label: "Suporte prioritário", on: true },
+    ],
+  },
+];
 
 const LandingPricing = () => {
-  const navigate = useNavigate();
-  const goCheckout = (tier: string) => navigate(`/checkout?plan=${tier}`);
-
   return (
-    <section id="pricing" className="py-20 lg:py-28 bg-card border-y border-border">
+    <section id="pricing" className="py-20 lg:py-28 relative">
       <div className="container mx-auto px-5 sm:px-6">
-        <div className="max-w-2xl mb-12 lg:mb-16" data-anim="up">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
-            Planos
-          </p>
-          <h2 className="text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-tight">
-            Dois planos. Zero complicação.
+        <div className="max-w-2xl">
+          <span className="text-[10px] uppercase tracking-[0.3em] text-primary">Planos</span>
+          <h2 className="font-editorial text-[clamp(2rem,4.5vw,3.4rem)] leading-[1.05] text-foreground mt-4">
+            Dois caminhos. Nenhuma surpresa na fatura.
           </h2>
-          <p className="text-muted-foreground mt-4 leading-relaxed">
-            Comece com a gestão completa da sua carteira. Quando quiser cobrar no automático com
-            inteligência artificial, é só subir de plano — sem fidelidade.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-5xl" data-anim-group>
-          {PLAN_LIST.map((plan) => (
-            <article
-              key={plan.tier}
-              data-anim="scale"
-              className={`relative rounded-[2rem] border p-7 sm:p-9 flex flex-col transition-transform duration-300 hover:-translate-y-2 ${
-                plan.highlight
-                  ? "border-primary bg-background shadow-xl shadow-primary/10"
-                  : "border-border bg-background"
+        <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6" data-anim-group>
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              data-anim="up"
+              className={`relative rounded-3xl p-8 sm:p-10 border ${
+                plan.highlight ? "border-primary/50 obsidian-card" : "border-border bg-card"
               }`}
             >
               {plan.highlight && (
-                <span className="absolute -top-3 left-7 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.14em]">
+                <span className="absolute -top-3 left-8 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.18em] bg-primary text-primary-foreground">
                   Mais escolhido
                 </span>
               )}
-
-              <h3 className="font-editorial text-2xl font-bold text-foreground">{plan.name}</h3>
+              <h3 className="font-editorial text-3xl text-foreground">{plan.name}</h3>
               <p className="text-sm text-muted-foreground mt-2">{plan.tagline}</p>
 
-              <div className="flex items-end gap-1.5 mt-7 mb-7">
-                <span className="text-sm font-semibold text-muted-foreground mb-2">R$</span>
-                <span className="tnum font-editorial text-[3rem] leading-none font-bold text-foreground">
-                  {plan.priceLabel}
-                </span>
-                <span className="text-sm text-subtle mb-2">/mês</span>
+              <div className="flex items-end gap-2 mt-7">
+                <span className="text-sm text-muted-foreground mb-2">R$</span>
+                <span className="tnum font-editorial text-6xl text-foreground leading-none">{plan.price}</span>
+                <span className="text-sm text-muted-foreground mb-2">/mês</span>
               </div>
 
-              <ul className="space-y-3 flex-1">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-foreground">
-                    <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-                {plan.missing?.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-subtle">
-                    <X size={16} className="mt-0.5 flex-shrink-0" />
-                    <span className="line-through">{f}</span>
+              <div className="gold-line my-7" />
+
+              <ul className="space-y-3.5">
+                {plan.items.map((item) => (
+                  <li key={item.label} className="flex items-start gap-3 text-sm">
+                    {item.on ? (
+                      <Check size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <Minus size={16} className="text-muted-foreground/60 mt-0.5 flex-shrink-0" />
+                    )}
+                    <span className={item.on ? "text-foreground" : "text-muted-foreground/70 line-through"}>
+                      {item.label}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              <button
-                type="button"
-                onClick={() => goCheckout(plan.tier)}
-                className={`mt-8 inline-flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl font-semibold transition-all ${
+              <Link
+                to="/checkout"
+                className={`mt-9 flex items-center justify-center py-4 rounded-full font-semibold transition-opacity hover:opacity-90 ${
                   plan.highlight
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:opacity-90"
-                    : "border border-border text-foreground hover:border-primary/40"
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border text-foreground"
                 }`}
               >
                 Assinar {plan.name}
-                <ArrowRight size={16} />
-              </button>
-            </article>
+              </Link>
+            </div>
           ))}
         </div>
 
-        <p className="flex items-center gap-2 text-xs text-subtle mt-6">
-          <ShieldCheck size={14} className="text-primary" />
-          Pagamento processado pelo Mercado Pago · cancele quando quiser
+        <p className="text-center text-xs text-muted-foreground mt-8">
+          Pagamento seguro via Mercado Pago · Cancele quando quiser
         </p>
       </div>
     </section>

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
-import eagleLogo from "@/assets/eagle-logo.webp";
+import eagleLogo from "@/assets/eagle-mascot.png";
 import { Mail, Phone, MapPin } from "lucide-react";
 
 const LandingFooter = () => {
@@ -17,9 +17,12 @@ const LandingFooter = () => {
               <img
                 src={config.companyLogo || eagleLogo}
                 alt={brandTitle}
-                className="w-9 h-9 rounded-xl border border-border"
+                width={40}
+                height={40}
+                loading="lazy"
+                className="w-10 h-10 object-contain"
               />
-              <span className="font-editorial text-lg font-bold text-foreground">{brandTitle}</span>
+              <span className="font-editorial text-xl text-foreground">{brandTitle}</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               O sistema completo para quem empresta dinheiro: clientes, contratos, parcelas e cobrança
@@ -31,10 +34,8 @@ const LandingFooter = () => {
             <h3 className="text-sm font-bold text-foreground mb-4">Navegação</h3>
             <ul className="space-y-3">
               {[
-                { label: "Início", href: "#home" },
-                { label: "Recursos", href: "#features" },
-                { label: "Como funciona", href: "#how" },
-                { label: "Benefícios", href: "#benefits" },
+                { label: "Manifesto", href: "#home" },
+                { label: "Plataforma", href: "#features" },
                 { label: "Planos", href: "#pricing" },
                 { label: "Dúvidas", href: "#faq" },
               ].map((item) => (

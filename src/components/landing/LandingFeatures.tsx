@@ -1,90 +1,83 @@
-import {
-  Users,
-  FileText,
-  Bell,
-  BarChart3,
-  Smartphone,
-  Bot,
-  ShieldCheck,
-  Wallet,
-} from "lucide-react";
+import { Users, CalendarClock, MessageSquareText, LineChart, Wallet, ShieldCheck } from "lucide-react";
+import eagleMascot from "@/assets/eagle-mascot.png";
 
 const features = [
   {
     icon: Users,
-    title: "Clientes organizados",
-    desc: "Cadastro completo em etapas, documentos, histórico e score de risco em uma ficha só.",
+    title: "Clientes e contratos",
+    text: "Cadastro em etapas, histórico completo, score de crédito e renegociação sem sair da ficha.",
   },
   {
-    icon: FileText,
-    title: "Contratos flexíveis",
-    desc: "Parcelado ou por porcentagem, diário, semanal ou mensal — com dias úteis e renegociação.",
+    icon: CalendarClock,
+    title: "Parcelas e juros diários",
+    text: "4% ao dia acumulativo aplicado automaticamente, com detalhamento de cada centavo cobrado.",
   },
   {
-    icon: Bell,
-    title: "Cobrança que acontece",
-    desc: "Mensagens curtas no WhatsApp com PIX e link do portal, disparadas na hora certa.",
+    icon: MessageSquareText,
+    title: "Cobrança no WhatsApp",
+    text: "Mensagens curtas com PIX e link do portal, disparadas por régua automática todos os dias.",
   },
   {
-    icon: Bot,
-    title: "Agente de IA 24h",
-    desc: "Responde dúvidas, negocia dentro das suas regras e devolve o cliente ao pagamento.",
-  },
-  {
-    icon: BarChart3,
-    title: "Lucro sem achismo",
-    desc: "Capital na rua, recebido, a receber e ROI real de cada contrato, parcela por parcela.",
+    icon: LineChart,
+    title: "Painel e relatórios",
+    text: "Lucro realizado, carteira ativa, inadimplência e comparativos de período em tempo real.",
   },
   {
     icon: Wallet,
-    title: "Carteira de investidores",
-    desc: "Aportes, rendimento e extrato em PDF, com portal próprio para cada investidor.",
-  },
-  {
-    icon: Smartphone,
-    title: "Portal do cliente",
-    desc: "Seu cliente entra com CPF, vê as parcelas e paga sozinho — sem te ligar.",
+    title: "Investidores",
+    text: "Aportes, rateio de lucro e portal próprio com extrato em PDF para cada investidor.",
   },
   {
     icon: ShieldCheck,
-    title: "Seguro por padrão",
-    desc: "Dados isolados por conta, criptografia, backup diário e conformidade com a LGPD.",
+    title: "Portal do cliente",
+    text: "Acesso por CPF, segunda via, comprovantes e negociação — sem você atender no manual.",
   },
 ];
 
 const LandingFeatures = () => {
   return (
-    <section id="features" className="py-20 lg:py-28">
+    <section id="features" className="py-20 lg:py-28 relative">
       <div className="container mx-auto px-5 sm:px-6">
-        <div className="max-w-2xl mb-12 lg:mb-16" data-anim="up">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold mb-3">
-            Recursos
-          </p>
-          <h2 className="text-[clamp(1.75rem,3.6vw,2.75rem)] font-bold text-foreground leading-tight">
-            Tudo que a sua operação precisa, sem nada que atrapalhe.
+        <div className="max-w-2xl">
+          <span className="text-[10px] uppercase tracking-[0.3em] text-primary">A plataforma</span>
+          <h2 className="font-editorial text-[clamp(2rem,4.5vw,3.4rem)] leading-[1.05] text-foreground mt-4">
+            Tudo o que a sua operação faz no papel, feito aqui em segundos.
           </h2>
-          <p className="text-muted-foreground mt-4 leading-relaxed">
-            Cada recurso existe para responder uma pergunta prática: quem me deve, quanto, quando e o que
-            fazer agora.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5" data-anim-group>
-          {features.map(({ icon: Icon, title, desc }) => (
-            <article
-              key={title}
-              data-anim="up"
-              className="paper-card p-6 flex flex-col gap-4 transition-transform duration-300 hover:-translate-y-1.5"
-            >
-              <span className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Icon size={19} className="text-primary" />
-              </span>
-              <div>
-                <h3 className="text-base font-bold text-foreground mb-2">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-3xl overflow-hidden" data-anim-group>
+          {features.map(({ icon: Icon, title, text }, i) => (
+            <div key={title} data-anim="up" className="group bg-card p-7 sm:p-8 transition-colors hover:bg-secondary/60">
+              <div className="flex items-center justify-between">
+                <Icon size={22} className="text-primary" />
+                <span className="tnum text-[11px] tracking-[0.2em] text-muted-foreground">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
               </div>
-            </article>
+              <h3 className="font-editorial text-2xl text-foreground mt-6">{title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mt-3">{text}</p>
+            </div>
           ))}
+        </div>
+
+        <div className="mt-12 flex flex-col sm:flex-row items-center gap-6 rounded-3xl border border-border obsidian-card p-7 sm:p-9" data-anim="scale">
+          <img
+            src={eagleMascot}
+            alt="Mascote águia CredMais"
+            width={160}
+            height={160}
+            loading="lazy"
+            className="w-24 h-24 sm:w-32 sm:h-32 object-contain flex-shrink-0"
+          />
+          <div className="text-center sm:text-left">
+            <p className="font-editorial text-2xl sm:text-3xl text-foreground">
+              A águia enxerga primeiro. Você cobra antes.
+            </p>
+            <p className="text-sm text-muted-foreground mt-3 max-w-xl">
+              Alertas de vencimento, aging de carteira e agente de IA trabalhando 24h para que
+              nenhuma parcela vire prejuízo.
+            </p>
+          </div>
         </div>
       </div>
     </section>
