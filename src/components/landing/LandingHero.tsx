@@ -51,7 +51,7 @@ const LandingHero = () => {
                   to="/checkout"
                   className="group inline-flex w-full items-center justify-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold"
                 >
-                  Quero começar agora
+                  Quero receber em dia
                   <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
               </motion.div>
@@ -63,7 +63,7 @@ const LandingHero = () => {
                   className="inline-flex w-full items-center justify-center gap-2 px-8 py-4 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors"
                 >
                   <MessageSquareText size={17} className="text-primary" />
-                  Falar com um humano
+                  Falar no WhatsApp
                 </a>
               </motion.div>
             </div>

@@ -40,7 +40,7 @@ const LandingCTA = () => {
               rel="noreferrer"
               className="inline-flex items-center justify-center px-8 py-4 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors"
             >
-              Falar no WhatsApp
+              Tirar dúvidas
             </a>
           </div>
         </div>
