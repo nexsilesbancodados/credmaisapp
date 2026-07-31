@@ -740,10 +740,20 @@ const Cobrancas = () => {
     const clean = phone.replace(/\D/g, "");
     const num = clean.startsWith("55") ? clean : `55${clean}`;
     const unpaid = group.items.filter((i: any) => i.status !== "paid");
-    const lines = unpaid.map((i: any) => `- Parcela #${i.installment_number} · R$ ${fmt(Number(i.amount))} (venc. ${formatBR(i.due_date)})`).join("\n");
-    const total = unpaid.reduce((s: number, i: any) => s + Number(i.amount), 0);
+    let total = 0;
+    let totalFees = 0;
+    const lines = unpaid.map((i: any) => {
+      const bd = computeLateFeeBreakdown(i);
+      const paid = Number(i.paid_amount || 0);
+      const due = Math.max(0, Math.round((bd.withFees - paid) * 100) / 100);
+      total += due;
+      totalFees += bd.total;
+      const extra = bd.total > 0 ? ` [parcela R$ ${fmt(bd.base)} + juros R$ ${fmt(bd.total)} · ${bd.daysLate}d]` : "";
+      return `- Parcela #${i.installment_number} · R$ ${fmt(due)} (venc. ${formatBR(i.due_date)})${extra}`;
+    }).join("\n");
     const portalUrl = `${window.location.origin}/portal-cliente`;
-    const msg = `Olá ${group.client_name}, tudo bem?\n\nIdentificamos ${unpaid.length} parcelas pendentes totalizando R$ ${fmt(total)}:\n${lines}\n\nVocê pode regularizar via PIX ou pelo portal: ${portalUrl}`;
+    const feesBlock = totalFees > 0 ? `\nJuros de atraso incluídos: R$ ${fmt(totalFees)}` : "";
+    const msg = `Olá ${group.client_name}, tudo bem?\n\nIdentificamos ${unpaid.length} parcelas pendentes totalizando R$ ${fmt(total)}:\n${lines}${feesBlock}\n\nVocê pode regularizar via PIX ou pelo portal: ${portalUrl}`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
