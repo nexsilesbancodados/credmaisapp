@@ -140,7 +140,7 @@ serve(async (req) => {
 
       const { data: installments } = await supabase
         .from("contract_installments")
-        .select("id, amount, due_date, client_id, installment_number, late_fee, daily_interest_percent")
+        .select("id, amount, due_date, client_id, installment_number, late_fee")
         .eq("user_id", userId)
         .eq("status", "pending")
         .lte("due_date", lookAheadDate);
