@@ -542,6 +542,103 @@ export default function App() {
           </div>
         </section>
 
+        {/* Section 4: Planos */}
+        <section id="planos" className="relative z-10 border-t border-white/5 bg-black px-6 py-24 md:px-10 md:py-32">
+          <div className="mb-4 font-mono text-[10px] uppercase tracking-[0.4em] text-white opacity-30">
+            / planos e assinatura
+          </div>
+          <h2 className="max-w-4xl font-display text-[11vw] font-bold uppercase leading-[0.92] tracking-tight text-white md:text-[6vw]">
+            Escolha como
+            <br />
+            <span className="opacity-40">vai operar</span>
+          </h2>
+          <p className="mt-6 max-w-xl text-sm font-light leading-relaxed text-white opacity-50 md:text-base">
+            Assinatura mensal, sem fidelidade. Cancele quando quiser. Acesso liberado em segundos após a confirmação do pagamento.
+          </p>
+
+          <div className="mt-16 grid grid-cols-1 gap-px border border-white/10 bg-white/10 md:grid-cols-2">
+            {PLAN_LIST.map((plan, idx) => (
+              <motion.div
+                key={plan.tier}
+                variants={cardVariants}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ delay: idx * 0.1 }}
+                className="group relative flex flex-col bg-black p-8 lg:p-12"
+              >
+                {plan.highlight && (
+                  <div className="absolute right-6 top-6 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.3em] text-white opacity-60">
+                    <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                    recomendado
+                  </div>
+                )}
+
+                <div className="font-mono text-[10px] uppercase tracking-[0.35em] text-white opacity-40">
+                  plano {plan.tier}
+                </div>
+
+                <div className="mt-6 flex items-end gap-2">
+                  <span className="font-mono text-sm text-white opacity-40">R$</span>
+                  <span className="font-display text-[18vw] font-bold leading-[0.85] tracking-tighter text-white md:text-[7vw]">
+                    {plan.priceLabel}
+                  </span>
+                  <span className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white opacity-40">
+                    /mês
+                  </span>
+                </div>
+
+                <p className="mt-4 max-w-sm text-sm font-light leading-relaxed text-white opacity-50">
+                  {plan.tagline}
+                </p>
+
+                <div className="mt-10 flex flex-col gap-3 border-t border-white/5 pt-8">
+                  {plan.features.map((f) => (
+                    <div key={f} className="flex items-start gap-3">
+                      <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-white opacity-60" />
+                      <span className="text-[13px] font-light leading-relaxed text-white opacity-70">{f}</span>
+                    </div>
+                  ))}
+                  {plan.missing?.map((f) => (
+                    <div key={f} className="flex items-start gap-3">
+                      <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-white opacity-15" />
+                      <span className="text-[13px] font-light leading-relaxed text-white opacity-25 line-through">
+                        {f}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-12 flex flex-wrap items-center gap-6">
+                  <Link
+                    to={`/checkout?plan=${plan.tier}`}
+                    className={`group/btn flex items-center gap-2 border px-6 py-4 text-[11px] font-medium uppercase tracking-[0.25em] transition-all ${
+                      plan.highlight
+                        ? "border-white bg-white text-black hover:bg-white/85"
+                        : "border-white/20 text-white hover:border-white/60"
+                    }`}
+                  >
+                    Assinar {plan.name}
+                    <ArrowUpRight className="h-3 w-3 transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    to="/planos"
+                    className="font-mono text-[10px] uppercase tracking-[0.25em] text-white opacity-40 transition-opacity hover:opacity-80"
+                  >
+                    ver detalhes
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center gap-x-10 gap-y-3 font-mono text-[9px] uppercase tracking-[0.3em] text-white opacity-30">
+            <span>[ pix · cartão · boleto ]</span>
+            <span>[ sem fidelidade ]</span>
+            <span>[ suporte no whatsapp ]</span>
+          </div>
+        </section>
+
         {/* Footer Branding */}
         <footer className="relative z-10 w-full pt-20 pb-12 px-6 md:pb-16 md:px-10 bg-black">
           <div className="absolute inset-x-0 top-0 h-40 -z-10 backdrop-blur-xl progressive-blur" />
