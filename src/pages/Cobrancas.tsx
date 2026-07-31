@@ -392,12 +392,21 @@ const Cobrancas = () => {
   const buildBulkWhatsAppMessage = (clientName: string, items: any[]) => {
     const pix = (profile as any)?.pix_key;
     const portalUrl = `${window.location.origin}/portal-cliente`;
-    const lines = items.map((i: any) =>
-      `Parcela ${i.installment_number} — R$ ${fmt(Number(i.amount))} — venceu ${formatBR(i.due_date)}`
-    ).join("\n");
-    const total = items.reduce((s: number, i: any) => s + Number(i.amount), 0);
+    let total = 0;
+    let totalFees = 0;
+    const lines = items.map((i: any) => {
+      const bd = computeLateFeeBreakdown(i);
+      const paid = Number(i.paid_amount || 0);
+      const due = Math.max(0, Math.round((bd.withFees - paid) * 100) / 100);
+      total += due;
+      totalFees += bd.total;
+      const extra = bd.total > 0 ? ` (parcela R$ ${fmt(bd.base)} + juros R$ ${fmt(bd.total)} · ${bd.daysLate}d)` : "";
+      return `Parcela ${i.installment_number} — R$ ${fmt(due)} — venceu ${formatBR(i.due_date)}${extra}`;
+    }).join("\n");
+    const feesBlock = totalFees > 0 ? `\nJuros de atraso: R$ ${fmt(totalFees)}` : "";
     const pixBlock = pix ? `\n\nPIX: ${pix}` : "";
-    return `*Aviso de pagamento*\n${clientName}\n${lines}\nTotal: R$ ${fmt(total)}${pixBlock}\n\nPortal: ${portalUrl}`;
+    return `*Aviso de pagamento*\n${clientName}\n${lines}${feesBlock}\n*Total atualizado: R$ ${fmt(total)}*${pixBlock}\n\nPortal: ${portalUrl}`;
+
   };
 
   const handleBulk = (channel: "whatsapp" | "email") => {
