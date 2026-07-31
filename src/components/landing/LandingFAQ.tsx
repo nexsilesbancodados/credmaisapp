@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: "Como funcionam os juros de atraso?",
-    a: "A multa é diária de 4% sobre o valor da parcela e acumula a cada dia de atraso. O cálculo é automático e fica detalhado parcela por parcela.",
+    a: "O sistema aplica o juro de atraso automaticamente a cada dia, no percentual que você configurar, e mostra o detalhamento parcela por parcela.",
   },
   {
     q: "O cliente consegue ver o que deve?",
