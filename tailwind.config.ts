@@ -17,6 +17,9 @@ export default {
         display: ['Space Grotesk', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         heading: ['Space Grotesk', 'sans-serif'],
+        logo: ['Orbitron', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
