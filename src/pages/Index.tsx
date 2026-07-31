@@ -368,7 +368,7 @@ export default function App() {
               <CursorProvider className="h-full w-full">
                 <CursorFollow>
                   <div className="z-50 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-mono uppercase tracking-widest shadow-2xl flex items-center gap-1.5 border border-black/10 whitespace-nowrap min-w-max">
-                    Read More
+                    Saiba mais
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                 </CursorFollow>
@@ -393,7 +393,7 @@ export default function App() {
               <CursorProvider className="h-full w-full">
                 <CursorFollow>
                   <div className="z-50 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-mono uppercase tracking-widest shadow-2xl flex items-center gap-1.5 border border-black/10 whitespace-nowrap min-w-max">
-                    Explore
+                    Conhecer
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                 </CursorFollow>
@@ -418,7 +418,7 @@ export default function App() {
               <CursorProvider className="h-full w-full">
                 <CursorFollow>
                   <div className="z-50 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-mono uppercase tracking-widest shadow-2xl flex items-center gap-1.5 border border-black/10 whitespace-nowrap min-w-max">
-                    Deploy
+                    Ativar
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                 </CursorFollow>
@@ -505,7 +505,7 @@ export default function App() {
               </p>
               <div className="mt-8 flex items-center gap-4">
                 <button className="group flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-70">
-                  Read philosophy
+                  Nosso manifesto
                   <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </button>
               </div>
