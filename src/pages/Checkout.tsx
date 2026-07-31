@@ -347,25 +347,26 @@ export default function Checkout() {
                         animate={{ scale: active ? 1.05 : 1 }}
                         className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors"
                         style={{
-                          backgroundColor: done ? c.inkSoft : active ? c.ink : "#e8e2cf",
-                          color: done || active ? "#fff" : "#9a9280",
+                          backgroundColor: done ? c.gold : active ? "rgba(201,168,76,0.18)" : "rgba(255,255,255,0.06)",
+                          color: done ? "#0A0A0A" : active ? c.gold : "rgba(255,255,255,0.35)",
+                          border: active ? `1px solid ${c.gold}` : "1px solid rgba(255,255,255,0.10)",
                         }}
                       >
                         {done ? <Check size={16} strokeWidth={3} /> : <Icon size={16} />}
                       </motion.div>
                       <div className="hidden md:block">
                         <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: c.inkSoft }}>Etapa {s.n}</div>
-                        <div className="text-sm font-bold" style={{ ...heading, color: active || done ? c.ink : "#a8a08a" }}>{s.label}</div>
+                        <div className="text-sm font-bold" style={{ ...heading, color: active || done ? c.cream : "rgba(255,255,255,0.35)" }}>{s.label}</div>
                       </div>
                     </div>
                     {i < STEPS.length - 1 && (
-                      <div className="flex-1 h-[2px] mx-2 rounded-full overflow-hidden bg-[#e8e2cf]">
+                      <div className="flex-1 h-[2px] mx-2 rounded-full overflow-hidden bg-white/10">
                         <motion.div
                           initial={false}
                           animate={{ width: step > s.n ? "100%" : "0%" }}
                           transition={{ duration: 0.4 }}
                           className="h-full"
-                          style={{ backgroundColor: c.inkSoft }}
+                          style={{ backgroundColor: c.gold }}
                         />
                       </div>
                     )}
