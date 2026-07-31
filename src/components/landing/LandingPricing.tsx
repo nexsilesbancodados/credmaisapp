@@ -91,7 +91,7 @@ const LandingPricing = () => {
                     : "border border-border text-foreground"
                 }`}
               >
-                Assinar {plan.name}
+                Escolher {plan.name}
               </Link>
             </div>
           ))}

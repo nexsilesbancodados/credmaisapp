@@ -310,10 +310,10 @@ export default function App() {
                   <Link to="/checkout" className="relative group overflow-hidden rounded-sm bg-black/60 backdrop-blur-3xl px-6 py-3 text-xs font-medium tracking-wide transition-all hover:bg-black/80 md:px-8 md:py-4 md:text-sm text-white border border-white/30">
                     <div className="absolute top-0 right-0 h-4 w-4 border-t-2 border-r-2 border-white/60 transition-transform group-hover:scale-110" />
                     <div className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-white/60 transition-transform group-hover:scale-110" />
-                    <span className="relative z-10 uppercase tracking-widest">Comece a lucrar hoje</span>
+                    <span className="relative z-10 uppercase tracking-widest">Quero cobrar no automático</span>
                   </Link>
                   <Link to="/login" className="text-xs font-medium tracking-wide text-white transition-colors hover:opacity-70 md:text-sm">
-                    Já sou cliente — acessar painel
+                    Acessar meu painel
                   </Link>
 
                </motion.div>
@@ -368,7 +368,7 @@ export default function App() {
               <CursorProvider className="h-full w-full">
                 <CursorFollow>
                   <div className="z-50 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-mono uppercase tracking-widest shadow-2xl flex items-center gap-1.5 border border-black/10 whitespace-nowrap min-w-max">
-                    Read More
+                    Saiba mais
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                 </CursorFollow>
@@ -393,7 +393,7 @@ export default function App() {
               <CursorProvider className="h-full w-full">
                 <CursorFollow>
                   <div className="z-50 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-mono uppercase tracking-widest shadow-2xl flex items-center gap-1.5 border border-black/10 whitespace-nowrap min-w-max">
-                    Explore
+                    Conhecer
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                 </CursorFollow>
@@ -418,7 +418,7 @@ export default function App() {
               <CursorProvider className="h-full w-full">
                 <CursorFollow>
                   <div className="z-50 px-3 py-1.5 rounded-full bg-white text-black text-[10px] font-mono uppercase tracking-widest shadow-2xl flex items-center gap-1.5 border border-black/10 whitespace-nowrap min-w-max">
-                    Deploy
+                    Ativar
                     <ArrowUpRight className="h-3.5 w-3.5 stroke-[2.5]" />
                   </div>
                 </CursorFollow>
@@ -505,7 +505,7 @@ export default function App() {
               </p>
               <div className="mt-8 flex items-center gap-4">
                 <button className="group flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-70">
-                  Read philosophy
+                  Nosso manifesto
                   <ArrowUpRight className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </button>
               </div>

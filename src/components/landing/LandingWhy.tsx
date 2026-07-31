@@ -60,7 +60,7 @@ const LandingWhy = () => {
             to="/checkout"
             className="group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold whitespace-nowrap"
           >
-            Assinar agora
+            Começar a usar
             <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
         </div>

@@ -58,7 +58,7 @@ const LandingFooter = () => {
                 { label: "Entrar no painel", to: "/login" },
                 { label: "Portal do cliente", to: "/portal" },
                 { label: "Portal do investidor", to: "/portal-investidor" },
-                { label: "Assinar", to: "/checkout" },
+                { label: "Assinar agora", to: "/checkout" },
               ].map((item) => (
                 <li key={item.label}>
                   <Link
