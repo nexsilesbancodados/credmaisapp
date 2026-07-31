@@ -1,9 +1,14 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowUpRight, ShieldCheck, Zap } from "lucide-react";
+import { ArrowUpRight, ShieldCheck, Zap, MessageSquareText } from "lucide-react";
 import eagleHero from "@/assets/eagle-hero.jpg";
 import eagleMascot from "@/assets/eagle-mascot.png";
-import AnimatedNumber from "./AnimatedNumber";
+
+const promises = [
+  "Você sabe quem deve, quanto deve e desde quando — sem abrir planilha.",
+  "A cobrança sai sozinha no WhatsApp, com PIX e link para o cliente pagar.",
+  "O cliente resolve tudo no portal e para de te procurar fora de hora.",
+];
 
 const LandingHero = () => {
   return (
@@ -19,7 +24,7 @@ const LandingHero = () => {
       <div className="container mx-auto px-5 sm:px-6 relative">
         {/* Faixa superior editorial */}
         <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-          <span className="text-primary">Ed. 2026</span>
+          <span className="text-primary">CredMais App</span>
           <span className="flex-1 gold-line" />
           <span className="hidden sm:inline">Gestão de empréstimos</span>
         </div>
@@ -27,16 +32,17 @@ const LandingHero = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-end mt-8" data-hero>
           <div className="lg:col-span-7 space-y-7">
             <h1 className="font-editorial text-[clamp(2.8rem,7.5vw,5.5rem)] leading-[0.95] text-foreground">
-              A visão da <span className="gold-text italic">águia</span>
+              Empreste com a
               <br />
-              sobre cada real
+              <span className="gold-text italic">visão da águia</span>
               <br />
-              que você empresta.
+              e receba em dia.
             </h1>
 
             <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
-              Contratos, parcelas, juros diários e cobrança automática no WhatsApp em uma única
-              plataforma. Você deixa a planilha e passa a operar com precisão.
+              O sistema que organiza seus contratos, calcula os juros de atraso sozinho e cobra
+              cada cliente por você no WhatsApp. Você deixa a planilha e passa a operar como
+              empresa.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 pt-1">
@@ -45,16 +51,19 @@ const LandingHero = () => {
                   to="/checkout"
                   className="group inline-flex w-full items-center justify-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold"
                 >
-                  Começar agora
+                  Quero começar agora
                   <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <a
-                  href="#features"
+                  href="https://wa.me/5511964541758"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex w-full items-center justify-center gap-2 px-8 py-4 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors"
                 >
-                  Ver a plataforma
+                  <MessageSquareText size={17} className="text-primary" />
+                  Falar com um humano
                 </a>
               </motion.div>
             </div>
@@ -96,25 +105,16 @@ const LandingHero = () => {
           </div>
         </div>
 
-        {/* Números */}
-        <div className="mt-14 grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border border border-border rounded-2xl overflow-hidden">
-          {[
-            { value: 4, suffix: "% ao dia", label: "Juros de atraso automáticos", decimals: 0 },
-            { value: 98.2, suffix: "%", label: "Entrega das cobranças", decimals: 1 },
-            { value: 142, suffix: "", label: "Mensagens enviadas por dia", decimals: 0 },
-            { value: 2.4, suffix: "%", label: "Inadimplência média", decimals: 1 },
-          ].map((stat) => (
-            <div key={stat.label} className="p-5 sm:p-6">
-              <AnimatedNumber
-                value={stat.value}
-                decimals={stat.decimals}
-                suffix={stat.suffix}
-                className="tnum block font-editorial text-2xl sm:text-3xl text-primary"
-              />
-              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mt-2 leading-relaxed">
-                {stat.label}
-              </p>
-            </div>
+        {/* Promessas — sem métricas, só resultado */}
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-px bg-border border border-border rounded-2xl overflow-hidden">
+          {promises.map((p) => (
+            <p
+              key={p}
+              className="bg-card p-6 sm:p-7 text-sm text-muted-foreground leading-relaxed"
+            >
+              <span className="block w-6 gold-line mb-4" />
+              {p}
+            </p>
           ))}
         </div>
       </div>
