@@ -391,6 +391,11 @@ ${extraDiversity}`;
           } else if (has("abriu_portal")) {
             message += `\n\n(Vi que você abriu o portal recentemente — se precisar de ajuda pra concluir, me chama por aqui.)`;
           }
+          // Detalhamento dos juros de atraso (4% ao dia) sempre visível
+          if (totalLateFees > 0 && !/juros/i.test(message)) {
+            const principal = totalAmount - totalLateFees;
+            message += `\n\nDetalhe: parcela(s) R$ ${principal.toFixed(2)} + juros de atraso R$ ${totalLateFees.toFixed(2)} (4% ao dia · ${daysOverdue} dia(s))\nTotal atualizado: R$ ${totalAmount.toFixed(2)}`;
+          }
         }
 
 
