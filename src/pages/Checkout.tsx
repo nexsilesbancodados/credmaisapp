@@ -177,9 +177,10 @@ export default function Checkout() {
           },
           visual: {
             style: {
-              theme: "default",
+              theme: "dark",
               customVariables: {
-                baseColor: "#0d7a5f",
+                baseColor: "#c9a84c",
+                textPrimaryColor: "#F4F1E8",
                 borderRadiusMedium: "12px",
                 borderRadiusLarge: "16px",
               },
