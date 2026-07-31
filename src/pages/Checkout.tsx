@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, User, CreditC
 import { supabase } from "@/integrations/supabase/client";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { toast } from "sonner";
+import { ParticleOrb } from "@/components/vexon/ParticleOrb";
+import { TextEffect } from "@/components/vexon/ui/text-effect";
 import { PLANS, PLAN_LIST, normalizeTier, type PlanTier } from "@/lib/plans";
 
 
@@ -175,9 +177,10 @@ export default function Checkout() {
           },
           visual: {
             style: {
-              theme: "default",
+              theme: "dark",
               customVariables: {
-                baseColor: "#0d7a5f",
+                baseColor: "#c9a84c",
+                textPrimaryColor: "#F4F1E8",
                 borderRadiusMedium: "12px",
                 borderRadiusLarge: "16px",
               },
@@ -283,19 +286,19 @@ export default function Checkout() {
   };
 
   const c = {
-    bg: "#f5f0e0",
-    ink: "#064e3b",
-    inkSoft: "#0d7a5f",
+    bg: "#07070A",
+    ink: "#0B0B0F",
+    inkSoft: "#16161C",
     gold: "#c9a84c",
     goldSoft: "#f0d78c",
-    cream: "#f5f0e0",
+    cream: "#F4F1E8",
   };
 
   const heading: React.CSSProperties = { fontFamily: "'Outfit', system-ui, sans-serif" };
   const body: React.CSSProperties = { fontFamily: "'Figtree', system-ui, sans-serif" };
 
   const inputBase =
-    "w-full px-4 py-3 bg-white border rounded-xl outline-none transition-all text-[#064e3b] placeholder:text-gray-400 focus:ring-2 focus:ring-[#c9a84c]/30";
+    "w-full px-4 py-3 bg-white/[0.04] border rounded-xl outline-none transition-all text-white placeholder:text-white/35 focus:ring-2 focus:ring-[#c9a84c]/30";
 
   const STEPS = [
     { n: 1, label: "Identificação", icon: User },
@@ -304,10 +307,23 @@ export default function Checkout() {
   ] as const;
 
   return (
-    <div className="min-h-dvh w-full flex items-start justify-center py-6 px-4 md:px-8" style={{ backgroundColor: c.bg, ...body }}>
-      <div className="w-full max-w-5xl">
+    <div className="relative min-h-dvh w-full flex items-start justify-center py-6 px-4 md:px-8 overflow-hidden" style={{ backgroundColor: c.bg, ...body }}>
+      {/* Animated particle background (Vexon) */}
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-70">
+        <ParticleOrb className="h-full w-full" start />
+      </div>
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{ background: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.14), transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,0,0,0.85), transparent 60%)" }}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: 24, filter: "blur(12px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+        className="relative z-10 w-full max-w-5xl"
+      >
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-6 text-xs" style={{ color: c.ink }}>
+        <div className="flex items-center justify-between mb-6 text-xs" style={{ color: c.goldSoft }}>
           <button onClick={() => step === 3 ? navigate("/") : navigate("/")} className="inline-flex items-center gap-2 font-semibold hover:opacity-70 transition-opacity">
             <ArrowLeft size={14} /> Voltar
           </button>
@@ -318,7 +334,7 @@ export default function Checkout() {
 
         {/* Stepper */}
         {step !== 3 && (
-          <div className="mb-6 rounded-2xl bg-white/70 backdrop-blur border border-black/5 p-4 md:p-5 shadow-sm">
+          <div className="mb-6 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]">
             <div className="flex items-center justify-between gap-2">
               {STEPS.map((s, i) => {
                 const active = step === s.n;
@@ -331,25 +347,26 @@ export default function Checkout() {
                         animate={{ scale: active ? 1.05 : 1 }}
                         className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm transition-colors"
                         style={{
-                          backgroundColor: done ? c.inkSoft : active ? c.ink : "#e8e2cf",
-                          color: done || active ? "#fff" : "#9a9280",
+                          backgroundColor: done ? c.gold : active ? "rgba(201,168,76,0.18)" : "rgba(255,255,255,0.06)",
+                          color: done ? "#0A0A0A" : active ? c.gold : "rgba(255,255,255,0.35)",
+                          border: active ? `1px solid ${c.gold}` : "1px solid rgba(255,255,255,0.10)",
                         }}
                       >
                         {done ? <Check size={16} strokeWidth={3} /> : <Icon size={16} />}
                       </motion.div>
                       <div className="hidden md:block">
                         <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: c.inkSoft }}>Etapa {s.n}</div>
-                        <div className="text-sm font-bold" style={{ ...heading, color: active || done ? c.ink : "#a8a08a" }}>{s.label}</div>
+                        <div className="text-sm font-bold" style={{ ...heading, color: active || done ? c.cream : "rgba(255,255,255,0.35)" }}>{s.label}</div>
                       </div>
                     </div>
                     {i < STEPS.length - 1 && (
-                      <div className="flex-1 h-[2px] mx-2 rounded-full overflow-hidden bg-[#e8e2cf]">
+                      <div className="flex-1 h-[2px] mx-2 rounded-full overflow-hidden bg-white/10">
                         <motion.div
                           initial={false}
                           animate={{ width: step > s.n ? "100%" : "0%" }}
                           transition={{ duration: 0.4 }}
                           className="h-full"
-                          style={{ backgroundColor: c.inkSoft }}
+                          style={{ backgroundColor: c.gold }}
                         />
                       </div>
                     )}
@@ -367,7 +384,7 @@ export default function Checkout() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="w-full bg-white rounded-3xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(6,78,59,0.18)] flex flex-col md:flex-row"
+              className="w-full rounded-3xl overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] flex flex-col md:flex-row"
             >
               {/* Left — Plan summary */}
               <aside
@@ -380,7 +397,7 @@ export default function Checkout() {
                 <div className="relative z-10 mb-8">
                   <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ backgroundColor: c.gold }}>
-                      <Sparkles size={18} style={{ color: c.ink }} />
+                      <Sparkles size={18} style={{ color: c.goldSoft }} />
                     </div>
                     <span className="text-2xl font-bold tracking-tight text-white" style={heading}>{brand}</span>
                   </div>
@@ -429,7 +446,7 @@ export default function Checkout() {
                   {selectedPlan.features.slice(0, 6).map((f) => (
                     <div key={f} className="flex gap-3 items-start">
                       <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: c.gold }}>
-                        <Check size={12} strokeWidth={3} style={{ color: c.ink }} />
+                        <Check size={12} strokeWidth={3} style={{ color: c.goldSoft }} />
                       </div>
                       <p className="font-medium text-white/90 text-[14px]">{f}</p>
                     </div>
@@ -462,59 +479,61 @@ export default function Checkout() {
                       transition={{ duration: 0.25 }}
                     >
                       <header className="mb-8">
-                        <h2 className="text-2xl font-bold" style={{ ...heading, color: c.ink }}>Quem é você?</h2>
-                        <p className="text-sm text-gray-500 mt-1">Precisamos desses dados para gerar sua conta e emitir a nota.</p>
+                        <h2 className="text-2xl md:text-3xl font-bold" style={{ ...heading, color: c.cream }}>
+                          <TextEffect preset="blur" per="char" as="span">Quem é você?</TextEffect>
+                        </h2>
+                        <p className="text-sm text-white/60 mt-1">Precisamos desses dados para gerar sua conta e emitir a nota.</p>
                       </header>
 
                       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); goToPayment(); }}>
                         <div>
-                          <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: c.ink }}>Nome completo *</label>
+                          <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: c.goldSoft }}>Nome completo *</label>
                           <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Como no seu documento"
-                            className={`${inputBase} border-gray-200 focus:border-[#0d7a5f]`}
+                            className={`${inputBase} border-white/10 focus:border-[#c9a84c]`}
                           />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: c.ink }}>E-mail *</label>
+                            <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: c.goldSoft }}>E-mail *</label>
                             <input
                               type="email"
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
                               placeholder="voce@empresa.com"
-                              className={`${inputBase} border-gray-200 focus:border-[#0d7a5f]`}
+                              className={`${inputBase} border-white/10 focus:border-[#c9a84c]`}
                             />
                           </div>
                           <div>
-                            <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: c.ink }}>WhatsApp *</label>
+                            <label className="block text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: c.goldSoft }}>WhatsApp *</label>
                             <input
                               type="tel"
                               inputMode="numeric"
                               value={whatsapp}
                               onChange={(e) => setWhatsapp(maskPhone(e.target.value))}
                               placeholder="(11) 99999-9999"
-                              className={`${inputBase} ${whatsapp && !validPhone ? "border-red-400" : "border-gray-200 focus:border-[#0d7a5f]"}`}
+                              className={`${inputBase} ${whatsapp && !validPhone ? "border-red-400" : "border-white/10 focus:border-[#c9a84c]"}`}
                             />
                           </div>
                         </div>
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <label className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: c.ink }}>Documento *</label>
-                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <label className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: c.goldSoft }}>Documento *</label>
+                            <div className="flex bg-white/5 border border-white/10 p-1 rounded-lg">
                               {(["CPF", "CNPJ"] as const).map((t) => (
                                 <button
                                   key={t}
                                   type="button"
                                   onClick={() => { setDocType(t); setDoc(""); }}
                                   className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${
-                                    docType === t ? "bg-white shadow-sm" : "text-gray-400"
+                                    docType === t ? "bg-white/15 shadow-sm text-white" : "text-white/40"
                                   }`}
-                                  style={docType === t ? { color: c.ink } : undefined}
+                                  style={docType === t ? { color: c.cream } : undefined}
                                 >
                                   {t}
                                 </button>
@@ -526,16 +545,16 @@ export default function Checkout() {
                             value={doc}
                             onChange={(e) => setDoc(docType === "CPF" ? maskCPF(e.target.value) : maskCNPJ(e.target.value))}
                             placeholder={docType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
-                            className={`${inputBase} ${doc && !validDoc ? "border-red-400" : "border-gray-200 focus:border-[#0d7a5f]"}`}
+                            className={`${inputBase} ${doc && !validDoc ? "border-red-400" : "border-white/10 focus:border-[#c9a84c]"}`}
                           />
                           {doc && !validDoc && (
                             <p className="text-[11px] text-red-500 mt-2">{docType} inválido</p>
                           )}
                         </div>
 
-                        <div className="rounded-xl border border-dashed p-4 text-[12px] text-gray-500 leading-relaxed flex gap-3 items-start" style={{ borderColor: "#e5e0d0", backgroundColor: "#fbf8ee" }}>
+                        <div className="rounded-xl border border-dashed p-4 text-[12px] text-white/60 leading-relaxed flex gap-3 items-start" style={{ borderColor: "rgba(201,168,76,0.35)", backgroundColor: "rgba(255,255,255,0.04)" }}>
                           <Mail size={16} className="mt-0.5 flex-shrink-0" style={{ color: c.inkSoft }} />
-                          <span>Após a confirmação você recebe um <strong style={{ color: c.ink }}>link de acesso</strong> em <strong style={{ color: c.ink }}>{email || "seu e-mail"}</strong>.</span>
+                          <span>Após a confirmação você recebe um <strong style={{ color: c.gold }}>link de acesso</strong> em <strong style={{ color: c.gold }}>{email || "seu e-mail"}</strong>.</span>
                         </div>
 
                         {formError && <p className="text-xs text-red-500">{formError}</p>}
@@ -553,9 +572,9 @@ export default function Checkout() {
                           )}
                         </button>
 
-                        <p className="text-center text-[11px] text-gray-400 pt-1">
+                        <p className="text-center text-[11px] text-white/40 pt-1">
                           Ao continuar você concorda com nossos{" "}
-                          <a href="/privacidade" className="underline hover:text-[#064e3b]">Termos e Política de Privacidade</a>.
+                          <a href="/privacidade" className="underline hover:text-[#c9a84c]">Termos e Política de Privacidade</a>.
                         </p>
                       </form>
                     </motion.div>
@@ -570,15 +589,17 @@ export default function Checkout() {
                       transition={{ duration: 0.25 }}
                     >
                       <header className="mb-6">
-                        <h2 className="text-2xl font-bold" style={{ ...heading, color: c.ink }}>Forma de pagamento</h2>
-                        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                          <span>Pagando como <strong style={{ color: c.ink }}>{email}</strong></span>
-                          <button onClick={backToStep1} className="underline hover:text-[#064e3b]">alterar</button>
+                        <h2 className="text-2xl md:text-3xl font-bold" style={{ ...heading, color: c.cream }}>
+                          <TextEffect preset="blur" per="char" as="span">Forma de pagamento</TextEffect>
+                        </h2>
+                        <div className="mt-2 flex items-center justify-between text-xs text-white/60">
+                          <span>Pagando como <strong style={{ color: c.gold }}>{email}</strong></span>
+                          <button onClick={backToStep1} className="underline hover:text-[#c9a84c]">alterar</button>
                         </div>
                       </header>
 
                       {brickLoading && (
-                        <div className="flex items-center justify-center py-12 text-sm text-gray-500 gap-2">
+                        <div className="flex items-center justify-center py-12 text-sm text-white/60 gap-2">
                           <Loader2 size={18} className="animate-spin" /> Preparando pagamento seguro...
                         </div>
                       )}
@@ -590,28 +611,28 @@ export default function Checkout() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="mt-6 p-6 rounded-2xl border"
-                          style={{ borderColor: `${c.inkSoft}33`, backgroundColor: "#f0faf5" }}
+                          style={{ borderColor: `${c.inkSoft}33`, backgroundColor: "rgba(255,255,255,0.05)" }}
                         >
-                          <div className="text-sm font-bold mb-3" style={{ color: c.ink }}>Pague com Pix</div>
+                          <div className="text-sm font-bold mb-3" style={{ color: c.goldSoft }}>Pague com Pix</div>
                           {pixData.qrBase64 && (
-                            <img src={`data:image/png;base64,${pixData.qrBase64}`} alt="QR Code Pix" className="w-56 h-56 mx-auto rounded-xl bg-white p-2 border border-gray-100" />
+                            <img src={`data:image/png;base64,${pixData.qrBase64}`} alt="QR Code Pix" className="w-56 h-56 mx-auto rounded-xl bg-white p-2 border border-white/10" />
                           )}
                           <button
                             onClick={copyPix}
                             className="w-full mt-4 py-3 rounded-xl font-bold text-sm transition-all hover:brightness-95"
-                            style={{ backgroundColor: c.ink, color: "#fff", ...heading }}
+                            style={{ backgroundColor: c.gold, color: "#0A0A0A", ...heading }}
                           >
                             Copiar código Pix
                           </button>
-                          <p className="text-[11px] text-gray-500 mt-3 text-center">
+                          <p className="text-[11px] text-white/60 mt-3 text-center">
                             A confirmação é automática. Assim que pago, você recebe o acesso por e-mail.
                           </p>
                         </motion.div>
                       )}
 
                       {boletoUrl && (
-                        <div className="mt-6 p-6 rounded-2xl border text-center" style={{ borderColor: `${c.gold}55`, backgroundColor: "#fdfaf0" }}>
-                          <div className="text-sm font-bold mb-3" style={{ color: c.ink }}>Boleto gerado</div>
+                        <div className="mt-6 p-6 rounded-2xl border text-center" style={{ borderColor: `${c.gold}55`, backgroundColor: "rgba(201,168,76,0.08)" }}>
+                          <div className="text-sm font-bold mb-3" style={{ color: c.goldSoft }}>Boleto gerado</div>
                           <a
                             href={boletoUrl}
                             target="_blank"
@@ -643,7 +664,7 @@ export default function Checkout() {
             />
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -676,7 +697,7 @@ function SuccessScreen({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative w-full bg-white rounded-3xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(6,78,59,0.25)]"
+      className="relative w-full rounded-3xl overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]"
     >
       <div
         className="relative overflow-hidden px-6 md:px-12 py-14 md:py-20 text-center"
@@ -717,7 +738,7 @@ function SuccessScreen({
             animate={{ pathLength: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            <Check size={48} strokeWidth={3.5} style={{ color: c.ink }} />
+            <Check size={48} strokeWidth={3.5} style={{ color: c.goldSoft }} />
           </motion.div>
           {/* Pulse ring */}
           <motion.div
@@ -754,23 +775,23 @@ function SuccessScreen({
         className="px-6 md:px-12 py-10"
       >
         <div className="max-w-lg mx-auto space-y-4">
-          <div className="flex items-start gap-4 p-4 rounded-2xl border" style={{ borderColor: `${c.inkSoft}22`, backgroundColor: "#f0faf5" }}>
+          <div className="flex items-start gap-4 p-4 rounded-2xl border" style={{ borderColor: `${c.inkSoft}22`, backgroundColor: "rgba(255,255,255,0.05)" }}>
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: c.inkSoft }}>
               <Mail size={18} className="text-white" />
             </div>
             <div className="text-sm text-left">
-              <p className="font-bold" style={{ color: c.ink }}>Link de acesso enviado</p>
-              <p className="text-gray-500 mt-0.5">Enviamos suas credenciais para <strong style={{ color: c.ink }}>{email}</strong>. Verifique também sua caixa de spam.</p>
+              <p className="font-bold" style={{ color: c.goldSoft }}>Link de acesso enviado</p>
+              <p className="text-white/60 mt-0.5">Enviamos suas credenciais para <strong style={{ color: c.gold }}>{email}</strong>. Verifique também sua caixa de spam.</p>
             </div>
           </div>
 
-          <div className="flex items-start gap-4 p-4 rounded-2xl border" style={{ borderColor: `${c.gold}33`, backgroundColor: "#fdfaf0" }}>
+          <div className="flex items-start gap-4 p-4 rounded-2xl border" style={{ borderColor: `${c.gold}33`, backgroundColor: "rgba(201,168,76,0.08)" }}>
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: c.gold }}>
-              <ShieldCheck size={18} style={{ color: c.ink }} />
+              <ShieldCheck size={18} style={{ color: c.goldSoft }} />
             </div>
             <div className="text-sm text-left">
-              <p className="font-bold" style={{ color: c.ink }}>Tudo liberado</p>
-              <p className="text-gray-500 mt-0.5">Clientes ilimitados, agente de IA, portal white-label — tudo pronto pra você começar.</p>
+              <p className="font-bold" style={{ color: c.goldSoft }}>Tudo liberado</p>
+              <p className="text-white/60 mt-0.5">Clientes ilimitados, agente de IA, portal white-label — tudo pronto pra você começar.</p>
             </div>
           </div>
 
@@ -783,7 +804,7 @@ function SuccessScreen({
           </button>
 
           {paymentId && (
-            <p className="text-center text-[11px] text-gray-400 pt-1">ID do pagamento: {paymentId}</p>
+            <p className="text-center text-[11px] text-white/40 pt-1">ID do pagamento: {paymentId}</p>
           )}
         </div>
       </motion.div>
