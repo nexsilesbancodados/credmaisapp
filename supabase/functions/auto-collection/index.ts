@@ -231,7 +231,20 @@ serve(async (req) => {
         const totalHist = history?.length || 0;
         const reliability = totalHist ? Math.round((paidCount / totalHist) * 100) : 0;
 
-        const totalAmount = insts.reduce((s, i) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
+        // Juros diário composto (4% a.d. padrão) calculado ao vivo — nunca depende
+        // apenas do late_fee gravado, que pode estar desatualizado.
+        const liveLateFee = (i: any) => {
+          const base = Number(i.amount) || 0;
+          const due = new Date(String(i.due_date).slice(0, 10) + "T00:00:00");
+          const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+          const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86400000));
+          if (!base || days <= 0) return Number(i.late_fee) || 0;
+          const rate = (Number(i.daily_interest_percent) > 0 ? Number(i.daily_interest_percent) : 4) / 100;
+          const fee = Math.round(base * (Math.pow(1 + rate, days) - 1) * 100) / 100;
+          return Math.max(fee, Number(i.late_fee) || 0);
+        };
+        const totalLateFees = insts.reduce((s, i) => s + liveLateFee(i), 0);
+        const totalAmount = insts.reduce((s, i) => s + Number(i.amount) + liveLateFee(i), 0);
         let message = "";
         const daysOverdue = Math.max(0, selectedDays);
         const daysUntilDue = Math.max(0, -selectedDays);
