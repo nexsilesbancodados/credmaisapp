@@ -231,7 +231,20 @@ serve(async (req) => {
         const totalHist = history?.length || 0;
         const reliability = totalHist ? Math.round((paidCount / totalHist) * 100) : 0;
 
-        const totalAmount = insts.reduce((s, i) => s + Number(i.amount) + (Number(i.late_fee) || 0), 0);
+        // Juros diário composto (4% a.d. padrão) calculado ao vivo — nunca depende
+        // apenas do late_fee gravado, que pode estar desatualizado.
+        const liveLateFee = (i: any) => {
+          const base = Number(i.amount) || 0;
+          const due = new Date(String(i.due_date).slice(0, 10) + "T00:00:00");
+          const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+          const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86400000));
+          if (!base || days <= 0) return Number(i.late_fee) || 0;
+          const rate = (Number(i.daily_interest_percent) > 0 ? Number(i.daily_interest_percent) : 4) / 100;
+          const fee = Math.round(base * (Math.pow(1 + rate, days) - 1) * 100) / 100;
+          return Math.max(fee, Number(i.late_fee) || 0);
+        };
+        const totalLateFees = insts.reduce((s, i) => s + liveLateFee(i), 0);
+        const totalAmount = insts.reduce((s, i) => s + Number(i.amount) + liveLateFee(i), 0);
         let message = "";
         const daysOverdue = Math.max(0, selectedDays);
         const daysUntilDue = Math.max(0, -selectedDays);
@@ -299,7 +312,8 @@ serve(async (req) => {
           const buildPrompt = (extraDiversity: string) => `Gere mensagem WhatsApp personalizada:
 CLIENTE: ${client.name}
 ${isPreDue ? `PARCELA VENCE EM ${daysUntilDue} DIA(S)` : `PARCELA EM ATRASO: ${daysOverdue} DIA(S)`}
-VALOR: R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
+VALOR TOTAL ATUALIZADO (com juros de atraso): R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
+${totalLateFees > 0 ? `JUROS DE ATRASO JÁ INCLUÍDOS: R$ ${totalLateFees.toFixed(2)} (4% ao dia) — SEMPRE informe o valor total atualizado com os juros.` : ""}
 SCORE: ${client.credit_score ?? 100}/100
 HISTÓRICO: ${paidCount}/${totalHist} pagas (${reliability}% confiabilidade)
 INTENÇÕES RECENTES:
@@ -376,6 +390,11 @@ ${extraDiversity}`;
             message += `\n\nSei que o momento tá difícil — se puder pagar hoje uma parte, já ajuda. Me chame que a gente combina.`;
           } else if (has("abriu_portal")) {
             message += `\n\n(Vi que você abriu o portal recentemente — se precisar de ajuda pra concluir, me chama por aqui.)`;
+          }
+          // Detalhamento dos juros de atraso (4% ao dia) sempre visível
+          if (totalLateFees > 0 && !/juros/i.test(message)) {
+            const principal = totalAmount - totalLateFees;
+            message += `\n\nDetalhe: parcela(s) R$ ${principal.toFixed(2)} + juros de atraso R$ ${totalLateFees.toFixed(2)} (4% ao dia · ${daysOverdue} dia(s))\nTotal atualizado: R$ ${totalAmount.toFixed(2)}`;
           }
         }
 

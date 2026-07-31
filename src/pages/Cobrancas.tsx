@@ -316,21 +316,32 @@ const Cobrancas = () => {
     const total = inst.contracts?.num_installments || inst.total_installments || "";
     const parcelaInfo = total ? `${inst.installment_number}/${total}` : `${inst.installment_number}`;
     const nome = inst.client_name || "";
-    const valor = Number(inst.amount).toFixed(2);
+    const bd = computeLateFeeBreakdown(inst);
+    const paid = Number(inst.paid_amount || 0);
+    const valorAtualizado = Math.max(0, Math.round((bd.withFees - paid) * 100) / 100);
+    const valor = fmt(valorAtualizado);
     const data = formatBR(inst.due_date);
+    const feeLine = bd.total > 0
+      ? `Parcela: R$ ${fmt(bd.base)}\nJuros de atraso (${bd.jurosPct}% ao dia · ${bd.daysLate} dia${bd.daysLate !== 1 ? "s" : ""}): R$ ${fmt(bd.total)}\n*Total atualizado: R$ ${valor}*`
+      : `Valor: R$ ${valor}`;
     const customTemplate = profile?.billing_message;
     let base: string;
     if (customTemplate) {
       base = customTemplate
         .replace(/\{nome\}|\[Nome do Cliente\]/g, nome)
         .replace(/\{parcela\}|\[Parcela\]/g, parcelaInfo)
+        .replace(/\{multa\}|\[Multa\]/g, fmt(bd.total))
+        .replace(/\{total\}|\[Total\]/g, valor)
         .replace(/\{valor\}|\[Valor da Parcela\]/g, valor)
         .replace(/\{data\}|\[Data\]/g, data)
         .replace(/\{portal\}|\[Portal\]/g, portalUrl)
         .replace(/\[Nome da Empresa\]/g, "CredMais App").replace(/Sr\(a\)\s*/g, "");
+      if (bd.total > 0 && !/juros|multa/i.test(customTemplate)) {
+        base += `\n\nJuros de atraso (${bd.jurosPct}% ao dia · ${bd.daysLate} dia${bd.daysLate !== 1 ? "s" : ""}): R$ ${fmt(bd.total)}\nTotal atualizado: R$ ${valor}`;
+      }
     } else {
       // Mensagem curta padrão
-      base = `*Aviso de pagamento*\n${nome}\nParcela ${parcelaInfo} — R$ ${valor}\nVenceu em ${data}\n\nPortal: ${portalUrl}`;
+      base = `*Aviso de pagamento*\n${nome}\nParcela ${parcelaInfo}\n${feeLine}\nVenceu em ${data}\n\nPortal: ${portalUrl}`;
     }
     const pix = (profile as any)?.pix_key;
     if (opts.includePix && pix && !/PIX/i.test(base)) {
@@ -338,6 +349,7 @@ const Cobrancas = () => {
     }
     return base;
   };
+
 
   const handleWhatsApp = (inst: any, opts: { withPix?: boolean } = {}) => {
     if (!inst.client_phone) { toast({ title: "Sem telefone", variant: "destructive" }); return; }
@@ -380,12 +392,21 @@ const Cobrancas = () => {
   const buildBulkWhatsAppMessage = (clientName: string, items: any[]) => {
     const pix = (profile as any)?.pix_key;
     const portalUrl = `${window.location.origin}/portal-cliente`;
-    const lines = items.map((i: any) =>
-      `Parcela ${i.installment_number} — R$ ${fmt(Number(i.amount))} — venceu ${formatBR(i.due_date)}`
-    ).join("\n");
-    const total = items.reduce((s: number, i: any) => s + Number(i.amount), 0);
+    let total = 0;
+    let totalFees = 0;
+    const lines = items.map((i: any) => {
+      const bd = computeLateFeeBreakdown(i);
+      const paid = Number(i.paid_amount || 0);
+      const due = Math.max(0, Math.round((bd.withFees - paid) * 100) / 100);
+      total += due;
+      totalFees += bd.total;
+      const extra = bd.total > 0 ? ` (parcela R$ ${fmt(bd.base)} + juros R$ ${fmt(bd.total)} · ${bd.daysLate}d)` : "";
+      return `Parcela ${i.installment_number} — R$ ${fmt(due)} — venceu ${formatBR(i.due_date)}${extra}`;
+    }).join("\n");
+    const feesBlock = totalFees > 0 ? `\nJuros de atraso: R$ ${fmt(totalFees)}` : "";
     const pixBlock = pix ? `\n\nPIX: ${pix}` : "";
-    return `*Aviso de pagamento*\n${clientName}\n${lines}\nTotal: R$ ${fmt(total)}${pixBlock}\n\nPortal: ${portalUrl}`;
+    return `*Aviso de pagamento*\n${clientName}\n${lines}${feesBlock}\n*Total atualizado: R$ ${fmt(total)}*${pixBlock}\n\nPortal: ${portalUrl}`;
+
   };
 
   const handleBulk = (channel: "whatsapp" | "email") => {
@@ -719,10 +740,20 @@ const Cobrancas = () => {
     const clean = phone.replace(/\D/g, "");
     const num = clean.startsWith("55") ? clean : `55${clean}`;
     const unpaid = group.items.filter((i: any) => i.status !== "paid");
-    const lines = unpaid.map((i: any) => `- Parcela #${i.installment_number} · R$ ${fmt(Number(i.amount))} (venc. ${formatBR(i.due_date)})`).join("\n");
-    const total = unpaid.reduce((s: number, i: any) => s + Number(i.amount), 0);
+    let total = 0;
+    let totalFees = 0;
+    const lines = unpaid.map((i: any) => {
+      const bd = computeLateFeeBreakdown(i);
+      const paid = Number(i.paid_amount || 0);
+      const due = Math.max(0, Math.round((bd.withFees - paid) * 100) / 100);
+      total += due;
+      totalFees += bd.total;
+      const extra = bd.total > 0 ? ` [parcela R$ ${fmt(bd.base)} + juros R$ ${fmt(bd.total)} · ${bd.daysLate}d]` : "";
+      return `- Parcela #${i.installment_number} · R$ ${fmt(due)} (venc. ${formatBR(i.due_date)})${extra}`;
+    }).join("\n");
     const portalUrl = `${window.location.origin}/portal-cliente`;
-    const msg = `Olá ${group.client_name}, tudo bem?\n\nIdentificamos ${unpaid.length} parcelas pendentes totalizando R$ ${fmt(total)}:\n${lines}\n\nVocê pode regularizar via PIX ou pelo portal: ${portalUrl}`;
+    const feesBlock = totalFees > 0 ? `\nJuros de atraso incluídos: R$ ${fmt(totalFees)}` : "";
+    const msg = `Olá ${group.client_name}, tudo bem?\n\nIdentificamos ${unpaid.length} parcelas pendentes totalizando R$ ${fmt(total)}:\n${lines}${feesBlock}\n\nVocê pode regularizar via PIX ou pelo portal: ${portalUrl}`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
