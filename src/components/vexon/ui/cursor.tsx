@@ -35,7 +35,7 @@ type CursorProviderProps = React.ComponentProps<'div'> & {
   children: React.ReactNode;
 };
 
-function CursorProvider({ ref, children, ...props }: CursorProviderProps) {
+const CursorProvider = React.forwardRef<HTMLDivElement, CursorProviderProps>(function CursorProvider({ children, ...props }, ref) {
   const [cursorPos, setCursorPos] = React.useState({ x: 0, y: 0 });
   const [isActive, setIsActive] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -77,13 +77,13 @@ function CursorProvider({ ref, children, ...props }: CursorProviderProps) {
       </div>
     </CursorContext.Provider>
   );
-}
+});
 
 type CursorProps = HTMLMotionProps<'div'> & {
   children: React.ReactNode;
 };
 
-function Cursor({ ref, children, className, style, ...props }: CursorProps) {
+const Cursor = React.forwardRef<HTMLDivElement, CursorProps>(function Cursor({ children, className, style, ...props }, ref) {
   const { cursorPos, isActive, containerRef, cursorRef } = useCursor();
   React.useImperativeHandle(ref, () => cursorRef.current as HTMLDivElement);
 
@@ -126,7 +126,7 @@ function Cursor({ ref, children, className, style, ...props }: CursorProps) {
       )}
     </AnimatePresence>
   );
-}
+});
 
 type Align =
   | 'top'
@@ -146,8 +146,7 @@ type CursorFollowProps = HTMLMotionProps<'div'> & {
   children: React.ReactNode;
 };
 
-function CursorFollow({
-  ref,
+const CursorFollow = React.forwardRef<HTMLDivElement, CursorFollowProps>(function CursorFollow({
   sideOffset = 15,
   align = 'bottom-right',
   children,
@@ -155,7 +154,7 @@ function CursorFollow({
   style,
   transition = { stiffness: 500, damping: 50, bounce: 0 },
   ...props
-}: CursorFollowProps) {
+}, ref) {
   const { cursorPos, isActive, cursorRef } = useCursor();
   const cursorFollowRef = React.useRef<HTMLDivElement>(null);
   React.useImperativeHandle(
@@ -242,7 +241,7 @@ function CursorFollow({
       )}
     </AnimatePresence>
   );
-}
+});
 
 export {
   CursorProvider,
