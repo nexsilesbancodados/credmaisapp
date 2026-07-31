@@ -6,7 +6,7 @@ import {
   motion,
   TargetAndTransition,
   Variants,
-} from 'motion/react';
+} from 'framer-motion';
 import React from 'react';
 
 type PresetType = 'blur' | 'shake' | 'scale' | 'fade' | 'slide';
