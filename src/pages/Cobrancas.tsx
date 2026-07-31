@@ -316,21 +316,32 @@ const Cobrancas = () => {
     const total = inst.contracts?.num_installments || inst.total_installments || "";
     const parcelaInfo = total ? `${inst.installment_number}/${total}` : `${inst.installment_number}`;
     const nome = inst.client_name || "";
-    const valor = Number(inst.amount).toFixed(2);
+    const bd = computeLateFeeBreakdown(inst);
+    const paid = Number(inst.paid_amount || 0);
+    const valorAtualizado = Math.max(0, Math.round((bd.withFees - paid) * 100) / 100);
+    const valor = fmt(valorAtualizado);
     const data = formatBR(inst.due_date);
+    const feeLine = bd.total > 0
+      ? `Parcela: R$ ${fmt(bd.base)}\nJuros de atraso (${bd.jurosPct}% ao dia · ${bd.daysLate} dia${bd.daysLate !== 1 ? "s" : ""}): R$ ${fmt(bd.total)}\n*Total atualizado: R$ ${valor}*`
+      : `Valor: R$ ${valor}`;
     const customTemplate = profile?.billing_message;
     let base: string;
     if (customTemplate) {
       base = customTemplate
         .replace(/\{nome\}|\[Nome do Cliente\]/g, nome)
         .replace(/\{parcela\}|\[Parcela\]/g, parcelaInfo)
+        .replace(/\{multa\}|\[Multa\]/g, fmt(bd.total))
+        .replace(/\{total\}|\[Total\]/g, valor)
         .replace(/\{valor\}|\[Valor da Parcela\]/g, valor)
         .replace(/\{data\}|\[Data\]/g, data)
         .replace(/\{portal\}|\[Portal\]/g, portalUrl)
         .replace(/\[Nome da Empresa\]/g, "CredMais App").replace(/Sr\(a\)\s*/g, "");
+      if (bd.total > 0 && !/juros|multa/i.test(customTemplate)) {
+        base += `\n\nJuros de atraso (${bd.jurosPct}% ao dia · ${bd.daysLate} dia${bd.daysLate !== 1 ? "s" : ""}): R$ ${fmt(bd.total)}\nTotal atualizado: R$ ${valor}`;
+      }
     } else {
       // Mensagem curta padrão
-      base = `*Aviso de pagamento*\n${nome}\nParcela ${parcelaInfo} — R$ ${valor}\nVenceu em ${data}\n\nPortal: ${portalUrl}`;
+      base = `*Aviso de pagamento*\n${nome}\nParcela ${parcelaInfo}\n${feeLine}\nVenceu em ${data}\n\nPortal: ${portalUrl}`;
     }
     const pix = (profile as any)?.pix_key;
     if (opts.includePix && pix && !/PIX/i.test(base)) {
@@ -338,6 +349,7 @@ const Cobrancas = () => {
     }
     return base;
   };
+
 
   const handleWhatsApp = (inst: any, opts: { withPix?: boolean } = {}) => {
     if (!inst.client_phone) { toast({ title: "Sem telefone", variant: "destructive" }); return; }
