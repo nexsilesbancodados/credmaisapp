@@ -295,12 +295,9 @@ export default function App() {
 
             {/* Right Column - Info & Actions */}
             <div className="flex flex-col justify-end gap-8 pt-12 md:gap-12 lg:col-span-4 pb-12 md:pb-20 translate-y-[58px]">
-               <motion.div variants={itemVariants} className="flex items-center justify-between">
+               <motion.div variants={itemVariants} className="flex items-center justify-start">
                   <div className="text-3xl font-light text-[#E6E6E6] tracking-tighter md:text-4xl">
                     ( <span className="font-mono font-bold">A</span> )
-                  </div>
-                  <div className="font-mono text-[10px] tracking-[0.2em] text-[#E6E6E6] md:text-[11px]">
-                    [ 001 / 003 ]
                   </div>
                </motion.div>
 
