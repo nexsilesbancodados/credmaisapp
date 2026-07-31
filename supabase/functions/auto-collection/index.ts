@@ -312,7 +312,8 @@ serve(async (req) => {
           const buildPrompt = (extraDiversity: string) => `Gere mensagem WhatsApp personalizada:
 CLIENTE: ${client.name}
 ${isPreDue ? `PARCELA VENCE EM ${daysUntilDue} DIA(S)` : `PARCELA EM ATRASO: ${daysOverdue} DIA(S)`}
-VALOR: R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
+VALOR TOTAL ATUALIZADO (com juros de atraso): R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
+${totalLateFees > 0 ? `JUROS DE ATRASO JÁ INCLUÍDOS: R$ ${totalLateFees.toFixed(2)} (4% ao dia) — SEMPRE informe o valor total atualizado com os juros.` : ""}
 SCORE: ${client.credit_score ?? 100}/100
 HISTÓRICO: ${paidCount}/${totalHist} pagas (${reliability}% confiabilidade)
 INTENÇÕES RECENTES:
