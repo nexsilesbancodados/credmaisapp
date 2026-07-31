@@ -1,203 +1,121 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck, Clock, MessageCircle, TrendingUp, TrendingDown } from "lucide-react";
-import heroTiger from "@/assets/hero-tiger.jpg";
+import { ArrowUpRight, ShieldCheck, Zap } from "lucide-react";
+import eagleHero from "@/assets/eagle-hero.jpg";
+import eagleMascot from "@/assets/eagle-mascot.png";
 import AnimatedNumber from "./AnimatedNumber";
-
-const heroChecks = [
-  { icon: ShieldCheck, label: "Pagamento seguro via Mercado Pago" },
-  { icon: Clock, label: "Pronto para usar em minutos" },
-  { icon: MessageCircle, label: "Suporte de gente de verdade" },
-];
-
-const rows = [
-  { name: "João Silva", info: "Parcela 3/10 · vence hoje", value: "R$ 1.200,00", ok: true },
-  { name: "Maria Souza", info: "Parcela 6/12 · pago", value: "R$ 850,00", ok: true },
-  { name: "Carlos Lima", info: "Parcela 2/8 · 3 dias em atraso", value: "R$ 1.040,00", ok: false },
-];
 
 const LandingHero = () => {
   return (
-    <section id="home" className="relative overflow-hidden pt-28 pb-14 lg:pt-36 lg:pb-24">
-      <div className="absolute inset-0 rule-grid opacity-[0.5] pointer-events-none" aria-hidden />
+    <section id="home" className="relative overflow-hidden pt-32 pb-16 lg:pt-40 lg:pb-24">
+      <div className="absolute inset-0 rule-grid opacity-70 pointer-events-none" aria-hidden />
       <motion.div
         aria-hidden
-        className="absolute -top-40 right-0 w-[520px] h-[520px] rounded-full bg-primary/10 blur-3xl pointer-events-none"
-        animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        aria-hidden
-        className="absolute -bottom-32 -left-24 w-[420px] h-[420px] rounded-full bg-primary/[0.07] blur-3xl pointer-events-none"
-        animate={{ scale: [1.1, 1, 1.1], opacity: [0.5, 0.9, 0.5] }}
-        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -top-32 left-1/2 -translate-x-1/2 w-[780px] h-[520px] rounded-full bg-primary/[0.10] blur-[120px] pointer-events-none"
+        animate={{ opacity: [0.55, 1, 0.55] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
       />
 
       <div className="container mx-auto px-5 sm:px-6 relative">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Coluna editorial */}
-          <div className="space-y-7 max-w-xl" data-hero>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              <span className="text-[11px] font-semibold text-primary uppercase tracking-[0.14em]">
-                Cobrança automática ativa
-              </span>
-            </span>
+        {/* Faixa superior editorial */}
+        <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
+          <span className="text-primary">Ed. 2026</span>
+          <span className="flex-1 gold-line" />
+          <span className="hidden sm:inline">Gestão de empréstimos</span>
+        </div>
 
-            <h1 className="text-[clamp(2.25rem,5vw,3.75rem)] font-bold leading-[1.08] text-foreground">
-              Gestão de empréstimos <span className="text-primary">inteligente</span> para o seu negócio.
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-end mt-8" data-hero>
+          <div className="lg:col-span-7 space-y-7">
+            <h1 className="font-editorial text-[clamp(2.8rem,7.5vw,5.5rem)] leading-[0.95] text-foreground">
+              A visão da <span className="gold-text italic">águia</span>
+              <br />
+              sobre cada real
+              <br />
+              que você empresta.
             </h1>
 
-            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-              Do contrato à última parcela: clientes, prazos, juros e cobrança automática no WhatsApp em um
-              só lugar. Você para de correr atrás de planilha e passa a enxergar cada real que tem a receber.
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl">
+              Contratos, parcelas, juros diários e cobrança automática no WhatsApp em uma única
+              plataforma. Você deixa a planilha e passa a operar com precisão.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   to="/checkout"
-                  className="group inline-flex w-full items-center justify-center gap-2 px-7 py-4 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/25 transition-shadow hover:shadow-xl hover:shadow-primary/30"
+                  className="group inline-flex w-full items-center justify-center gap-2 px-8 py-4 rounded-full bg-primary text-primary-foreground font-semibold"
                 >
                   Começar agora
-                  <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
+                  <ArrowUpRight size={18} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <a
-                  href="#pricing"
-                  className="inline-flex w-full items-center justify-center gap-2 px-7 py-4 rounded-xl bg-card border border-border font-semibold text-foreground transition-colors hover:border-primary/40"
+                  href="#features"
+                  className="inline-flex w-full items-center justify-center gap-2 px-8 py-4 rounded-full border border-border text-foreground font-semibold hover:border-primary/50 transition-colors"
                 >
-                  Ver planos e preços
+                  Ver a plataforma
                 </a>
               </motion.div>
             </div>
 
-            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3 pt-4">
-              {heroChecks.map(({ icon: Icon, label }) => (
-                <li key={label} className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                  <Icon size={15} className="text-primary flex-shrink-0" />
-                  <span>{label}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-wrap items-center gap-x-7 gap-y-3 pt-2 text-sm text-muted-foreground">
+              <span className="flex items-center gap-2">
+                <ShieldCheck size={15} className="text-primary" /> Pagamento via Mercado Pago
+              </span>
+              <span className="flex items-center gap-2">
+                <Zap size={15} className="text-primary" /> Ativo em minutos
+              </span>
+            </div>
           </div>
 
-          {/* Painel de prova do produto */}
-          <motion.div
-            className="relative"
-            data-hero-panel
-            initial={false}
-            whileHover={{ rotateX: -1.5, rotateY: 2 }}
-            transition={{ type: "spring", stiffness: 140, damping: 18 }}
-            style={{ transformPerspective: 1200 }}
-          >
-            <div className="relative rounded-[2rem] border border-border bg-gradient-to-br from-secondary to-card p-5 sm:p-7 space-y-5">
-              <div className="relative overflow-hidden rounded-2xl border border-border">
-                <motion.img
-                  src={heroTiger}
-                  alt="Tigre representando força e controle na gestão de empréstimos"
-                  width={1280}
-                  height={1280}
-                  className="w-full h-[180px] sm:h-[220px] object-cover object-center"
-                  initial={{ scale: 1.12 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 2.4, ease: [0.16, 1, 0.3, 1] }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/10 to-transparent" />
-                <p className="absolute bottom-3 left-4 font-editorial text-sm sm:text-base font-bold text-foreground">
-                  Força e controle na sua carteira
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-card border border-border p-5 sm:p-6 space-y-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-subtle font-semibold">
-                      Painel do dia
-                    </p>
-                    <p className="font-editorial text-lg font-bold text-foreground mt-1">Sua carteira hoje</p>
-                  </div>
-                  <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    Tempo real
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-border p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-subtle font-semibold">
-                      Recebido hoje
-                    </p>
-                    <AnimatedNumber
-                      value={15420}
-                      decimals={2}
-                      prefix="R$ "
-                      className="tnum block text-lg sm:text-xl font-bold text-foreground mt-1 whitespace-nowrap"
-                    />
-                    <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
-                      <motion.div
-                        className="h-full bg-primary"
-                        initial={{ width: 0 }}
-                        whileInView={{ width: "72%" }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-border p-4">
-                    <p className="text-[10px] uppercase tracking-wider text-subtle font-semibold">
-                      Inadimplência
-                    </p>
-                    <AnimatedNumber
-                      value={2.4}
-                      decimals={1}
-                      suffix="%"
-                      className="tnum block text-xl font-bold text-foreground mt-1"
-                    />
-                    <p className="flex items-center gap-1 text-[11px] text-primary mt-3 font-medium">
-                      <TrendingDown size={12} /> 0,8% este mês
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-border divide-y divide-border">
-                  {rows.map((row, i) => (
-                    <motion.div
-                      key={row.name}
-                      className="flex items-center justify-between gap-3 px-4 py-3"
-                      initial={{ opacity: 0, x: 14 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.5 + i * 0.12, duration: 0.5, ease: "easeOut" }}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{row.name}</p>
-                        <p className="text-[11px] text-subtle truncate">{row.info}</p>
-                      </div>
-                      <span
-                        className={`tnum text-sm font-semibold whitespace-nowrap flex-shrink-0 ${
-                          row.ok ? "text-foreground" : "text-destructive"
-                        }`}
-                      >
-                        {row.value}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl bg-secondary px-4 py-3">
-                  <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <TrendingUp size={14} className="text-primary" />
-                    Agente de IA no WhatsApp
-                  </span>
-                  <span className="tnum text-xs font-bold text-foreground whitespace-nowrap">
-                    142 mensagens · 98,2%
-                  </span>
-                </div>
-              </div>
+          {/* Retrato do mascote */}
+          <div className="lg:col-span-5" data-hero-panel>
+            <div className="relative rounded-[2rem] overflow-hidden border border-border">
+              <img
+                src={eagleHero}
+                alt="Águia sobrevoando gráficos financeiros"
+                width={1280}
+                height={960}
+                className="w-full h-[300px] sm:h-[400px] lg:h-[460px] object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/25 to-transparent" />
+              <img
+                src={eagleMascot}
+                alt=""
+                aria-hidden
+                width={96}
+                height={96}
+                loading="lazy"
+                className="absolute top-5 left-5 w-14 h-14 object-contain opacity-90"
+              />
+              <p className="absolute bottom-5 left-6 right-6 font-editorial text-xl text-foreground">
+                Nada passa despercebido.
+              </p>
             </div>
-          </motion.div>
+          </div>
+        </div>
+
+        {/* Números */}
+        <div className="mt-14 grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border border border-border rounded-2xl overflow-hidden">
+          {[
+            { value: 4, suffix: "% ao dia", label: "Juros de atraso automáticos", decimals: 0 },
+            { value: 98.2, suffix: "%", label: "Entrega das cobranças", decimals: 1 },
+            { value: 142, suffix: "", label: "Mensagens enviadas por dia", decimals: 0 },
+            { value: 2.4, suffix: "%", label: "Inadimplência média", decimals: 1 },
+          ].map((stat) => (
+            <div key={stat.label} className="p-5 sm:p-6">
+              <AnimatedNumber
+                value={stat.value}
+                decimals={stat.decimals}
+                suffix={stat.suffix}
+                className="tnum block font-editorial text-2xl sm:text-3xl text-primary"
+              />
+              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground mt-2 leading-relaxed">
+                {stat.label}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
