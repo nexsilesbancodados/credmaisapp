@@ -8,6 +8,7 @@ import eagleMascot from "@/assets/eagle-mascot.png";
 const navLinks = [
   { name: "Manifesto", href: "#home" },
   { name: "Plataforma", href: "#features" },
+  { name: "Por que", href: "#why" },
   { name: "Planos", href: "#pricing" },
   { name: "Dúvidas", href: "#faq" },
 ];
