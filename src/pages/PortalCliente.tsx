@@ -197,12 +197,13 @@ const PortalCliente = () => {
       .on(
         "postgres_changes" as any,
         { event: "*", schema: "public", table: "contract_installments", filter: `client_id=eq.${clientId}` },
-        () => {
-          const cleanCpf = (portalData.client.cpf_cnpj || "").replace(/\D/g, "");
-          if (cleanCpf) {
-            void doLogin(cleanCpf, true);
-          }
-        },
+          () => {
+            const cleanCpf = (portalData.client.cpf_cnpj || "").replace(/\D/g, "");
+            const bd = portalData.client.birth_date || "";
+            if (cleanCpf) {
+              void doLogin(cleanCpf, bd, true);
+            }
+          },
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
