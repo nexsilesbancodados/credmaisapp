@@ -580,7 +580,7 @@ const PortalCliente = () => {
                 <div className="grid grid-cols-3 gap-2 pt-2">
                   {[
                     { icon: Lock, label: "Criptografado" },
-                    { icon: Shield, label: "Acesso por CPF" },
+                    { icon: Shield, label: "CPF + data de nascimento" },
                     { icon: BadgeCheck, label: "LGPD" },
                   ].map(({ icon: I, label }) => (
                     <div key={label} className="flex flex-col items-center gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] px-2 py-3 text-center">
