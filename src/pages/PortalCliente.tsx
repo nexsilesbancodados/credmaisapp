@@ -177,9 +177,11 @@ const PortalCliente = () => {
     try {
       const parsed = JSON.parse(saved);
       const c = parsed?.cpf;
+      const bd = parsed?.birth_date;
       if (c) {
         setCpf(c);
-        void doLogin(c, true);
+        if (bd) setBirthDate(bd);
+        void doLogin(c, bd || "", true);
       }
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
