@@ -41,29 +41,36 @@ export default function Index() {
       <Grain />
       <SiteHeader />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-52 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full opacity-[0.35] blur-[130px]"
-          style={{ background: "radial-gradient(circle,#1B6EF3 0%,transparent 68%)" }}
+      {/* Hero — logo em tela cheia */}
+      <section className="relative min-h-[92vh] overflow-hidden">
+        <img
+          src={heroLogoWide.url}
+          alt="CredMais App — mascote águia azul"
+          width={1920}
+          height={1080}
+          className="absolute inset-0 h-full w-full object-cover"
+          loading="eager"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.09]"
+          className="absolute inset-0"
           style={{
-            backgroundImage:
-              "linear-gradient(to right,#7FB2FF 1px,transparent 1px),linear-gradient(to bottom,#7FB2FF 1px,transparent 1px)",
-            backgroundSize: "72px 72px",
-            maskImage: "radial-gradient(ellipse at 50% 0%,black 0%,transparent 72%)",
-            WebkitMaskImage: "radial-gradient(ellipse at 50% 0%,black 0%,transparent 72%)",
+            background:
+              "linear-gradient(90deg,#050B18 0%,#050B18cc 38%,transparent 62%,#050B18cc 100%)",
           }}
         />
-
-        <div className="relative mx-auto grid w-full max-w-[1160px] items-center gap-14 px-5 pb-24 pt-16 md:grid-cols-[1.05fr_0.95fr] md:pt-28">
-          <div>
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg,transparent 0%,transparent 55%,#050B18 100%)",
+          }}
+        />
+        <div className="relative mx-auto grid w-full max-w-[1160px] min-h-[92vh] items-center px-5 pb-24 pt-32 md:pt-24">
+          <div className="max-w-xl">
             <Eyebrow>Gestão de empréstimos pessoais</Eyebrow>
-            <h1 className="font-display mt-7 text-[clamp(2.4rem,7.2vw,4.4rem)] font-semibold leading-[0.98] tracking-[-0.035em]">
+            <h1 className="font-display mt-7 text-[clamp(2.6rem,7.5vw,4.8rem)] font-semibold leading-[0.98] tracking-[-0.035em] text-shadow-hero">
               Empreste com
               <br />
               controle.
@@ -72,7 +79,7 @@ export default function Index() {
                 Receba em dia.
               </span>
             </h1>
-            <p className="mt-7 max-w-md text-[15px] leading-[1.75] text-white/55 md:text-[17px]">
+            <p className="mt-7 max-w-md text-[16px] leading-[1.75] text-white/75 md:text-[18px]">
               O CredMais organiza sua carteira, calcula os juros de atraso e cobra por você no WhatsApp.
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -85,50 +92,17 @@ export default function Index() {
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center rounded-full border border-white/15 px-7 py-4 text-sm font-medium text-white/75 transition-colors hover:border-white/35 hover:text-white"
+                className="inline-flex items-center justify-center rounded-full border border-white/25 px-7 py-4 text-sm font-medium text-white/90 transition-colors hover:border-white/50 hover:bg-white/10 hover:text-white"
               >
                 Já sou cliente
               </Link>
             </div>
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-white/35">
+            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-white/50">
               <span>Sem instalar nada</span>
-              <span className="h-1 w-1 rounded-full bg-white/20" />
+              <span className="h-1 w-1 rounded-full bg-white/25" />
               <span>Celular, tablet e computador</span>
-              <span className="h-1 w-1 rounded-full bg-white/20" />
+              <span className="h-1 w-1 rounded-full bg-white/25" />
               <span>Cancele quando quiser</span>
-            </div>
-          </div>
-
-          {/* Logo + painel realista */}
-          <div className="relative mx-auto w-full max-w-[420px]">
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 rounded-full opacity-60 blur-[70px]"
-              style={{ background: "radial-gradient(circle,#1B6EF3 0%,transparent 70%)" }}
-            />
-            <img
-              src={logo}
-              alt="Logo CredMais App: mascote águia azul"
-              className="w-full rounded-full"
-              loading="eager"
-            />
-            <div className="relative z-10 mx-auto -mt-4 w-[248px] rounded-2xl border border-white/10 bg-[#08132A]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-md md:mx-0 md:-mt-10 md:-ml-6">
-              <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Cobranças de hoje</div>
-              <div className="mt-3 space-y-2.5">
-                {[
-                  ["Ana P.", "em dia", "text-[#4ADE80]"],
-                  ["Marcos S.", "2 dias", "text-[#FBBF24]"],
-                  ["Julio R.", "pago", "text-white/45"],
-                ].map(([nome, status, cor]) => (
-                  <div key={nome} className="flex items-center justify-between text-[12px]">
-                    <span className="text-white/75">{nome}</span>
-                    <span className={cor}>{status}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 border-t border-white/10 pt-3 text-[12px] text-white/45">
-                Mensagens enviadas <span className="text-white">automático</span>
-              </div>
             </div>
           </div>
         </div>
