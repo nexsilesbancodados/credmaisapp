@@ -251,7 +251,7 @@ const PortalCliente = () => {
     };
   }, [portalData]);
 
-  const doLogin = async (cleanCpf: string, silent = false) => {
+  const doLogin = async (cleanCpf: string, birthDateInput: string, silent = false) => {
     if (!silent) {
       const block = isPortalLoginBlocked();
       if (block.blocked) {
@@ -265,8 +265,9 @@ const PortalCliente = () => {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("portal_client_login_cpf" as never, {
+      const { data, error } = await supabase.rpc("portal_client_login" as never, {
         _cpf: cleanCpf,
+        _birth_date: birthDateInput,
       } as never);
 
       if (error) {
@@ -281,14 +282,14 @@ const PortalCliente = () => {
       if (!data) {
         if (!silent) {
           recordPortalLoginAttempt(false);
-          toast({ title: "CPF não encontrado", description: "Confira os dígitos e tente novamente.", variant: "destructive" });
+          toast({ title: "CPF ou data de nascimento não encontrados", description: "Confira os dados e tente novamente.", variant: "destructive" });
         }
         sessionStorage.removeItem(SESSION_KEY);
         return;
       }
 
       setPortalData(data as unknown as PortalData);
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cpf: cleanCpf }));
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ cpf: cleanCpf, birth_date: birthDateInput }));
       if (!silent) {
         recordPortalLoginAttempt(true);
         toast({ title: "Acesso autorizado!" });
