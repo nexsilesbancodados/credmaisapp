@@ -43,10 +43,10 @@ function buildEmail(kind: "upcoming" | "paid" | "settled", args: any) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  // SEGURANÇA (M4): cron protegido por segredo. FAIL-SAFE: só exige quando
-  // CRON_SECRET estiver configurado nos secrets (senão apenas roda, como antes).
-  if (Deno.env.get("CRON_SECRET") &&
-      (req.headers.get("x-cron-secret") ?? new URL(req.url).searchParams.get("secret") ?? "") !== Deno.env.get("CRON_SECRET")) {
+  // SEGURANÇA (M4): cron protegido por segredo obrigatório.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const providedSecret = req.headers.get("x-cron-secret") ?? new URL(req.url).searchParams.get("secret") ?? "";
+  if (!cronSecret || providedSecret !== cronSecret) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
