@@ -118,7 +118,7 @@ const PortalCliente = () => {
   useEffect(() => {
     if (!helpOpen || portalData) return;
     const clean = onlyDigits(cpf);
-    if (clean.length !== 11 || !isValidCPF(clean)) {
+    if (clean.length !== 11 || !isValidCPF(clean) || !birthDate) {
       setHelpContact(null);
       return;
     }
@@ -126,7 +126,7 @@ const PortalCliente = () => {
     setHelpContactLoading(true);
     (async () => {
       try {
-        const { data } = await (supabase as any).rpc("portal_lookup_creditor_contact", { _cpf: clean });
+        const { data } = await (supabase as any).rpc("portal_lookup_creditor_contact", { _cpf: clean, _birth_date: birthDate });
         if (!cancelled) setHelpContact(data || null);
       } catch {
         if (!cancelled) setHelpContact(null);
@@ -135,7 +135,7 @@ const PortalCliente = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [helpOpen, cpf, portalData]);
+  }, [helpOpen, cpf, birthDate, portalData]);
 
   // Auto re-login from saved CPF on mount + isolamento absoluto do app do credor
   useEffect(() => {
