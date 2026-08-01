@@ -111,7 +111,7 @@ export default function Index() {
               className="w-full rounded-full"
               loading="eager"
             />
-            <div className="absolute -bottom-6 -left-2 w-[240px] rounded-2xl border border-white/10 bg-[#08132A]/90 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-md sm:-left-8">
+            <div className="relative z-10 mx-auto -mt-4 w-[248px] rounded-2xl border border-white/10 bg-[#08132A]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-md md:mx-0 md:-mt-10 md:-ml-6">
               <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Cobranças de hoje</div>
               <div className="mt-3 space-y-2.5">
                 {[
