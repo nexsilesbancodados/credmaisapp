@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Check, MessageCircle, Percent, ShieldCheck, Wallet } from "lucide-react";
 import { SiteHeader, SiteFooter, Card } from "@/components/site/SiteLayout";
 import { PLAN_LIST } from "@/lib/plans";
-import logo from "@/assets/credmais-logo.jpeg.asset.json";
+import logo from "@/assets/credmais-logo.jpg";
 
 const FEATURES = [
   { icon: Wallet, t: "Clientes e contratos", d: "Cadastro em etapas, parcelas geradas automaticamente e histórico completo de cada cliente." },
@@ -61,7 +61,7 @@ export default function Index() {
 
           <div className="flex justify-center">
             <img
-              src={logo.url}
+              src={logo}
               alt="Logo CredMais App: mascote águia azul"
               className="w-full max-w-sm rounded-full shadow-[0_0_80px_rgba(27,110,243,0.35)]"
               loading="eager"

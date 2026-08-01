@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import logo from "@/assets/credmais-logo.jpeg.asset.json";
+import logo from "@/assets/credmais-logo.jpg";
 
 const NAV = [
   { to: "/inteligencia", label: "Cobrança" },
@@ -18,7 +18,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050B18]/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5">
         <Link to="/" className="flex items-center gap-3">
-          <img src={logo.url} alt="CredMais App" className="h-9 w-9 rounded-full" loading="eager" />
+          <img src={logo} alt="CredMais App" className="h-9 w-9 rounded-full" loading="eager" />
           <span className="font-display text-base font-semibold tracking-tight text-white">
             Cred<span className="text-[#3B8DFF]">Mais</span>
           </span>
@@ -89,7 +89,7 @@ export function SiteFooter() {
     <footer className="border-t border-white/10 bg-[#050B18] px-5 py-12">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <img src={logo.url} alt="" className="h-8 w-8 rounded-full" loading="lazy" />
+          <img src={logo} alt="" className="h-8 w-8 rounded-full" loading="lazy" />
           <div>
             <div className="font-display text-sm font-semibold text-white">CredMais App</div>
             <div className="text-xs text-white/40">Gestão de empréstimos e cobrança</div>
