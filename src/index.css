@@ -263,6 +263,10 @@
     box-shadow: var(--shadow-glow);
   }
 
+  .text-shadow-hero {
+    text-shadow: 0 2px 24px rgba(5, 11, 24, 0.85), 0 1px 4px rgba(5, 11, 24, 0.6);
+  }
+
   /* Action button surfaces (Fase 1 UX) */
   .btn-action {
     background: var(--gradient-action);
