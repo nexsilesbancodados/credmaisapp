@@ -310,6 +310,7 @@ const PortalCliente = () => {
   const handleAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     setCpfTouched(true);
+    setBirthTouched(true);
     const cleanCpf = onlyDigits(cpf);
     if (!cleanCpf) {
       setCpfError("Informe seu CPF para continuar.");
@@ -326,8 +327,14 @@ const PortalCliente = () => {
       toast({ title: "CPF inválido", description: "Os dígitos verificadores não conferem.", variant: "destructive" });
       return;
     }
+    if (!birthDate) {
+      setBirthError("Informe sua data de nascimento.");
+      toast({ title: "Data de nascimento obrigatória", description: "Digite sua data de nascimento para acessar.", variant: "destructive" });
+      return;
+    }
     setCpfError(null);
-    await doLogin(cleanCpf, false);
+    setBirthError(null);
+    await doLogin(cleanCpf, birthDate, false);
   };
 
   const handleLogout = async () => {
