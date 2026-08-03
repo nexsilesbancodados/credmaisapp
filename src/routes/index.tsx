@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Smartphone, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const MobileFunctionsAlert = () => {
