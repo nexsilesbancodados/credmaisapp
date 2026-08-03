@@ -151,6 +151,9 @@ const App = () => (
                   <Route path="/checkout/pendente" element={<CheckoutPendente />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/portal-cliente" element={<PortalCliente />} />
+                  {/* Alias público usado nas mensagens de cobrança/WhatsApp (?t=token) */}
+                  <Route path="/portal" element={<PortalCliente />} />
+                  <Route path="/portal/*" element={<PortalCliente />} />
                   <Route path="/investidor/:token" element={<PortalInvestidor />} />
                   <Route path="/privacidade" element={<Privacidade />} />
                   <Route path="/cobrador-externo" element={<CobradorExterno />} />
