@@ -9,7 +9,7 @@ const MobileFunctionsAlert = () => {
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle className="font-bold">Aviso de Compatibilidade</AlertTitle>
         <AlertDescription className="text-xs opacity-90">
-          funcinnalidade de pagar parcela no celular n funciona assim como outrras.
+          em pagar parcela do cliente no celukar n consigo clicar no botao confirmar.
           Estamos trabalhando para otimizar sua experiência.
         </AlertDescription>
       </Alert>
