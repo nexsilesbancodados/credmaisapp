@@ -142,10 +142,10 @@ const MobileBottomNav = () => {
       {showMore && (
         <>
           <div
-            className="fixed inset-0 bg-background/70 backdrop-blur-sm z-40 animate-fade-in"
+            className="fixed inset-0 bg-background/70 backdrop-blur-sm z-[28] animate-fade-in"
             onClick={() => setShowMore(false)}
           />
-          <div className="fixed left-0 right-0 z-50 px-3 pb-2 animate-slide-up" style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}>
+          <div className="fixed left-0 right-0 z-[31] px-3 pb-2 animate-slide-up" style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))" }}>
             <div className="glass-strong rounded-2xl border border-border/40 p-4 max-h-[70vh] overflow-y-auto shadow-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-foreground">Menu Completo</h3>
@@ -207,11 +207,11 @@ const MobileBottomNav = () => {
       {/* FAB - Ações rápidas */}
       {showFab && (
         <div
-          className="fixed inset-0 z-40 bg-background/40 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[28] bg-background/40 backdrop-blur-sm animate-fade-in"
           onClick={() => setShowFab(false)}
         />
       )}
-      <div className="fixed right-4 z-50 flex flex-col items-end gap-2.5" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
+      <div className="fixed right-4 z-30 flex flex-col items-end gap-2.5" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
         {showFab && fabActions.map((a, i) => (
           <button
             key={a.label}
@@ -234,7 +234,7 @@ const MobileBottomNav = () => {
 
       {/* Bottom nav */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border/40"
+        className="fixed bottom-0 left-0 right-0 z-30 glass-strong border-t border-border/40"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-stretch justify-around px-1.5 pt-1 pb-1">

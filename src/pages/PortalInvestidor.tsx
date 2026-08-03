@@ -219,7 +219,7 @@ export default function PortalInvestidor() {
 
       {/* Modal ajuda */}
       {helpOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={() => setHelpOpen(false)}>
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/70 p-4" onClick={() => setHelpOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6" onClick={(e) => e.stopPropagation()}>
             <h4 className="font-heading text-lg font-bold">Precisa de ajuda?</h4>
             <p className="mt-1 text-xs text-white/60">Fale diretamente com o credor:</p>

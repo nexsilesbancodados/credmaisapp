@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { ModalPortal } from "@/components/ui/modal-portal";
 import { CheckCircle, CalendarDays, AlertTriangle } from "lucide-react";
 import { formatBR } from "@/lib/dateUtils";
 import type { LateFeeBreakdown } from "@/lib/lateFee";
@@ -29,8 +30,9 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
 
   return (
+    <ModalPortal>
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-background/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center bg-background/80 backdrop-blur-sm"
       onClick={onCancel}
     >
       <div
@@ -151,6 +153,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };
 

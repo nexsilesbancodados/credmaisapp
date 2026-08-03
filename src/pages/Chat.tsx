@@ -1106,7 +1106,7 @@ const Chat = () => {
 
       {/* Create channel modal */}
       {showCreateChannel && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-background/60 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain" onClick={() => setShowCreateChannel(false)}>
+        <div className="fixed inset-0 z-[90] flex items-start sm:items-center justify-center bg-background/60 backdrop-blur-sm p-4 overflow-y-auto overscroll-contain" onClick={() => setShowCreateChannel(false)}>
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm my-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Plus size={18} className="text-primary" /> Novo canal

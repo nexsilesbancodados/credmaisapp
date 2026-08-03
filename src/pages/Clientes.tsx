@@ -643,8 +643,8 @@ const Clientes = () => {
 
       {/* ─── Import CSV Modal ──────────────────────────────── */}
       {importOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-start sm:items-center justify-center p-4 overflow-y-auto overscroll-contain" onClick={() => { setImportOpen(false); setImportPreview(null); }}>
-          <div className="bg-card border border-border rounded-2xl max-w-3xl w-full sm:max-h-[90vh] my-auto overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[90] bg-black/60 flex items-start sm:items-center justify-center p-4 overflow-y-auto overscroll-contain" onClick={() => { setImportOpen(false); setImportPreview(null); }}>
+          <div className="bg-card border border-border rounded-2xl max-w-3xl w-full sm:max-h-[90dvh] my-auto overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet size={18} className="text-primary" />
