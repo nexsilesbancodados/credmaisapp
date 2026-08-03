@@ -314,7 +314,7 @@ export default function Checkout() {
       </div>
       <div
         className="pointer-events-none fixed inset-0 z-0"
-        style={{ background: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.14), transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,0,0,0.85), transparent 60%)" }}
+        style={{ background: "radial-gradient(circle at 50% 0%, rgba(201,168,76,0.1), transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,0,0,0.95), transparent 60%)" }}
       />
       <motion.div
         initial={{ opacity: 0, y: 24, filter: "blur(12px)" }}
