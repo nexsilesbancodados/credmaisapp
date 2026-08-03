@@ -232,7 +232,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
 
       {/* Mobile: compact financial strip */}
       {isMobile && (
-        <div className="flex items-center gap-1.5 px-3 pb-2 -mt-1 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-2 px-3 pb-3 -mt-1 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             onClick={() => navigate("/carteira")}
             className="flex items-center gap-1.5 pl-1.5 pr-3 h-8 rounded-full bg-primary/10 border border-primary/20 shrink-0 active:scale-95 transition-transform"
