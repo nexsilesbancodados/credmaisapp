@@ -430,7 +430,7 @@ const PortalCliente = () => {
           />
         </>
       )}
-      <div className="portal-content relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 py-10 md:p-8">
+      <div className="portal-content relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl items-center justify-center p-4 pt-10 pb-[calc(2.5rem+env(safe-area-inset-bottom))] md:p-8">
         {!portalData ? (
           justLoggedOut ? (
             /* ═══════════ TELA PÓS-LOGOUT ═══════════ */
