@@ -157,7 +157,7 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-3xl bg-card shadow-2xl"
+        className="relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-3xl bg-card shadow-2xl pb-[max(2rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
