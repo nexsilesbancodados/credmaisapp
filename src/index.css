@@ -214,6 +214,7 @@
 
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 80px;
     overflow-x: hidden;
     overflow-y: auto;
     /* Momentum scroll nativo em iOS */
