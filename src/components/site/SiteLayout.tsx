@@ -38,8 +38,8 @@ export function SiteHeader() {
   const { pathname } = useLocation();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#050B18]/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-[68px] w-full max-w-[1160px] items-center justify-between px-5">
+    <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#050B18]/80 backdrop-blur-xl transition-all duration-300">
+      <div className="mx-auto flex h-[68px] w-full max-w-[1160px] items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="group flex items-center gap-3">
           <img
             src={logo}

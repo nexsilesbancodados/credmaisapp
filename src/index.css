@@ -177,6 +177,9 @@
     /* Deixa o scroll acontecer no <html> para evitar container duplo
        (que trava a rolagem em iOS/Android WebView). */
     overflow-y: visible;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* background-attachment: fixed causa jank e às vezes trava scroll em mobile.
