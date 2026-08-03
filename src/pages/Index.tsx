@@ -3,7 +3,7 @@ import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import { SiteHeader, SiteFooter, Card, Grain, Eyebrow } from "@/components/site/SiteLayout";
 import { PLAN_LIST } from "@/lib/plans";
 import logo from "@/assets/credmais-logo.jpg";
-import heroLogoWide from "@/assets/hero-logo-wide.jpg.asset.json";
+import heroEagle from "@/assets/hero-eagle-only.jpg";
 
 const FEATURES = [
   {
