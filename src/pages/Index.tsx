@@ -82,7 +82,7 @@ export default function Index() {
             <p className="mt-7 max-w-md text-[16px] leading-[1.75] text-white/75 md:text-[18px]">
               O CredMais organiza sua carteira, calcula os juros de atraso e cobra por você no WhatsApp.
             </p>
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
                 to="/checkout?plan=completo"
                 className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-semibold text-[#050B18] transition-all hover:-translate-y-[2px] hover:shadow-[0_14px_40px_rgba(123,178,255,0.28)]"
@@ -131,7 +131,7 @@ export default function Index() {
             {FEATURES.map((f) => (
               <div
                 key={f.n}
-                className="group grid grid-cols-1 gap-2 border-b border-white/[0.07] py-7 transition-colors hover:bg-white/[0.02] md:grid-cols-[70px_1fr_1.1fr] md:items-baseline md:gap-8 md:py-9"
+                className="group grid grid-cols-1 gap-4 border-b border-white/[0.07] py-7 transition-colors hover:bg-white/[0.02] md:grid-cols-[70px_1fr_1.1fr] md:items-baseline md:gap-8 md:py-9"
               >
                 <div className="font-mono text-[12px] text-[#3B8DFF]/80">{f.n}</div>
                 <h3 className="font-display text-[19px] font-medium tracking-[-0.01em] md:text-[22px]">{f.t}</h3>
