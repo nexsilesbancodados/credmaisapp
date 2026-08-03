@@ -67,10 +67,10 @@ export default function Index() {
               "linear-gradient(180deg,transparent 0%,transparent 55%,#050B18 100%)",
           }}
         />
-        <div className="relative mx-auto grid w-full max-w-[1160px] min-h-[92vh] items-center px-5 pb-24 pt-32 md:pt-24">
+        <div className="relative mx-auto grid w-full max-w-[1160px] min-h-[92vh] items-center px-4 sm:px-6 lg:px-8 pb-24 pt-32 md:pt-24">
           <div className="max-w-xl">
             <Eyebrow>Gestão de empréstimos pessoais</Eyebrow>
-            <h1 className="font-display mt-7 text-[clamp(2.6rem,7.5vw,4.8rem)] font-semibold leading-[0.98] tracking-[-0.035em] text-shadow-hero">
+            <h1 className="font-display mt-7 text-[clamp(2.4rem,8vw,4.8rem)] font-semibold leading-[1] tracking-[-0.035em] text-shadow-hero">
               Empreste com
               <br />
               controle.
@@ -109,7 +109,7 @@ export default function Index() {
       </section>
 
       {/* Features — lista editorial, sem grid de cards genérico */}
-      <section className="border-t border-white/[0.07] px-5 py-20 md:py-28">
+      <section className="border-t border-white/[0.07] px-4 sm:px-6 lg:px-8 py-20 md:py-28">
         <div className="mx-auto w-full max-w-[1160px]">
           <div className="md:flex md:items-end md:justify-between">
             <div>
@@ -143,7 +143,7 @@ export default function Index() {
       </section>
 
       {/* Como funciona — timeline */}
-      <section className="border-t border-white/[0.07] px-5 py-20 md:py-28">
+      <section className="border-t border-white/[0.07] px-4 sm:px-6 lg:px-8 py-20 md:py-28">
         <div className="mx-auto w-full max-w-[1160px]">
           <Eyebrow>Como funciona</Eyebrow>
           <h2 className="font-display mt-6 max-w-lg text-[clamp(1.7rem,4vw,2.8rem)] font-semibold leading-[1.06] tracking-[-0.03em]">
@@ -169,7 +169,7 @@ export default function Index() {
       </section>
 
       {/* Planos */}
-      <section className="border-t border-white/[0.07] px-5 py-20 md:py-28">
+      <section className="border-t border-white/[0.07] px-4 sm:px-6 lg:px-8 py-20 md:py-28">
         <div className="mx-auto w-full max-w-[1000px]">
           <Eyebrow>Planos</Eyebrow>
           <h2 className="font-display mt-6 text-[clamp(1.7rem,4vw,2.8rem)] font-semibold leading-[1.06] tracking-[-0.03em]">
@@ -225,7 +225,7 @@ export default function Index() {
       </section>
 
       {/* CTA final */}
-      <section className="relative overflow-hidden border-t border-white/[0.07] px-5 py-24">
+      <section className="relative overflow-hidden border-t border-white/[0.07] px-4 sm:px-6 lg:px-8 py-24">
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-[-260px] left-1/2 h-[460px] w-[860px] -translate-x-1/2 rounded-full opacity-40 blur-[120px]"
