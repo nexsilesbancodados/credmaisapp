@@ -157,7 +157,7 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-3xl bg-card shadow-2xl"
+        className="relative w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-3xl bg-card shadow-2xl pb-[max(2rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -250,7 +250,7 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
               <Button
                 onClick={handleCopyPix}
                 disabled={!pixPayload && !ownerProfile?.pix_key}
-                className="w-full rounded-xl py-6 text-base font-bold shadow-lg gap-2"
+                className="w-full rounded-2xl py-7 text-base font-bold shadow-lg gap-2 active:scale-[0.98] transition-all"
               >
                 {copied ? <Check size={18} /> : <Copy size={18} />}
                 {copied ? "Código copiado!" : "Copiar código PIX"}
@@ -260,7 +260,7 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
                 <Button
                   onClick={handleNotifyPaid}
                   variant="outline"
-                  className="w-full rounded-xl py-6 text-base font-semibold gap-2 border-success/40 text-success hover:bg-success/10 hover:text-success"
+                  className="w-full rounded-2xl py-7 text-base font-semibold gap-2 border-success/40 text-success hover:bg-success/10 hover:text-success active:scale-[0.98] transition-all"
                 >
                   <MessageCircle size={18} />
                   Já paguei — avisar credor no WhatsApp

@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import MobileFunctionsAlert from "@/routes/index";
+
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -66,12 +66,12 @@ const DashboardLayout = () => {
 
       <div className={`transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[76px]" : "ml-[260px]"}`}>
         <TopBar onSearchClick={() => setSearchOpen(true)} />
-        {isMobile && <MobileFunctionsAlert />}
+        
         <Breadcrumbs />
         <main
           className={`max-w-[1600px] mx-auto min-w-0 ${
             isMobile
-              ? "px-3 py-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))]"
+              ? "px-3 py-3 pb-[calc(7.5rem+env(safe-area-inset-bottom))]"
               : "px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-6 lg:px-8 lg:py-8"
           }`}
         >
