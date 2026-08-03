@@ -70,18 +70,6 @@ export default function Index() {
         <div className="relative mx-auto grid w-full max-w-[1160px] min-h-[92vh] items-center px-4 sm:px-6 lg:px-8 pb-24 pt-32 md:pt-24">
           <div className="max-w-xl">
             <Eyebrow>Gestão de empréstimos pessoais</Eyebrow>
-            <h1 className="font-display mt-7 text-[clamp(2.4rem,8vw,4.8rem)] font-semibold leading-[1] tracking-[-0.035em] text-shadow-hero">
-              Empreste com
-              <br />
-              controle.
-              <br />
-              <span className="bg-gradient-to-r from-[#3B8DFF] via-[#6FB0FF] to-[#3B8DFF] bg-clip-text text-transparent">
-                Receba em dia.
-              </span>
-            </h1>
-            <p className="mt-7 max-w-md text-[16px] leading-[1.75] text-white/75 md:text-[18px]">
-              O CredMais organiza sua carteira, calcula os juros de atraso e cobra por você no WhatsApp.
-            </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
                 to="/checkout?plan=completo"
