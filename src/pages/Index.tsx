@@ -3,7 +3,7 @@ import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import { SiteHeader, SiteFooter, Card, Grain, Eyebrow } from "@/components/site/SiteLayout";
 import { PLAN_LIST } from "@/lib/plans";
 import logo from "@/assets/credmais-logo.jpg";
-import heroLogoWide from "@/assets/hero-logo-wide.jpg.asset.json";
+import heroEagle from "@/assets/hero-eagle-only.jpg";
 
 const FEATURES = [
   {
@@ -41,14 +41,14 @@ export default function Index() {
       <Grain />
       <SiteHeader />
 
-      {/* Hero — logo em tela cheia */}
+      {/* Hero — águia em tela cheia, CTA no espaço livre à esquerda */}
       <section className="relative min-h-[92vh] overflow-hidden">
         <img
-          src={heroLogoWide.url}
+          src={heroEagle}
           alt="CredMais App — mascote águia azul"
           width={1920}
           height={1080}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-right"
           loading="eager"
         />
         <div
@@ -56,7 +56,7 @@ export default function Index() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg,#050B18 0%,#050B18cc 38%,transparent 62%,#050B18cc 100%)",
+              "linear-gradient(90deg,#050B18 0%,#050B18ee 42%,transparent 70%,#050B18aa 100%)",
           }}
         />
         <div
@@ -70,7 +70,14 @@ export default function Index() {
         <div className="relative mx-auto grid w-full max-w-[1160px] min-h-[92vh] items-center px-4 sm:px-6 lg:px-8 pb-24 pt-32 md:pt-24">
           <div className="max-w-xl">
             <Eyebrow>Gestão de empréstimos pessoais</Eyebrow>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <h1 className="font-display mt-5 text-[clamp(2.4rem,6vw,4.2rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-shadow-hero">
+              Empreste com controle.
+              <br /> Receba em dia.
+            </h1>
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-white/70 text-shadow-hero">
+              O CredMais organiza sua carteira, calcula os juros de atraso e cobra por você no WhatsApp.
+            </p>
+            <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
                 to="/checkout?plan=completo"
                 className="group inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-semibold text-[#050B18] transition-all hover:-translate-y-[2px] hover:shadow-[0_14px_40px_rgba(123,178,255,0.28)]"
