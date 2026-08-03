@@ -308,8 +308,8 @@ export default function Checkout() {
 
   return (
     <div className="relative min-h-dvh w-full flex items-start justify-center py-6 px-4 md:px-8 overflow-hidden" style={{ backgroundColor: c.bg, ...body }}>
-      {/* Animated particle background (Vexon) */}
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-70">
+      {/* Reduced opacity particle background to ensure readability */}
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-20">
         <ParticleOrb className="h-full w-full" start />
       </div>
       <div
@@ -334,7 +334,7 @@ export default function Checkout() {
 
         {/* Stepper */}
         {step !== 3 && (
-          <div className="mb-6 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]">
+          <div className="mb-6 rounded-2xl bg-black/40 backdrop-blur-3xl border border-white/10 p-4 md:p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]">
             <div className="flex items-center justify-between gap-2">
               {STEPS.map((s, i) => {
                 const active = step === s.n;
@@ -384,7 +384,7 @@ export default function Checkout() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="w-full rounded-3xl overflow-hidden border border-white/10 bg-white/[0.03] backdrop-blur-2xl shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] flex flex-col md:flex-row"
+              className="w-full rounded-3xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-3xl shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] flex flex-col md:flex-row"
             >
               {/* Left — Plan summary */}
               <aside
