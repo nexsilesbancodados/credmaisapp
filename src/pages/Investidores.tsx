@@ -136,9 +136,6 @@ export default function Investidores() {
     void load();
   };
 
-  if (expandedId) {
-    return <InvestidorPerfil investorId={expandedId} onBack={() => { setExpandedId(null); void load(); }} />;
-  }
 
   // Enriched list: filter + sort + search
   const enriched = useMemo(() => {
