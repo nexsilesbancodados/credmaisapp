@@ -14,8 +14,8 @@ verify_jwt = false
 [functions.mercadopago-webhook]
 verify_jwt = false
 
-[functions.admin-create-lifetime]
-verify_jwt = false
+# admin-create-lifetime e admin-create-trial NÃO aparecem aqui de propósito:
+# ficam com verify_jwt = true (padrão) e ainda checam admin da plataforma no código.
 
 [functions.whatsapp-webhook]
 verify_jwt = false

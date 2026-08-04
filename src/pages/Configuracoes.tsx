@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { EssencialConfig } from "@/components/Configuracoes/EssencialConfig";
-import { AparenciaConfig } from "@/components/Configuracoes/AparenciaConfig";
+﻿import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import InstallAppCard from "@/components/InstallAppCard";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +24,7 @@ const COLOR_PRESETS = [
 
 const Configuracoes = () => {
   const confirm = useConfirm();
-  const { user, profile } = useAuth();
+  const { user, profile, isPlatformAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { refresh: refreshWhiteLabel } = useWhiteLabel();
@@ -97,8 +97,6 @@ const Configuracoes = () => {
     portal_contact_phone: "",
     portal_contact_email: "",
     custom_contract_template: "",
-    hubla_checkout_url: "",
-    hubla_webhook_token: "",
     modules_enabled: { ...DEFAULT_MODULES } as Record<ModuleKey, boolean>,
   });
 
@@ -158,8 +156,6 @@ const Configuracoes = () => {
         portal_contact_phone: s.portal_contact_phone || "",
         portal_contact_email: s.portal_contact_email || "",
         custom_contract_template: s.custom_contract_template || "",
-        hubla_checkout_url: s.hubla_checkout_url || "",
-        hubla_webhook_token: "", // never loaded from server; type new value to replace
         modules_enabled: { ...DEFAULT_MODULES, ...(s.modules_enabled || {}) },
       }));
     }
@@ -268,8 +264,10 @@ const Configuracoes = () => {
       portal_contact_phone: form.portal_contact_phone,
       portal_contact_email: form.portal_contact_email,
       custom_contract_template: form.custom_contract_template?.trim() || null,
-      hubla_checkout_url: form.hubla_checkout_url ? form.hubla_checkout_url.trim() : null,
-      // hubla_webhook_token intentionally omitted — saved via edge function settings-set-secret
+      // Nada de hubla_* aqui: a view `settings_safe` não expõe essas colunas, então
+      // o form as lia como "" e o save gravava NULL — apagando o link de checkout
+      // que `get_signup_checkout_url()` usava e derrubando novos cadastros.
+      // O link agora mora em `platform_settings` (/admin → Plataforma).
       modules_enabled: form.modules_enabled,
     };
     const { error } = settings
@@ -277,32 +275,31 @@ const Configuracoes = () => {
       : await supabase.from("settings").insert(payload);
 
     // Persist sensitive secrets via dedicated edge function (cols revoked from authenticated)
-    const secretsPayload: Record<string, string> = {};
     if (form.whatsapp_api_key && form.whatsapp_api_key.trim().length > 0) {
-      secretsPayload.whatsapp_api_key = form.whatsapp_api_key.trim();
-    }
-    if (form.hubla_webhook_token && form.hubla_webhook_token.trim().length > 0) {
-      secretsPayload.hubla_webhook_token = form.hubla_webhook_token.trim();
-    }
-    if (Object.keys(secretsPayload).length > 0) {
-      const { error: secErr } = await supabase.functions.invoke("settings-set-secret", { body: secretsPayload });
+      const { error: secErr } = await supabase.functions.invoke("settings-set-secret", {
+        body: { whatsapp_api_key: form.whatsapp_api_key.trim() },
+      });
       if (secErr) toast({ title: "Erro ao salvar segredos", description: secErr.message, variant: "destructive" });
       else {
         // Clear from local form so the masked placeholder reappears
-        setForm(prev => ({ ...prev, whatsapp_api_key: "", hubla_webhook_token: "" }));
+        setForm(prev => ({ ...prev, whatsapp_api_key: "" }));
       }
     }
 
     // Save PIX and billing message to profile
-    await supabase.from("profiles").update({
+    const { error: profileError } = await supabase.from("profiles").update({
       pix_key: form.pix_key.trim() || null,
       pix_key_type: form.pix_key_type,
       billing_message: form.billing_message.trim() || null,
     }).eq("id", user.id);
 
     setSaving(false);
-    if (error) toast({ ...friendlyError(error, "Não foi possível salvar as configurações."), variant: "destructive" });
-    else {
+    if (error || profileError) {
+      toast({
+        ...friendlyError(error ?? profileError, "Não foi possível salvar as configurações."),
+        variant: "destructive",
+      });
+    } else {
       setSaved(true); setTimeout(() => setSaved(false), 2000);
       toast({ title: "✓ Configurações salvas!" });
       queryClient.invalidateQueries({ queryKey: ["settings"] });
@@ -332,9 +329,12 @@ const Configuracoes = () => {
 
   const inputCls = "w-full px-4 py-2.5 rounded-xl bg-background/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all outline-none";
 
-  // === NOVA NAVEGAÇÃO POR GRUPOS (mais fácil de configurar) ===
-  type Item = { id: string; label: string; icon: any; keywords?: string; adminOnly?: boolean };
-  type Group = { id: string; label: string; items: Item[]; advanced?: boolean };
+  // === NAVEGAÇÃO POR GRUPOS ===
+  // Esta tela é 100% do ASSINANTE: tudo aqui grava no próprio user_id
+  // (tabela `settings` + `profiles`). O que vale para a plataforma inteira
+  // (manutenção, cadastro aberto, link de checkout) vive em /admin.
+  type Item = { id: string; label: string; icon: any; keywords?: string };
+  type Group = { id: string; label: string; items: Item[] };
 
   const groups: Group[] = [
     {
@@ -344,13 +344,14 @@ const Configuracoes = () => {
         { id: "empresa", label: "Empresa & Dados", icon: Building, keywords: "cnpj nome empresa razão" },
         { id: "pix", label: "Chave PIX", icon: CreditCard, keywords: "pix chave pagamento recebimento" },
         { id: "padroes", label: "Padrões de Empréstimo", icon: Percent, keywords: "juros multa taxa frequência padrão" },
+        { id: "notificacoes", label: "Notificações", icon: Bell, keywords: "push notificação alerta aviso celular" },
       ],
     },
     {
       id: "aparencia",
       label: "Aparência & Módulos",
       items: [
-        { id: "marca", label: "Marca, Cores & Tema", icon: Palette, keywords: "white label logo cor tema dark light primária" },
+        { id: "marca", label: "Marca, Cores & Tema", icon: Palette, keywords: "white label logo cor tema dark light primária favicon rodapé login" },
         { id: "modulos", label: "Módulos Ativos", icon: Package, keywords: "modulos ativos ligar desligar penhores veiculos metas tarefas" },
         { id: "portal", label: "Portal do Cliente", icon: LayoutDashboard, keywords: "portal cliente cpf branding" },
         { id: "contrato", label: "Modelo de Contrato", icon: FileText, keywords: "contrato pdf template documento" },
@@ -362,6 +363,7 @@ const Configuracoes = () => {
       items: [
         { id: "bot", label: "Bot de Cobranças", icon: Bot, keywords: "bot ia automático mensagem cobrança horário" },
         { id: "templates", label: "Templates de Mensagem", icon: MessageSquare, keywords: "template mensagem padrão" },
+        { id: "mensagem", label: "Mensagem Padrão", icon: MessageSquare, keywords: "mensagem padrão cobrança texto" },
       ],
     },
     {
@@ -369,22 +371,13 @@ const Configuracoes = () => {
       label: "Integrações",
       items: [
         { id: "whatsapp", label: "WhatsApp (Evolution)", icon: MessageSquare, keywords: "whatsapp evolution instance api" },
+        { id: "webhooks", label: "Webhooks / N8N", icon: Webhook, keywords: "webhook n8n integração http automação externa" },
         { id: "pwa", label: "Aplicativo Mobile", icon: Zap, keywords: "pwa android ios mobile app instalar" },
-      ],
-    },
-    {
-      id: "avancado",
-      label: "Avançado",
-      advanced: true,
-      items: [
-        { id: "webhooks", label: "Webhooks / N8N", icon: Webhook, keywords: "webhook n8n integração http", adminOnly: true },
-        { id: "admin_global", label: "Admin Global", icon: Shield, keywords: "admin global sistema", adminOnly: true },
       ],
     },
   ];
 
   const [search, setSearch] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Atalho Ctrl+K / Cmd+K para focar a busca
@@ -404,20 +397,19 @@ const Configuracoes = () => {
     .map(g => ({
       ...g,
       items: g.items.filter(i => {
-        if (i.adminOnly && !profile?.is_admin) return false;
         if (!search.trim()) return true;
         const q = search.toLowerCase();
         return i.label.toLowerCase().includes(q) || (i.keywords || "").toLowerCase().includes(q);
       }),
     }))
-    .filter(g => g.items.length > 0 && (!g.advanced || showAdvanced || search.trim()));
+    .filter(g => g.items.length > 0);
 
   // Garante que a aba ativa exista; se busca esconder, vai para a primeira disponível
   useEffect(() => {
     const allIds = visibleGroups.flatMap(g => g.items.map(i => i.id));
     if (allIds.length && !allIds.includes(tab)) setTab(allIds[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, showAdvanced, profile?.is_admin]);
+  }, [search]);
 
   const configSteps = [
     { label: "Marca e Logo", done: !!form.company_logo_url, tab: "marca" },
@@ -519,32 +511,24 @@ const Configuracoes = () => {
             </div>
           ))}
 
-          {!search.trim() && (
-            <button
-              onClick={() => setShowAdvanced(v => !v)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground hover:text-foreground transition rounded-lg hover:bg-accent/20"
+          {isPlatformAdmin && !search.trim() && (
+            <Link
+              to="/admin"
+              className="w-full flex items-start gap-2 px-3 py-2.5 rounded-lg border border-amber-500/25 bg-amber-500/5 text-[11px] text-muted-foreground hover:bg-amber-500/10 transition"
             >
-              <Shield size={12} />
-              {showAdvanced ? "Ocultar avançado" : "Mostrar avançado"}
-            </button>
+              <Shield size={12} className="text-amber-500 shrink-0 mt-0.5" />
+              <span className="text-left">
+                <span className="block font-semibold text-foreground">Configurações da plataforma</span>
+                Manutenção, cadastro e checkout ficam no painel do dono do app.
+              </span>
+            </Link>
           )}
         </aside>
 
         {/* Conteúdo */}
         <div className="rounded-2xl border border-border/30 bg-card/30 backdrop-blur-md p-6 md:p-8 space-y-8 animate-fade-in shadow-xl min-w-0">
-          {tab === "empresa" && <EssencialConfig form={form} setForm={setForm} inputCls={inputCls} />}
-          {tab === "marca" && <AparenciaConfig form={form} setForm={setForm} inputCls={inputCls} />}
-          {!["empresa", "marca"].includes(tab) && (
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center"><Settings size={16} className="text-primary" /></div>
-              <div>
-                <h2 className="font-semibold text-foreground">Configurações</h2>
-                <p className="text-xs text-muted-foreground">Seção em transição para o novo layout.</p>
-              </div>
-            </div>
-          )}
-
-
+          {tab === "marca" && (
+            <>
             {/* Identity Section */}
             <div className="space-y-6 p-6 rounded-2xl border border-border/20 bg-background/20 backdrop-blur-sm">
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
@@ -850,6 +834,8 @@ const Configuracoes = () => {
             </div>
               </div>
             </details>
+            </>
+          )}
 
         {tab === "empresa" && (
           <>
@@ -1477,7 +1463,7 @@ const Configuracoes = () => {
           </>
         )}
 
-        {tab === "webhooks" && profile?.is_admin && (
+        {tab === "webhooks" && (
           <>
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-info/8 flex items-center justify-center"><Webhook size={16} className="text-info" /></div>
@@ -1776,59 +1762,6 @@ const Configuracoes = () => {
           </div>
         )}
 
-        {tab === "admin_global" && profile?.is_admin && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center"><Shield size={16} className="text-amber-500" /></div>
-              <div>
-                <h2 className="font-semibold text-foreground">Configurações de Administrador</h2>
-                <p className="text-xs text-muted-foreground">Parâmetros que afetam toda a infraestrutura</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className="p-4 rounded-2xl border border-border bg-accent/5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Auto-aprovação de Cobradores</p>
-                    <p className="text-[10px] text-muted-foreground">Novos cobradores podem começar sem revisão manual</p>
-                  </div>
-                  <input type="checkbox" className="w-4 h-4 accent-primary" />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Retenção de Auditoria (Dias)</p>
-                    <p className="text-[10px] text-muted-foreground">Tempo que os logs de sistema são mantidos (padrão 90)</p>
-                  </div>
-                  <input type="number" defaultValue={90} className="w-20 bg-input border border-border rounded-lg px-2 py-1 text-xs" />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Backup Diário Automático</p>
-                    <p className="text-[10px] text-muted-foreground">Exportar dados críticos para storage externo</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="w-4 h-4 accent-primary" />
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl border border-border bg-accent/5 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Limites da Plataforma</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span>Espaço em Disco</span>
-                    <span className="font-mono">1.2GB / 5GB</span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full bg-primary w-[24%]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {tab === "pwa" && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-2.5">
@@ -1839,117 +1772,30 @@ const Configuracoes = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-5 rounded-[2rem] border border-border/10 bg-card/30 backdrop-blur-xl space-y-4">
-                <h3 className="text-sm font-bold text-foreground">🤖 Para Android</h3>
-                <div className="space-y-3 text-xs text-muted-foreground">
-                  <p>1. Acesse o sistema pelo <strong>Google Chrome</strong>.</p>
-                  <p>2. Toque nos <strong>três pontos (⋮)</strong> no canto superior direito.</p>
-                  <p>3. Clique em <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.</p>
-                  <p>4. O ícone aparecerá na sua lista de apps como um aplicativo nativo.</p>
-                </div>
-              </div>
+            {/* Botão real de instalação: nativo no Android, guiado no iPhone */}
+            <InstallAppCard />
 
-              <div className="p-5 rounded-[2rem] border border-border/10 bg-card/30 backdrop-blur-xl space-y-4">
-                <h3 className="text-sm font-bold text-foreground">🍎 Para iPhone (iOS)</h3>
-                <div className="space-y-3 text-xs text-muted-foreground">
-                  <p>1. Acesse o sistema pelo <strong>Safari</strong>.</p>
-                  <p>2. Toque no ícone de <strong>Compartilhar (quadrado com seta)</strong>.</p>
-                  <p>3. Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>.</p>
-                  <p>4. Confirme tocando em <strong>"Adicionar"</strong> no canto superior.</p>
-                </div>
-              </div>
+            <div className="p-4 rounded-2xl border border-border/30 bg-accent/5 space-y-2">
+              <p className="text-xs font-semibold text-foreground">O que muda depois de instalar</p>
+              <ul className="text-[11px] text-muted-foreground space-y-1.5 list-disc list-inside leading-relaxed">
+                <li>Abre em tela cheia, sem a barra de endereço do navegador.</li>
+                <li>Ícone próprio junto dos outros aplicativos do celular.</li>
+                <li>Continua funcionando com internet ruim: as telas já visitadas abrem offline.</li>
+                <li>Atalhos rápidos ao segurar o ícone: Hoje, Novo cliente e Cobranças.</li>
+              </ul>
             </div>
 
-            <div className="p-6 rounded-[2rem] border border-primary/20 bg-primary/5 flex flex-col items-center text-center space-y-3">
-               <div className="w-16 h-16 rounded-2xl bg-white p-2 shadow-xl mb-2">
-                  <img src="/favicon.webp" alt="App Icon" className="w-full h-full object-contain" />
-               </div>
-               <h4 className="font-bold text-foreground">Sua Logo no Celular</h4>
-               <p className="text-xs text-muted-foreground max-w-xs">Ao instalar o app, sua marca configurada na aba "Marca" será usada como ícone oficial na tela do cliente.</p>
-            </div>
-          </div>
-        )}
-
-        {tab === "ia-voz" && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center"><Volume2 size={16} className="text-violet-400" /></div>
-              <div>
-                <h2 className="font-semibold text-foreground">IA de Voz e Áudio Personalizado</h2>
-                <p className="text-xs text-muted-foreground">O Agente IA envia áudios que parecem humanos para seus devedores</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-6 rounded-[2rem] border border-border/10 bg-card/30 backdrop-blur-xl space-y-6">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-violet-500/5 border border-violet-500/20">
-                  <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 rounded-full bg-violet-500/20 flex items-center justify-center animate-pulse">
-                        <Bot size={18} className="text-violet-400" />
-                     </div>
-                     <div>
-                        <p className="text-xs font-bold text-foreground">Voz Humanizada Ativa</p>
-                        <p className="text-[10px] text-muted-foreground">Usando ElevenLabs AI para realismo total</p>
-                     </div>
-                  </div>
-                  <div className="w-12 h-6 rounded-full bg-violet-500/30 relative cursor-not-allowed opacity-50">
-                     <div className="absolute right-1 top-1 w-4 h-4 rounded-full bg-white shadow-sm" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Escolher Narrador</label>
-                     <select className={inputCls}>
-                        <option>Voz Masculina (Rodrigo - Firme)</option>
-                        <option>Voz Feminina (Helena - Amigável)</option>
-                        <option>Voz Masculina (Arthur - Formal)</option>
-                     </select>
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tom de Voz</label>
-                     <select className={inputCls}>
-                        <option>Persuasivo e Educado</option>
-                        <option>Urgente e Sério</option>
-                        <option>Conciliador (Acordos)</option>
-                     </select>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-primary/5 border border-border/10 space-y-3">
-                   <p className="text-xs font-medium text-foreground">Exemplo de Roteiro Gerado pela IA:</p>
-                 <div className="p-3 rounded-xl bg-background/50 border border-border/5 text-[11px] italic text-muted-foreground leading-relaxed">
-                   "Olá Cliente, aqui é o assistente virtual da {form.company_name || 'CredMais App'}. Notei que sua parcela de R$ 450,00 está pendente há 3 dias. Quero te ajudar a não acumular juros. Podemos fechar um acordo via PIX agora?"
-                 </div>
-                </div>
-
-                <button className="w-full py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-sm shadow-xl shadow-violet-500/20 hover:scale-[1.02] active:scale-95 transition-all opacity-50 cursor-not-allowed">
-                   Disponível em Breve para sua Conta
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-{tab === "pagamentos" && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="rounded-3xl border border-border/30 bg-card p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <CreditCard className="text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">Pagamentos</h3>
-                  <p className="text-[11px] text-muted-foreground">Sistema de pagamentos ativo e configurado.</p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                O gateway de pagamentos está operando internamente. Não é necessário realizar ajustes manuais.
+            <div className="p-4 rounded-2xl border border-primary/20 bg-primary/5 flex items-center gap-3">
+              <img src="/apple-touch-icon.png" alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                O ícone do aplicativo instalado vem do arquivo padrão do sistema. Para usar a sua
+                própria marca, envie o favicon na aba <strong className="text-foreground">Marca, Cores &amp; Tema</strong> —
+                ele passa a valer nas próximas instalações.
               </p>
             </div>
           </div>
         )}
+
         </div>
       </div>
     </div>

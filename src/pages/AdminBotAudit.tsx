@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { isSuperAdminEmail } from "@/lib/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -48,7 +47,7 @@ const toneCls = {
 } as const;
 
 export default function AdminBotAudit() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isPlatformAdmin, loading: authLoading } = useAuth();
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [actions, setActions] = useState<BotAction[]>([]);
   const [fsm, setFsm] = useState<Array<{ id: string; phone: string; agent_state: string | null; agent_state_updated_at: string | null; clients?: { name: string } | null }>>([]);
@@ -112,7 +111,7 @@ export default function AdminBotAudit() {
   }, [audits, q, tone]);
 
   if (authLoading) return null;
-  if (!user || !isSuperAdminEmail(user.email)) return <Navigate to="/" replace />;
+  if (!user || !isPlatformAdmin) return <Navigate to="/" replace />;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">

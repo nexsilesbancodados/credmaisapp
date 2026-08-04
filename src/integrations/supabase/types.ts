@@ -1298,6 +1298,42 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          allow_new_registrations: boolean
+          checkout_url: string | null
+          default_trial_days: number
+          global_announcement: string | null
+          id: boolean
+          maintenance_message: string | null
+          maintenance_mode: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allow_new_registrations?: boolean
+          checkout_url?: string | null
+          default_trial_days?: number
+          global_announcement?: string | null
+          id?: boolean
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allow_new_registrations?: boolean
+          checkout_url?: string | null
+          default_trial_days?: number
+          global_announcement?: string | null
+          id?: boolean
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pledges: {
         Row: {
           client_name: string

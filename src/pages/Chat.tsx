@@ -54,9 +54,9 @@ const renderText = (text: string) => {
 };
 
 const Chat = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, isPlatformAdmin } = useAuth();
   const isMobile = useIsMobile();
-  const isAdmin = !!profile?.is_admin;
+  const isAdmin = isPlatformAdmin;
 
   const [channels, setChannels] = useState<Channel[]>([]);
   const [memberships, setMemberships] = useState<Member[]>([]);

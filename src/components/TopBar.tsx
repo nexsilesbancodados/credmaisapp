@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import NotificationsBell from "./NotificationsBell";
 import LanguageSwitcher from "./LanguageSwitcher";
+import AppModeSwitcher from "./AppModeSwitcher";
 import { fetchAll } from "@/lib/fetchAll";
 
 interface TopBarProps {
@@ -16,7 +17,7 @@ interface TopBarProps {
 }
 
 const TopBar = ({ onSearchClick }: TopBarProps) => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isPlatformAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -204,6 +205,9 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
 
       {/* Action buttons */}
       <div className="flex items-center gap-1 shrink-0 pl-1 ml-1 border-l border-border/30">
+        {/* No celular não existe menu lateral, então o seletor de modo vem para cá */}
+        {isMobile && <AppModeSwitcher collapsed />}
+
         {isMobile && (
           <button onClick={onSearchClick} aria-label="Buscar" className="p-2 rounded-full hover:bg-muted/50 transition-all duration-200 text-muted-foreground hover:text-foreground">
             <Search size={18} />
@@ -225,7 +229,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         <LanguageSwitcher />
         <NotificationsBell />
 
-        {!isMobile && <UserMenu profile={profile} theme={theme} toggleTheme={toggleTheme} onSignOut={handleSignOut} navigate={navigate} isAdmin={!!profile?.is_admin} />}
+        {!isMobile && <UserMenu profile={profile} theme={theme} toggleTheme={toggleTheme} onSignOut={handleSignOut} navigate={navigate} isAdmin={isPlatformAdmin} />}
 
       </div>
       </div>

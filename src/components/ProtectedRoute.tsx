@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Lock, CreditCard, Loader2 } from "lucide-react";
+import { Lock, CreditCard, Loader2, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { hasPortalSession } from "@/lib/portalSession";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 type AccessState = "checking" | "allowed" | "denied";
 
@@ -41,16 +42,17 @@ function clearAccessCache(uid?: string) {
 }
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, isPlatformAdmin, loading } = useAuth();
   const location = useLocation();
   const [access, setAccess] = useState<AccessState>("checking");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const { settings: platform } = usePlatformSettings();
 
   useEffect(() => {
     if (loading || !user?.id) return;
 
-    // Admin always allowed
-    if (profile?.is_admin) {
+    // Dono do app sempre entra (inclusive durante manutenção)
+    if (isPlatformAdmin) {
       setAccess("allowed");
       return;
     }
@@ -128,7 +130,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id, profile?.is_admin, profile?.trial_ends_at, (profile as any)?.subscription_expires_at, loading]);
+  }, [user?.id, isPlatformAdmin, profile?.trial_ends_at, (profile as any)?.subscription_expires_at, loading]);
 
   // Se o navegador tem sessão do portal do cliente, jamais permite o app do credor.
   if (hasPortalSession()) {
@@ -168,6 +170,25 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           <h1 className="text-xl font-bold text-foreground">Conta Bloqueada</h1>
           <p className="text-sm text-muted-foreground">
             Sua conta foi bloqueada pelo administrador. Entre em contato para mais informações.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Modo manutenção: definido pelo dono do app em /admin → Plataforma.
+  // O próprio admin continua entrando, para conseguir desligar depois.
+  if (platform.maintenance_mode && !isPlatformAdmin) {
+    return (
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full glass-card p-8 text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto">
+            <Wrench className="text-warning" size={28} />
+          </div>
+          <h1 className="text-xl font-bold text-foreground">Sistema em manutenção</h1>
+          <p className="text-sm text-muted-foreground">
+            {platform.maintenance_message?.trim() ||
+              "Estamos fazendo uma manutenção rápida. Volte em alguns minutos."}
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import {
   Users, Ban, CheckCircle, Search, Shield, Crown, MessageCircle,
   TrendingUp, UserCheck, UserX, Calendar, Filter, MoreVertical,
@@ -6,11 +6,18 @@ import {
   LayoutDashboard, Activity, Terminal, Lock, Globe, Settings2, CreditCard
 } from "lucide-react";
 import SupportInbox from "@/components/admin/SupportInbox";
+import { useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { isSuperAdminEmail } from "@/lib/admin";
 import { friendlyError } from "@/lib/friendlyError";
+import {
+  fetchPlatformSettings,
+  PLATFORM_SETTINGS_DEFAULTS,
+  PLATFORM_SETTINGS_KEY,
+  type PlatformSettings,
+} from "@/hooks/usePlatformSettings";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
@@ -47,11 +54,22 @@ type UserRow = {
 type FilterTab = "all" | "active" | "blocked" | "expired" | "admins";
 type AdminSection = "users" | "support" | "automations" | "logs" | "settings";
 
+const ADMIN_SECTIONS: AdminSection[] = ["users", "support", "automations", "logs", "settings"];
+const isAdminSection = (v: string | null): v is AdminSection =>
+  !!v && (ADMIN_SECTIONS as string[]).includes(v);
+
 const Admin = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, isPlatformAdmin } = useAuth();
   const { toast } = useToast();
-  const isSuperAdmin = isSuperAdminEmail(user?.email);
-  const [section, setSection] = useState<AdminSection>("users");
+
+  // A seção vive na URL (?secao=) para que o menu lateral do painel consiga
+  // apontar direto para cada uma e o botão voltar do navegador funcione.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sectionParam = searchParams.get("secao");
+  const section: AdminSection = isAdminSection(sectionParam) ? sectionParam : "users";
+  const setSection = (next: AdminSection) => {
+    setSearchParams(next === "users" ? {} : { secao: next }, { replace: false });
+  };
   const [supportUnread, setSupportUnread] = useState(0);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,7 +285,7 @@ const Admin = () => {
     { key: "admins", label: "Admins", count: stats.admins },
   ];
 
-  if (!isSuperAdmin) {
+  if (!isPlatformAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="w-20 h-20 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
@@ -338,8 +356,8 @@ const Admin = () => {
         <NavButton 
           active={section === "settings"} 
           onClick={() => setSection("settings")} 
-          icon={Settings2} 
-          label="Configurações Globais" 
+          icon={Settings2}
+          label="Plataforma"
         />
       </div>
 
@@ -350,7 +368,7 @@ const Admin = () => {
       ) : section === "logs" ? (
         <AdminLogs />
       ) : section === "settings" ? (
-        <GlobalAdminSettings />
+        <PlatformSettingsPanel />
       ) : (
       <>
       {/* KPI Cards */}
@@ -899,155 +917,161 @@ const AdminLogs = () => {
   );
 };
 
- const GlobalAdminSettings = () => {
-   const { toast } = useToast();
-   const { user } = useAuth();
+/**
+ * Configuração da PLATAFORMA — vale para todos os assinantes de uma vez.
+ * Grava na tabela `platform_settings` (linha única, escrita restrita a admin
+ * por RLS). Não confundir com /configuracoes, que é do assinante.
+ *
+ * A versão anterior gravava em `settings` filtrando por user_id (ou seja, na
+ * linha do próprio admin, não na plataforma) e só persistia 1 dos 5 campos —
+ * os outros 4 mostravam "salvo" sem salvar nada.
+ */
+const PlatformSettingsPanel = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    maintenance_mode: false,
-    default_trial_days: 3,
-    allow_new_registrations: true,
-    mercadopago_checkout_url: "",
-    global_announcement: "",
+  const [form, setForm] = useState<PlatformSettings>(PLATFORM_SETTINGS_DEFAULTS);
 
+  const { data, isLoading } = useQuery({
+    queryKey: PLATFORM_SETTINGS_KEY,
+    queryFn: fetchPlatformSettings,
   });
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      // M4: filtra pelo mesmo user_id que o handleSave usa. Antes usava .single()
-      // sem filtro — com várias linhas em settings (é por usuário) isso dava
-      // PGRST116, o form ficava no default e mostrava um token diferente do salvo.
-      if (!user?.id) return;
-      const { data, error } = await supabase
-        .from("settings").select("*").eq("user_id", user.id).maybeSingle();
-      if (error) { console.error("fetchSettings:", error); return; }
-      if (data) {
-        setForm({
-          maintenance_mode: false,
-          default_trial_days: 3,
-          allow_new_registrations: true,
-          mercadopago_checkout_url: (data as any).mercadopago_checkout_url || "",
-          global_announcement: "",
-        });
-      }
-    };
-    fetchSettings();
-  }, [user?.id]);
+    if (data) setForm(data);
+  }, [data]);
 
   const handleSave = async () => {
     setSaving(true);
-    try {
-      const { data: currentSettings } = await supabase
-        .from("settings")
-        .select("id")
-        .eq("user_id", user?.id)
-        .maybeSingle();
+    // upsert na linha única: o trigger do banco força id=true e carimba quem alterou.
+    const { error } = await supabase
+      .from("platform_settings")
+      .upsert({ id: true, ...form }, { onConflict: "id" });
+    setSaving(false);
 
-      const payload: any = {
-        mercadopago_checkout_url: form.mercadopago_checkout_url,
-      };
-
-      if (currentSettings) {
-        const { error } = await supabase
-          .from("settings")
-          .update(payload)
-          .eq("id", currentSettings.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("settings")
-          .insert({ user_id: user?.id, ...payload });
-        if (error) throw error;
-      }
-
-      toast({ title: "Configurações salvas", description: "As mudanças globais foram aplicadas." });
-    } catch (error: any) {
-      toast({ ...friendlyError(error, "Não foi possível salvar as configurações."), variant: "destructive" });
-    } finally {
-      setSaving(false);
+    if (error) {
+      toast({ ...friendlyError(error, "Não foi possível salvar a configuração da plataforma."), variant: "destructive" });
+      return;
     }
+    queryClient.invalidateQueries({ queryKey: PLATFORM_SETTINGS_KEY });
+    toast({ title: "✓ Configuração da plataforma salva", description: "Vale para todos os assinantes." });
   };
+
+  const fieldCls = "w-full bg-input border border-border rounded-lg px-3 py-2 text-sm";
+
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground animate-pulse">Carregando configuração da plataforma...</p>;
+  }
 
   return (
     <div className="max-w-2xl space-y-6 animate-fade-in">
       <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
         <div className="flex items-center gap-3 border-b border-border pb-4">
           <Globe className="text-primary" size={20} />
-          <h3 className="font-bold">Parâmetros Globais do Sistema</h3>
+          <div>
+            <h3 className="font-bold">Configuração da Plataforma</h3>
+            <p className="text-xs text-muted-foreground">
+              Afeta todos os assinantes. Configurações de cada empresa ficam em Configurações.
+            </p>
+          </div>
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-xl bg-accent/20">
+          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-accent/20">
             <div>
               <p className="text-sm font-semibold">Modo Manutenção</p>
-              <p className="text-xs text-muted-foreground">Bloqueia acesso para usuários comuns</p>
+              <p className="text-xs text-muted-foreground">
+                Tranca o app para todos os assinantes. Você continua entrando para poder desligar.
+              </p>
             </div>
-            <input 
-              type="checkbox" 
-              checked={form.maintenance_mode} 
-              onChange={(e) => setForm({...form, maintenance_mode: e.target.checked})}
-              className="w-5 h-5 accent-primary"
+            <input
+              type="checkbox"
+              checked={form.maintenance_mode}
+              onChange={(e) => setForm({ ...form, maintenance_mode: e.target.checked })}
+              className="w-5 h-5 accent-primary shrink-0"
             />
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-accent/20">
-            <div>
-              <p className="text-sm font-semibold">Novos Registros</p>
-              <p className="text-xs text-muted-foreground">Permitir criação de novas contas</p>
+          {form.maintenance_mode && (
+            <div className="space-y-1.5 p-3 rounded-xl bg-warning/5 border border-warning/20">
+              <p className="text-sm font-semibold">Aviso mostrado na manutenção</p>
+              <textarea
+                rows={2}
+                value={form.maintenance_message ?? ""}
+                onChange={(e) => setForm({ ...form, maintenance_message: e.target.value })}
+                placeholder="Estamos fazendo uma manutenção rápida. Volte em alguns minutos."
+                className={`${fieldCls} resize-none`}
+              />
             </div>
-            <input 
-              type="checkbox" 
-              checked={form.allow_new_registrations} 
-              onChange={(e) => setForm({...form, allow_new_registrations: e.target.checked})}
-              className="w-5 h-5 accent-primary"
+          )}
+
+          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-accent/20">
+            <div>
+              <p className="text-sm font-semibold">Novos Cadastros</p>
+              <p className="text-xs text-muted-foreground">
+                Desligado, a aba de criar conta some da tela de login.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={form.allow_new_registrations}
+              onChange={(e) => setForm({ ...form, allow_new_registrations: e.target.checked })}
+              className="w-5 h-5 accent-primary shrink-0"
             />
           </div>
 
           <div className="space-y-1.5 p-3 rounded-xl bg-primary/10 border border-primary/20">
             <p className="text-sm font-semibold flex items-center gap-2">
-              <CreditCard size={14} className="text-primary" /> Checkout Mercado Pago (URL)
+              <CreditCard size={14} className="text-primary" /> Link de checkout do cadastro
             </p>
             <input
               type="text"
-              value={form.mercadopago_checkout_url}
-              onChange={(e) => setForm({ ...form, mercadopago_checkout_url: e.target.value })}
-              placeholder="https://mpago.la/... ou link de assinatura MP"
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm"
+              value={form.checkout_url ?? ""}
+              onChange={(e) => setForm({ ...form, checkout_url: e.target.value })}
+              placeholder="https://mpago.la/... ou link de assinatura do Mercado Pago"
+              className={fieldCls}
             />
-            <p className="text-[10px] text-muted-foreground italic">Link principal — Mercado Pago é o gateway ativo. Configure o webhook em: <code>/functions/v1/mercadopago-webhook</code></p>
+            <p className="text-[10px] text-muted-foreground italic">
+              É para cá que o botão "Criar conta" manda quem ainda não assinou. Webhook do
+              Mercado Pago em <code>/functions/v1/mercadopago-webhook</code>.
+            </p>
           </div>
 
-
           <div className="space-y-1.5 p-3 rounded-xl bg-accent/20">
-            <p className="text-sm font-semibold">Dias de Trial Padrão</p>
-            <input 
-              type="number" 
+            <p className="text-sm font-semibold">Dias de trial padrão</p>
+            <input
+              type="number"
+              min={0}
+              max={365}
               value={form.default_trial_days}
-              onChange={(e) => setForm({...form, default_trial_days: parseInt(e.target.value)})}
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm"
+              onChange={(e) => setForm({ ...form, default_trial_days: Math.max(0, Math.min(365, parseInt(e.target.value) || 0)) })}
+              className={fieldCls}
             />
+            <p className="text-[10px] text-muted-foreground italic">
+              Usado quando você libera um acesso de teste sem informar o prazo.
+            </p>
           </div>
 
           <div className="space-y-1.5 p-3 rounded-xl bg-accent/20">
-            <p className="text-sm font-semibold">Comunicado Global</p>
-            <textarea 
+            <p className="text-sm font-semibold">Comunicado global</p>
+            <textarea
               rows={3}
-              value={form.global_announcement}
-              onChange={(e) => setForm({...form, global_announcement: e.target.value})}
-              placeholder="Exibido para todos os usuários no dashboard..."
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm resize-none"
+              value={form.global_announcement ?? ""}
+              onChange={(e) => setForm({ ...form, global_announcement: e.target.value })}
+              placeholder="Aparece como faixa no topo do painel de todos os assinantes. Deixe vazio para não mostrar nada."
+              className={`${fieldCls} resize-none`}
             />
           </div>
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full rounded-xl py-6">
-          {saving ? "Salvando..." : "Salvar Configurações Globais"}
+          {saving ? "Salvando..." : "Salvar configuração da plataforma"}
         </Button>
       </div>
     </div>
   );
 };
+
 const toneMap = {
   primary: "from-primary/20 to-primary/5 text-primary",
   success: "from-emerald-500/20 to-emerald-500/5 text-emerald-500",

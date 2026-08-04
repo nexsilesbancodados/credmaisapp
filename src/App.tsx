@@ -8,6 +8,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AppModeProvider } from "@/contexts/AppModeContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { WhiteLabelProvider } from "@/contexts/WhiteLabelContext";
 import PlanGuard from "@/components/PlanGuard";
@@ -134,6 +135,7 @@ const App = () => (
           <ThemeProvider>
           <ConfirmProvider>
           <BrowserRouter>
+            <AppModeProvider>
             <ErrorBoundary>
               <PortalSessionGuard />
               <Suspense fallback={<PageLoader />}>
@@ -207,6 +209,7 @@ const App = () => (
                 </Routes>
               </Suspense>
             </ErrorBoundary>
+            </AppModeProvider>
           </BrowserRouter>
           </ConfirmProvider>
           </ThemeProvider>

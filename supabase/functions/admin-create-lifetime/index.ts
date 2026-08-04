@@ -1,5 +1,11 @@
-// One-off admin function: creates a user with lifetime access
+// Admin: cria (ou promove) um usuário com acesso vitalício.
+//
+// SEGURANÇA: esta função cria contas e, para e-mail já existente, TROCA A SENHA
+// do dono daquele e-mail — é um caminho direto de tomada de conta. Antes rodava
+// com `verify_jwt = false` (aberta a qualquer um na internet) e sem checar admin.
+// Agora exige JWT válido de um admin da plataforma.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getPlatformAdminUser, unauthorized } from "../_shared/guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +15,9 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    const caller = await getPlatformAdminUser(req);
+    if (!caller) return unauthorized(corsHeaders);
+
     const { email, password, name } = await req.json();
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -27,7 +36,7 @@ Deno.serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { name: name || "Gustavo" },
+        user_metadata: { name: name || email.split("@")[0] },
       });
       if (error) throw error;
       userId = data.user!.id;

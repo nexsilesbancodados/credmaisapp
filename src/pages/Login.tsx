@@ -20,6 +20,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 // ---------- Validação ----------
 const emailSchema = z
@@ -70,7 +71,14 @@ const Login = () => {
   const [name, setName] = useState("");
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get("plan");
+  const { settings: platform } = usePlatformSettings();
   const [isRegister, setIsRegister] = useState(!!planParam);
+
+  // Se o dono do app fechar o cadastro, ninguém fica preso na aba de criar conta
+  // (inclusive quem chegou por um link antigo com ?plan=).
+  useEffect(() => {
+    if (!platform.allow_new_registrations && isRegister) setIsRegister(false);
+  }, [platform.allow_new_registrations, isRegister]);
   const [selectedPlan, setSelectedPlan] = useState<"trial" | "paid" | null>(
     planParam === "paid" ? "paid" : planParam === "trial" ? "trial" : null,
   );
@@ -442,21 +450,27 @@ const Login = () => {
                 <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-5">
                   <ArrowRight size={28} className="text-white/70" />
                 </div>
-                <h2 className="font-display text-xl font-bold text-white mb-2">Primeira vez?</h2>
+                <h2 className="font-display text-xl font-bold text-white mb-2">
+                  {platform.allow_new_registrations ? "Primeira vez?" : "Cadastro fechado"}
+                </h2>
                 <p className="text-white/40 text-sm text-center mb-6 max-w-[260px]">
-                  Crie uma conta gratuita e descubra todas as possibilidades.
+                  {platform.allow_new_registrations
+                    ? "Crie uma conta gratuita e descubra todas as possibilidades."
+                    : "No momento não estamos aceitando novos cadastros. Fale com o suporte se já é cliente."}
                 </p>
-                <button
-                  onClick={() => {
-                    setIsRegister(true);
-                    setErrors({});
-                    setFormError(null);
-                    setTouched({});
-                  }}
-                  className="px-8 py-2.5 rounded-2xl border border-white/20 text-white/70 text-sm font-medium hover:bg-white/10 transition-all duration-300"
-                >
-                  Criar Conta
-                </button>
+                {platform.allow_new_registrations && (
+                  <button
+                    onClick={() => {
+                      setIsRegister(true);
+                      setErrors({});
+                      setFormError(null);
+                      setTouched({});
+                    }}
+                    className="px-8 py-2.5 rounded-2xl border border-white/20 text-white/70 text-sm font-medium hover:bg-white/10 transition-all duration-300"
+                  >
+                    Criar Conta
+                  </button>
+                )}
               </div>
             </div>
           ) : (

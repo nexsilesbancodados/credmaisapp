@@ -4,9 +4,12 @@ import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/TopBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { Outlet } from "react-router-dom";
+import GlobalAnnouncement from "@/components/GlobalAnnouncement";
+import InstallAppBanner from "@/components/InstallAppBanner";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAppMode, isPlatformPath, isNeutralPath } from "@/contexts/AppModeContext";
 
 // Defer heavy overlays — they're only rendered after user interaction.
 const GlobalSearch = lazy(() => import("@/components/GlobalSearch"));
@@ -21,9 +24,19 @@ const DashboardLayout = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const { mode } = useAppMode();
   usePushNotifications();
 
   // Subscription enforcement lives in ProtectedRoute (single source of truth).
+
+  // Em modo plataforma o dono do app não vê tela de operação: se cair numa por
+  // link antigo ou URL digitada, volta para o painel. Trocar para "Minha operação"
+  // no seletor libera tudo de novo.
+  const blockedByMode =
+    mode === "platform" &&
+    !isPlatformPath(location.pathname) &&
+    !isNeutralPath(location.pathname);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -53,6 +66,8 @@ const DashboardLayout = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, [isMobile]);
 
+  if (blockedByMode) return <Navigate to="/admin" replace />;
+
   return (
     <div className="min-h-dvh bg-background relative overflow-x-hidden">
       {/* Static mesh gradients — no animation (animated blur is one of the heaviest paints). */}
@@ -66,7 +81,9 @@ const DashboardLayout = () => {
 
       <div className={`transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[76px]" : "ml-[260px]"}`}>
         <TopBar onSearchClick={() => setSearchOpen(true)} />
-        
+
+        <GlobalAnnouncement />
+        <InstallAppBanner />
         <Breadcrumbs />
         <main
           className={`max-w-[1600px] mx-auto min-w-0 ${
