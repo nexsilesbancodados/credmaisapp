@@ -284,17 +284,8 @@ const CentralBot = () => {
         <TabsContent value="bot" className="mt-5 focus-visible:outline-none">
           <Suspense fallback={<Fallback />}><WhatsAppConfig /></Suspense>
         </TabsContent>
-        <TabsContent value="reguas" className="mt-5 focus-visible:outline-none">
-          <Suspense fallback={<Fallback />}><CobrancasReguas /></Suspense>
-        </TabsContent>
-        <TabsContent value="automacoes" className="mt-5 focus-visible:outline-none">
-          <Suspense fallback={<Fallback />}><Automacoes /></Suspense>
-        </TabsContent>
         <TabsContent value="agente" className="mt-5 focus-visible:outline-none">
           <Suspense fallback={<Fallback />}><AgenteIA /></Suspense>
-        </TabsContent>
-        <TabsContent value="performance" className="mt-5 focus-visible:outline-none">
-          <Suspense fallback={<Fallback />}><BotPerformance /></Suspense>
         </TabsContent>
       </Tabs>
     </div>
