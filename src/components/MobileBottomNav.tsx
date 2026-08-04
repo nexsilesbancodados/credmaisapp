@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { isSuperAdminEmail } from "@/lib/admin";
+import { useAppMode } from "@/contexts/AppModeContext";
 import { usePlan } from "@/hooks/usePlan";
 
 const PRO_PATHS = ["/comunicacao", "/comunicacao/inbox", "/agente-ia", "/automacoes", "/bot-performance"];
@@ -49,6 +49,15 @@ const mainTabs = [
   { label: "Clientes", icon: Users, path: "/clientes" },
   { label: "Painel", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Mais", icon: MoreHorizontal, path: "__more__" },
+];
+
+/** Barra do painel do dono do app — no celular substitui a de operação. */
+const platformTabs = [
+  { label: "Usuários", icon: Users, path: "/admin" },
+  { label: "Suporte", icon: MessageCircle, path: "/admin?secao=support" },
+  { label: "Logs", icon: ClipboardList, path: "/admin?secao=logs" },
+  { label: "Sistema", icon: Settings, path: "/admin?secao=settings" },
+  { label: "Perfil", icon: UserCheck, path: "/perfil" },
 ];
 
 const moreGroups = [
@@ -111,10 +120,10 @@ const moreGroups = [
 const MobileBottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isPlatformAdmin } = useAuth();
+  const { mode } = useAppMode();
   const [showMore, setShowMore] = useState(false);
   const [showFab, setShowFab] = useState(false);
-  const isSuperAdmin = isSuperAdminEmail(user?.email);
   const { hasAutomations } = usePlan();
 
   const fabActions = [
@@ -125,8 +134,17 @@ const MobileBottomNav = () => {
 
   const isActive = (path: string) => {
     if (path === "__more__") return showMore;
-    return location.pathname === path || location.pathname.startsWith(path + "/");
+    const [p, q] = path.split("?");
+    const samePath = location.pathname === p || location.pathname.startsWith(p + "/");
+    if (!samePath) return false;
+    const current = new URLSearchParams(location.search).get("secao");
+    if (!q) return !current;
+    return current === new URLSearchParams(q).get("secao");
   };
+
+  // Em modo plataforma a barra inteira vira o painel do dono do app.
+  const isPlatformMode = mode === "platform";
+  const visibleTabs = isPlatformMode ? platformTabs : mainTabs;
 
   const isInMoreSection = moreGroups.some((group) =>
     group.items.some(
@@ -165,7 +183,7 @@ const MobileBottomNav = () => {
                     </p>
                     <div className="grid grid-cols-4 gap-2">
                       {group.items
-                        .filter((i) => (i.path !== "/admin" || isSuperAdmin) && (hasAutomations || !PRO_PATHS.includes(i.path)))
+                        .filter((i) => (i.path !== "/admin" || isPlatformAdmin) && (hasAutomations || !PRO_PATHS.includes(i.path)))
                         .map((item) => {
                           const active = isActive(item.path);
                           return (
@@ -211,7 +229,8 @@ const MobileBottomNav = () => {
           onClick={() => setShowFab(false)}
         />
       )}
-      <div className="fixed right-4 z-30 flex flex-col items-end gap-2.5" style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
+      {/* Ações rápidas são de operação — não fazem sentido no painel do dono */}
+      <div className={`fixed right-4 z-30 flex-col items-end gap-2.5 ${isPlatformMode ? "hidden" : "flex"}`} style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
         {showFab && fabActions.map((a, i) => (
           <button
             key={a.label}
@@ -238,7 +257,7 @@ const MobileBottomNav = () => {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-stretch justify-around px-1.5 pt-1 pb-1">
-          {mainTabs.map((tab) => {
+          {visibleTabs.map((tab) => {
             const active =
               tab.path === "__more__"
                 ? showMore || isInMoreSection

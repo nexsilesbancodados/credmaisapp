@@ -47,6 +47,32 @@ export function checkSharedSecret(req: Request, envName: string, headerName = "x
   return timingSafeEqual(provided, expected);
 }
 
+/**
+ * Autentica o chamador E exige que ele seja admin da PLATAFORMA.
+ * A checagem usa a função `is_admin()` do banco (user_roles → profiles.is_admin),
+ * a mesma fonte de verdade usada pelo front e pelas policies de RLS.
+ * Retorna o usuário quando for admin; caso contrário, null.
+ */
+export async function getPlatformAdminUser(req: Request) {
+  const user = await getCallerUser(req);
+  if (!user) return null;
+
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey) {
+    console.error("[guard] SUPABASE_SERVICE_ROLE_KEY ausente — negando por segurança");
+    return null;
+  }
+
+  const admin = createClient(url, serviceKey);
+  const { data, error } = await admin.rpc("is_admin", { _user_id: user.id });
+  if (error) {
+    console.error("[guard] is_admin falhou:", error.message);
+    return null;
+  }
+  return data === true ? user : null;
+}
+
 export const unauthorized = (corsHeaders: Record<string, string>) =>
   new Response(JSON.stringify({ error: "unauthorized" }), {
     status: 401,

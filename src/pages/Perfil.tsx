@@ -12,7 +12,7 @@ import { friendlyError } from "@/lib/friendlyError";
 import MFACard from "@/components/perfil/MFACard";
 
 const Perfil = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isPlatformAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [form, setForm] = useState({
@@ -107,7 +107,7 @@ const Perfil = () => {
               <Badge variant="outline" className="bg-gradient-to-r from-amber-500/15 to-yellow-500/15 text-amber-400 border-amber-500/30 text-[10px] font-bold">
                 <InfinityIcon size={10} className="mr-1" /> Acesso Vitalício
               </Badge>
-              {profile?.is_admin && (
+              {isPlatformAdmin && (
                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-[10px]">
                   <Shield size={10} className="mr-1" /> Admin
                 </Badge>

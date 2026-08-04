@@ -9,10 +9,12 @@ import {
   Crown, ClipboardList, Sparkles, Settings, Bot, QrCode,
   UserCheck, Shield, Cog, LogOut, User, LifeBuoy, MessageCircle,
   AlertTriangle, ChevronLeft, Plus, Search, Archive, Landmark,
+  Activity, Terminal,
 } from "lucide-react";
+import AppModeSwitcher from "@/components/AppModeSwitcher";
+import { useAppMode } from "@/contexts/AppModeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
-import { isSuperAdminEmail } from "@/lib/admin";
 import { useChatUnread } from "@/hooks/useChatUnread";
 import { usePlan } from "@/hooks/usePlan";
 
@@ -102,6 +104,36 @@ const sections: MenuSection[] = [
 ];
 
 
+/**
+ * Menu do painel do dono do app. Em modo "plataforma" ele SUBSTITUI o menu de
+ * operação por completo — nenhuma tela de credor (clientes, contratos,
+ * cobranças) aparece aqui.
+ */
+const platformSections: MenuSection[] = [
+  {
+    title: "Plataforma",
+    items: [
+      { label: "Usuários & Assinaturas", icon: Users, path: "/admin" },
+      { label: "Suporte", icon: LifeBuoy, path: "/admin?secao=support" },
+      { label: "Automações", icon: Activity, path: "/admin?secao=automations" },
+      { label: "Logs do sistema", icon: Terminal, path: "/admin?secao=logs" },
+      { label: "Manutenção & Controle", icon: Cog, path: "/admin?secao=settings" },
+    ],
+  },
+  {
+    title: "Diagnóstico",
+    items: [
+      { label: "Auditoria do bot", icon: Bot, path: "/admin/bot-audit" },
+      { label: "Trilha de auditoria", icon: Shield, path: "/auditoria" },
+      { label: "Histórico", icon: Archive, path: "/historico" },
+    ],
+  },
+  {
+    title: "Conta",
+    items: [{ label: "Meu perfil", icon: User, path: "/perfil" }],
+  },
+];
+
 interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -110,30 +142,41 @@ interface SidebarProps {
 const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, signOut, user } = useAuth();
+  const { profile, signOut, user, isPlatformAdmin } = useAuth();
   const { config } = useWhiteLabel();
   const logoSrc = config.companyLogo || eagleLogo;
   const brandName = config.companyName || "CREDMAIS APP";
-  const isSuperAdmin = isSuperAdminEmail(user?.email);
   const chatUnread = useChatUnread();
 
   const modules = config.modulesEnabled;
   const { hasAutomations } = usePlan();
+  const { mode } = useAppMode();
 
-  const visibleSections = useMemo(() =>
+  const operationSections = useMemo(() =>
     sections.map((s) => ({
       ...s,
       items: s.items.filter((i) => {
-        if (i.path === "/admin") return isSuperAdmin;
-        if (["/auditoria", "/historico"].includes(i.path)) return profile?.is_admin;
+        // Painel do dono do app e trilha de auditoria: mesma regra, uma fonte só.
+        if (["/admin", "/auditoria", "/historico"].includes(i.path)) return isPlatformAdmin;
         if (i.pro && !hasAutomations) return false;
         if (i.module && modules && modules[i.module] === false) return false;
         return true;
       }),
-    })).filter(s => s.items.length > 0), [isSuperAdmin, profile?.is_admin, modules, hasAutomations]);
+    })).filter(s => s.items.length > 0), [isPlatformAdmin, modules, hasAutomations]);
 
-  const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path + "/");
+  // Em modo plataforma o menu de operação some por inteiro.
+  const visibleSections = mode === "platform" ? platformSections : operationSections;
+
+  // Itens do painel apontam para /admin?secao=x, então a comparação leva a query
+  // em conta — senão todos os itens do painel ficariam ativos ao mesmo tempo.
+  const isActive = (path: string) => {
+    const [p, q] = path.split("?");
+    const samePath = location.pathname === p || location.pathname.startsWith(p + "/");
+    if (!samePath) return false;
+    const current = new URLSearchParams(location.search).get("secao");
+    if (!q) return !current;
+    return current === new URLSearchParams(q).get("secao");
+  };
 
   const openGlobalSearch = () => {
     // dispara o atalho global Cmd/Ctrl+K (GlobalSearch escuta esse evento)
@@ -299,8 +342,10 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         </span>
       </button>
 
-      {/* Busca rápida + Ação rápida */}
-      {!collapsed && (
+      <AppModeSwitcher collapsed={collapsed} />
+
+      {/* Busca rápida + Ação rápida (só no app de operação) */}
+      {mode !== "platform" && !collapsed && (
         <div className="px-3 pt-3 pb-2 space-y-1.5">
           <button
             onClick={openGlobalSearch}
@@ -319,7 +364,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         </div>
       )}
 
-      {collapsed && (
+      {mode !== "platform" && collapsed && (
         <div className="px-2 pt-3 pb-1 flex flex-col gap-1.5">
           <button
             onClick={openGlobalSearch}

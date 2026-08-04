@@ -7,6 +7,15 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: any | null;
+  /**
+   * Admin da PLATAFORMA (dono do app) — quem enxerga /admin e as configurações
+   * globais. Fonte única de verdade: a função `is_admin()` do banco, que checa
+   * `user_roles` e cai para `profiles.is_admin`. O e-mail super admin funciona
+   * como chave reserva para nunca haver trava total de acesso.
+   *
+   * Não confundir com o assinante comum, que administra apenas o próprio tenant.
+   */
+  isPlatformAdmin: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -15,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   profile: null,
+  isPlatformAdmin: false,
   loading: true,
   signOut: async () => {},
 });
@@ -25,18 +35,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (data && isSuperAdminEmail(data.email)) {
-      data.is_admin = true;
-    }
+  const fetchProfile = useCallback(async (userId: string, email?: string | null) => {
+    const [{ data }, { data: adminFlag }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", userId).single(),
+      supabase.rpc("is_admin", { _user_id: userId }),
+    ]);
     setProfile(data);
+    setIsPlatformAdmin(adminFlag === true || isSuperAdminEmail(email ?? data?.email));
   }, []);
 
   useEffect(() => {
@@ -53,13 +61,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Use setTimeout to avoid Supabase auth deadlock
           setTimeout(() => {
             if (mounted) {
-              fetchProfile(newSession.user.id).then(() => {
+              fetchProfile(newSession.user.id, newSession.user.email).then(() => {
                 if (mounted) setLoading(false);
               });
             }
           }, 0);
         } else {
           setProfile(null);
+          setIsPlatformAdmin(false);
           setLoading(false);
         }
       }
@@ -71,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       if (existingSession?.user) {
-        fetchProfile(existingSession.user.id).then(() => {
+        fetchProfile(existingSession.user.id, existingSession.user.email).then(() => {
           if (mounted) setLoading(false);
         });
       } else {
@@ -90,10 +99,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setSession(null);
     setUser(null);
     setProfile(null);
+    setIsPlatformAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, isPlatformAdmin, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
