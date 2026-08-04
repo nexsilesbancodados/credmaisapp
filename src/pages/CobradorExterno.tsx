@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { formatBR } from "@/lib/dateUtils";
+import { renderMessage } from "@/lib/messageTemplate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -491,7 +492,15 @@ const CobradorExterno = () => {
                         {a.clients?.whatsapp && (
                           <a
                             href={`https://wa.me/55${a.clients.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
-                              (ownerProfile?.billing_message || "").replace("[Nome do Cliente]", a.clients?.name || "")
+                              // Antes só [Nome do Cliente] era trocado: a mensagem
+                              // chegava ao devedor com "[Nome da Empresa]" e
+                              // "[Valor da Parcela]" literais no WhatsApp.
+                              renderMessage(ownerProfile?.billing_message || "", {
+                                nome: a.clients?.name || "",
+                                empresa: ownerProfile?.name || "",
+                                pix: ownerProfile?.pix_key || "",
+                                portal: `${window.location.origin}/portal-cliente`,
+                              })
                             )}`}
                             target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1.5 text-xs text-success hover:underline">

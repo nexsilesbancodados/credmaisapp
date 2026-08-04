@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendEmail } from "../_shared/brevo.ts";
 import { callAnthropic } from "../_shared/anthropic.ts";
 import { parseMemory, summarizeIntents, lastApproach, pushIntent, serializeMemory } from "../_shared/memory.ts";
+import { renderTemplate, renderMessage } from "../_shared/messageTemplate.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -347,16 +348,40 @@ ${extraDiversity}`;
 
 
         if (!message) {
+          // Variáveis disponíveis para QUALQUER texto configurável desta mensagem.
+          // Antes cada trecho substituía um subconjunto diferente: o template
+          // trocava 5 variáveis mas só em {chaves} (e a tela ensina [colchetes],
+          // então os 8 templates prontos chegavam literais ao cliente), a saudação
+          // trocava 2, e a mensagem de encerramento não trocava nenhuma.
+          const varsMensagem = {
+            nome: client.name,
+            empresa: companyName,
+            valor: `R$ ${totalAmount.toFixed(2)}`,
+            parcelas: String(insts.length),
+            dias: String(isPreDue ? daysUntilDue : daysOverdue),
+            numero: insts[0]?.installment_number != null ? String(insts[0].installment_number) : "",
+            parcela: insts[0]?.installment_number != null ? String(insts[0].installment_number) : "",
+            data: insts[0]?.due_date ? new Date(insts[0].due_date).toLocaleDateString("pt-BR") : "",
+            juros: `R$ ${totalLateFees.toFixed(2)}`,
+            pix: profile?.pix_key ?? "",
+            // Link genérico do portal: o cliente entra com CPF + data de
+            // nascimento. Esta função não emite token de sessão, e mandar um
+            // link com token por disparo automático aumentaria a exposição —
+            // o token abre o dossiê inteiro para quem receber a mensagem.
+            portal: `${(Deno.env.get("SITE_URL") ?? "https://www.credmaisapp.com.br").replace(/\/+$/, "")}/portal-cliente`,
+          };
+
           const template = templates?.find(t => t.name.toLowerCase().includes(matchingRule.template.toLowerCase()));
           if (template) {
-            message = template.content
-              .replace(/\{nome\}/gi, client.name).replace(/\{empresa\}/gi, companyName)
-              .replace(/\{valor\}/gi, `R$ ${totalAmount.toFixed(2)}`)
-              .replace(/\{parcelas\}/gi, String(insts.length))
-              .replace(/\{dias\}/gi, String(isPreDue ? daysUntilDue : daysOverdue));
+            const r = renderTemplate(template.content, varsMensagem);
+            message = r.texto;
+            if (r.desconhecidas.length) {
+              console.warn(`[auto-collection] template "${template.name}" usa variáveis inexistentes:`, r.desconhecidas);
+            }
           } else {
             const baseGreet = settings.bot_greeting_message
-              ?.replace(/\{nome\}/gi, client.name)?.replace(/\{empresa\}/gi, companyName) || `Olá ${client.name}`;
+              ? renderMessage(settings.bot_greeting_message, varsMensagem)
+              : `Olá ${client.name}`;
             // Rotaciona aberturas para NÃO repetir a mesma mensagem toda vez
             const greetVariants = isPreDue
               ? [`${baseGreet}, tudo bem?`, `Oi ${client.name}!`, `${client.name}, passando rapidinho aqui.`, `E aí, ${client.name}?`]
@@ -373,7 +398,11 @@ ${extraDiversity}`;
               `Pendência: R$ ${totalAmount.toFixed(2)} em ${insts.length} parcela(s), ${daysOverdue} dia(s) sem pagamento.`,
               `Verificamos aqui: R$ ${totalAmount.toFixed(2)} em atraso há ${daysOverdue} dia(s).`,
             ];
-            const closing = settings.bot_closing_message || "Qualquer dúvida, chama aqui.";
+            // A mensagem de encerramento não passava por substituição nenhuma:
+            // quem escrevesse "Att, {empresa}" mandava "Att, {empresa}" ao cliente.
+            const closing = settings.bot_closing_message
+              ? renderMessage(settings.bot_closing_message, varsMensagem)
+              : "Qualquer dúvida, chama aqui.";
             const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
             if (isPreDue) {
               message = `${pick(greetVariants)}\n\n${pick(bodyPreVariants)}\nSe preferir, já deixe o pagamento agendado.`;

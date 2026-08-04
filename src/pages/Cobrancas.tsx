@@ -24,6 +24,8 @@ import { SkeletonList } from "@/components/feedback/Skeletons";
 import ErrorState from "@/components/feedback/ErrorState";
 import CollectionMetrics from "@/components/cobrancas/CollectionMetrics";
 import { fetchAll } from "@/lib/fetchAll";
+import { renderMessage } from "@/lib/messageTemplate";
+import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 
 const fmt = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const relTime = (iso: string) => {
@@ -72,6 +74,8 @@ const useDebounced = <T,>(value: T, ms = 180) => {
 
 const Cobrancas = () => {
   const { user, profile } = useAuth();
+  // Nome da empresa vem do white-label do assinante, não de um literal no código.
+  const { config: whiteLabel } = useWhiteLabel();
   const navigate = useNavigate();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -327,15 +331,20 @@ const Cobrancas = () => {
     const customTemplate = profile?.billing_message;
     let base: string;
     if (customTemplate) {
-      base = customTemplate
-        .replace(/\{nome\}|\[Nome do Cliente\]/g, nome)
-        .replace(/\{parcela\}|\[Parcela\]/g, parcelaInfo)
-        .replace(/\{multa\}|\[Multa\]/g, fmt(bd.total))
-        .replace(/\{total\}|\[Total\]/g, valor)
-        .replace(/\{valor\}|\[Valor da Parcela\]/g, valor)
-        .replace(/\{data\}|\[Data\]/g, data)
-        .replace(/\{portal\}|\[Portal\]/g, portalUrl)
-        .replace(/\[Nome da Empresa\]/g, "CredMais App").replace(/Sr\(a\)\s*/g, "");
+      // Renderizador compartilhado com o bot: mesma lista de variáveis nos dois.
+      // A versão anterior fixava "CredMais App" como [Nome da Empresa] — quem usa
+      // o sistema com a própria marca mandava o nome errado para o cliente.
+      base = renderMessage(customTemplate, {
+        nome,
+        empresa: whiteLabel.companyName || "",
+        parcela: parcelaInfo,
+        numero: String(inst.installment_number ?? ""),
+        juros: fmt(bd.total),
+        valor,
+        data,
+        portal: portalUrl,
+        pix: (profile as any)?.pix_key ?? "",
+      }).replace(/Sr\(a\)\s*/g, "");
       if (bd.total > 0 && !/juros|multa/i.test(customTemplate)) {
         base += `\n\nJuros de atraso (${bd.jurosPct}% ao dia · ${bd.daysLate} dia${bd.daysLate !== 1 ? "s" : ""}): R$ ${fmt(bd.total)}\nTotal atualizado: R$ ${valor}`;
       }

@@ -5,6 +5,8 @@ import { CONTRACT_PLACEHOLDERS, DEFAULT_CONTRACT_TEMPLATE } from "@/utils/contra
 import type { ModuleKey } from "@/contexts/WhiteLabelContext";
 import InstallAppCard from "@/components/InstallAppCard";
 import { COLOR_PRESETS } from "../constants";
+import VariaveisDisponiveis from "../VariaveisDisponiveis";
+import VariaveisNaoReconhecidas from "../VariaveisNaoReconhecidas";
 import type { SectionProps } from "../types";
 
 const BotSection = ({ ctx }: SectionProps) => {
@@ -354,14 +356,16 @@ const BotSection = ({ ctx }: SectionProps) => {
                 {/* Mensagens do bot */}
                 <div className="space-y-3">
                   <p className="text-label">Mensagens Personalizadas</p>
-                  <p className="text-[10px] text-muted-foreground">Variáveis: <code className="text-primary font-mono bg-primary/5 px-1 rounded">{"{nome}"}</code> <code className="text-primary font-mono bg-primary/5 px-1 rounded">{"{empresa}"}</code> <code className="text-primary font-mono bg-primary/5 px-1 rounded">{"{valor}"}</code> <code className="text-primary font-mono bg-primary/5 px-1 rounded">{"{data}"}</code></p>
+                  <VariaveisDisponiveis onCopiar={(t) => { navigator.clipboard?.writeText(t); notify(`${t} copiado`); }} />
                   <div>
                     <label className="text-[11px] text-muted-foreground mb-1 block">Saudação Inicial</label>
                     <input value={form.bot_greeting_message} onChange={(e) => setForm({ ...form, bot_greeting_message: e.target.value })} className={inputCls} placeholder="Olá {nome}, aqui é do {empresa}." />
+                    <VariaveisNaoReconhecidas texto={form.bot_greeting_message} />
                   </div>
                   <div>
                     <label className="text-[11px] text-muted-foreground mb-1 block">Mensagem de Encerramento</label>
-                    <input value={form.bot_closing_message} onChange={(e) => setForm({ ...form, bot_closing_message: e.target.value })} className={inputCls} placeholder="Qualquer dúvida, entre em contato. Obrigado!" />
+                    <input value={form.bot_closing_message} onChange={(e) => setForm({ ...form, bot_closing_message: e.target.value })} className={inputCls} placeholder="Qualquer dúvida, chama aqui. Att, {empresa}" />
+                    <VariaveisNaoReconhecidas texto={form.bot_closing_message} />
                   </div>
                 </div>
 

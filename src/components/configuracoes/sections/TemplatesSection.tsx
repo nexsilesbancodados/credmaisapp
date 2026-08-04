@@ -5,6 +5,8 @@ import { CONTRACT_PLACEHOLDERS, DEFAULT_CONTRACT_TEMPLATE } from "@/utils/contra
 import type { ModuleKey } from "@/contexts/WhiteLabelContext";
 import InstallAppCard from "@/components/InstallAppCard";
 import { COLOR_PRESETS, TEMPLATE_PRESETS } from "../constants";
+import VariaveisDisponiveis from "../VariaveisDisponiveis";
+import VariaveisNaoReconhecidas from "../VariaveisNaoReconhecidas";
 import type { SectionProps } from "../types";
 
 const TemplatesSection = ({ ctx }: SectionProps) => {
@@ -24,7 +26,7 @@ const TemplatesSection = ({ ctx }: SectionProps) => {
               <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center"><MessageSquare size={16} className="text-primary" /></div>
               <div>
                 <h2 className="font-semibold text-foreground">Templates de Mensagem</h2>
-                <p className="text-xs text-muted-foreground">Use [Nome], [Valor], [Dias], [Portal] como variáveis.</p>
+                <p className="text-xs text-muted-foreground">Escreva a mensagem e use variáveis para os dados do cliente.</p>
               </div>
             </div>
 
@@ -93,8 +95,13 @@ const TemplatesSection = ({ ctx }: SectionProps) => {
             {/* Criar template personalizado */}
             <div className="border-t border-border pt-5 space-y-3">
               <p className="text-sm font-semibold text-foreground">Template Personalizado</p>
+              <VariaveisDisponiveis onCopiar={(t) => {
+                navigator.clipboard?.writeText(t);
+                notify(`${t} copiado`);
+              }} />
               <input value={newTemplate.name} onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })} placeholder="Nome do template" className={inputCls} />
-              <textarea value={newTemplate.content} onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })} placeholder="Olá [Nome], sua parcela de R$ [Valor] está atrasada há [Dias] dias..." className={`${inputCls} min-h-[80px] resize-none`} />
+              <textarea value={newTemplate.content} onChange={(e) => setNewTemplate({ ...newTemplate, content: e.target.value })} placeholder="Olá {nome}, sua parcela de {valor} está atrasada há {dias} dias..." className={`${inputCls} min-h-[80px] resize-none`} />
+              <VariaveisNaoReconhecidas texto={newTemplate.content} />
               <input type="number" value={newTemplate.trigger_days} onChange={(e) => setNewTemplate({ ...newTemplate, trigger_days: e.target.value })} placeholder="Dias de atraso para disparar (opcional)" className={inputCls} />
               <button onClick={onAddTemplate} disabled={!newTemplate.name || !newTemplate.content}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50 focus-ring"

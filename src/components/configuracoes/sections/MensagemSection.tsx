@@ -5,6 +5,8 @@ import { CONTRACT_PLACEHOLDERS, DEFAULT_CONTRACT_TEMPLATE } from "@/utils/contra
 import type { ModuleKey } from "@/contexts/WhiteLabelContext";
 import InstallAppCard from "@/components/InstallAppCard";
 import { COLOR_PRESETS } from "../constants";
+import VariaveisDisponiveis from "../VariaveisDisponiveis";
+import VariaveisNaoReconhecidas from "../VariaveisNaoReconhecidas";
 import type { SectionProps } from "../types";
 
 const MensagemSection = ({ ctx }: SectionProps) => {
@@ -28,16 +30,15 @@ const MensagemSection = ({ ctx }: SectionProps) => {
               </div>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground mb-2">
-                Variáveis: <code className="text-primary font-mono bg-primary/5 px-1 rounded">[Nome da Empresa]</code> <code className="text-primary font-mono bg-primary/5 px-1 rounded">[Nome do Cliente]</code> <code className="text-primary font-mono bg-primary/5 px-1 rounded">[Valor da Parcela]</code>
-              </p>
+              <VariaveisDisponiveis onCopiar={(t) => { navigator.clipboard?.writeText(t); notify(`${t} copiado`); }} />
               <textarea
                 value={form.billing_message}
                 onChange={(e) => setForm({ ...form, billing_message: e.target.value })}
                 rows={5}
                 className={`${inputCls} resize-none`}
-                placeholder="[Nome da Empresa]: Sr(a) [Nome do Cliente], identificamos um atraso em sua parcela..."
+                placeholder="{empresa}: {nome}, identificamos um atraso em sua parcela de {valor}..."
               />
+              <VariaveisNaoReconhecidas texto={form.billing_message} />
             </div>
             <div className="space-y-2">
               <p className="text-label">Mensagens Prontas</p>
