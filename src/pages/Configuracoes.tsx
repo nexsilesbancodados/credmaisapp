@@ -850,8 +850,6 @@ const Configuracoes = () => {
             </div>
               </div>
             </details>
-          </>
-        )}
 
         {tab === "empresa" && (
           <>
