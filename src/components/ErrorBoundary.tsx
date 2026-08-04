@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
+import { reportError } from "@/lib/reportError";
 
 interface Props {
   children: ReactNode;
@@ -43,6 +44,13 @@ class ErrorBoundaryInner extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     // eslint-disable-next-line no-console
     console.error("[ErrorBoundary]", error, info.componentStack);
+
+    // Registra em `client_errors` para o dono do app ver em /admin → Logs.
+    // Antes o erro morria no console do navegador do cliente.
+    void reportError(error, {
+      origem: "error-boundary",
+      componente: info.componentStack?.slice(0, 1000),
+    });
 
     // Stale-deploy recovery: if a code-split chunk hash 404s after a redeploy,
     // force a one-time hard reload so the browser picks up the new index.html.

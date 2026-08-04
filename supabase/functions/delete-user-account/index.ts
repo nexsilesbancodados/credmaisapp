@@ -43,6 +43,26 @@ serve(async (req) => {
       details: { email: user.email, at: new Date().toISOString() },
     });
 
+    // LGPD: apaga os backups ANTES de remover a conta.
+    // Isto faltava — a conta sumia e a pasta em `storage/backups` continuava lá,
+    // com nome, CPF e contratos dos clientes daquele assinante, por tempo
+    // indeterminado. Feito antes do delete porque depois não há mais como saber
+    // que aquela pasta ficou órfã até a próxima varredura do auto-backup.
+    let backupsRemovidos = 0;
+    try {
+      const { data: arquivos } = await admin.storage.from("backups").list(user.id, { limit: 1000 });
+      const caminhos = (arquivos || []).map((a: any) => `${user.id}/${a.name}`);
+      if (caminhos.length) {
+        const { error: rmErr } = await admin.storage.from("backups").remove(caminhos);
+        if (rmErr) console.error("[delete-user-account] falha ao apagar backups:", rmErr);
+        else backupsRemovidos = caminhos.length;
+      }
+    } catch (e) {
+      // Não bloqueia a exclusão da conta: o direito ao esquecimento vem primeiro,
+      // e a varredura de pastas órfãs do auto-backup pega o resto.
+      console.error("[delete-user-account] erro no expurgo de backups:", e);
+    }
+
     // Deleta usuário do auth — o ON DELETE CASCADE em foreign keys limpa o resto.
     // Tabelas sem CASCADE ficam órfãs mas não expõem dados (RLS scopa por user_id).
     const { error: delErr } = await admin.auth.admin.deleteUser(user.id);
@@ -53,7 +73,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, message: "Conta apagada com sucesso." }), {
+    return new Response(JSON.stringify({ ok: true, message: "Conta apagada com sucesso.", backupsRemovidos }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

@@ -8,6 +8,8 @@ import {
 import SupportInbox from "@/components/admin/SupportInbox";
 import GrantAccessDialog from "@/components/admin/GrantAccessDialog";
 import PlatformSettingsPanel from "@/components/admin/PlatformSettingsPanel";
+import ClientErrorsPanel from "@/components/admin/ClientErrorsPanel";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +29,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { formatBR } from "@/lib/dateUtils";
+import { PLANS, normalizeTier } from "@/lib/plans";
 
 type UserRow = {
   id: string;
@@ -134,9 +137,25 @@ const Admin = () => {
     const admins = users.filter((u) => u.is_admin).length;
     const monthly = users.filter((u) => u.subscription_type === "monthly").length;
     const yearly = users.filter((u) => u.subscription_type === "yearly").length;
+    const lifetime = users.filter((u) => u.subscription_type === "lifetime").length;
     const expired = users.filter((u) => isExpired(u) && !u.is_admin).length;
     const active = total - blocked - expired;
-    const mrr = (monthly * 49.90) + (yearly * 499.0 / 12); // Cálculo estimado de faturamento mensal
+
+    // Receita recorrente pelo preço REAL do plano de cada assinante.
+    // A conta anterior usava `monthly * 49,90 + yearly * 499/12` — preços de uma
+    // tabela que não existe mais (hoje é 199 e 299) — e olhava para
+    // `subscription_type`, que diz a periodicidade, não o plano. O plano está em
+    // `plan_tier`. Com a base atual isso mostrava R$ 149,70 no lugar de R$ 897.
+    //
+    // Só entra quem paga de forma recorrente e está em dia: vitalício não gera
+    // receita mensal, e expirado não gera receita nenhuma.
+    const mrr = users.reduce((soma, u) => {
+      if (u.is_admin || isExpired(u)) return soma;
+      if (u.subscription_type !== "monthly" && u.subscription_type !== "yearly") return soma;
+      const mensalidade = PLANS[normalizeTier(u.plan_tier)].price;
+      // Plano anual entra rateado no mês, para comparar com o mensal.
+      return soma + (u.subscription_type === "yearly" ? (mensalidade * 12 * 0.8) / 12 : mensalidade);
+    }, 0);
     const churn = total > 0 ? (expired / total) * 100 : 0;
     const newThisMonth = users.filter((u) => {
       const d = new Date(u.created_at);
@@ -145,7 +164,7 @@ const Admin = () => {
     }).length;
     const totalLoaned = users.reduce((s, u) => s + Number(u.loan_balance || 0), 0);
     const totalProfit = users.reduce((s, u) => s + Number(u.profit_balance || 0), 0);
-    return { total, blocked, admins, monthly, yearly, expired, active, newThisMonth, totalLoaned, totalProfit, mrr, churn };
+    return { total, blocked, admins, monthly, yearly, lifetime, expired, active, newThisMonth, totalLoaned, totalProfit, mrr, churn };
   }, [users]);
 
   // ============ FILTERED ============
@@ -395,7 +414,13 @@ const Admin = () => {
           <div className="space-y-3">
             <PlanBar label="Mensal" value={stats.monthly} total={stats.total} color="bg-blue-500" />
             <PlanBar label="Anual" value={stats.yearly} total={stats.total} color="bg-emerald-500" />
-            <PlanBar label="Sem plano" value={stats.total - stats.monthly - stats.yearly} total={stats.total} color="bg-muted-foreground/40" />
+            <PlanBar label="Vitalício" value={stats.lifetime} total={stats.total} color="bg-amber-500" />
+            <PlanBar
+              label="Sem plano"
+              value={stats.total - stats.monthly - stats.yearly - stats.lifetime}
+              total={stats.total}
+              color="bg-muted-foreground/40"
+            />
           </div>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -403,7 +428,7 @@ const Admin = () => {
             <TrendingUp size={14} /> SAÚDE DA BASE & FINANCEIRO
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <MiniStat label="Faturamento Est." value={`R$ ${stats.mrr.toFixed(2)}`} />
+            <MiniStat label="Receita mensal" value={`R$ ${stats.mrr.toFixed(2)}`} />
             <MiniStat label="Taxa Churn" value={`${stats.churn.toFixed(1)}%`} />
             <MiniStat label="Capital Total" value={`R$ ${(stats.totalLoaned / 1000).toFixed(1)}k`} />
             <MiniStat label="Lucro Total" value={`R$ ${(stats.totalProfit / 1000).toFixed(1)}k`} />
@@ -877,6 +902,8 @@ const AdminLogs = () => {
   }, []);
 
   return (
+    <div className="space-y-4">
+    <ClientErrorsPanel />
     <div className="rounded-2xl border border-border bg-card overflow-hidden animate-fade-in">
        <div className="overflow-x-auto">
          <table className="w-full text-xs text-left">
@@ -918,6 +945,7 @@ const AdminLogs = () => {
            </tbody>
          </table>
        </div>
+    </div>
     </div>
   );
 };

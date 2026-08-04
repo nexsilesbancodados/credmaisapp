@@ -344,6 +344,39 @@ export type Database = {
           },
         ]
       }
+      client_errors: {
+        Row: {
+          contexto: Json
+          criado_em: string
+          id: string
+          mensagem: string
+          navegador: string | null
+          pilha: string | null
+          rota: string
+          user_id: string | null
+        }
+        Insert: {
+          contexto?: Json
+          criado_em?: string
+          id?: string
+          mensagem: string
+          navegador?: string | null
+          pilha?: string | null
+          rota?: string
+          user_id?: string | null
+        }
+        Update: {
+          contexto?: Json
+          criado_em?: string
+          id?: string
+          mensagem?: string
+          navegador?: string | null
+          pilha?: string | null
+          rota?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       client_notifications: {
         Row: {
           client_id: string
