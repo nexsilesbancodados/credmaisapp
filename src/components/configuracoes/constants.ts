@@ -1,0 +1,37 @@
+/** Paletas prontas oferecidas na aba Marca. */
+export const COLOR_PRESETS = [
+  { label: "Azul Steel", primary: "#4a86c8", accent: "#6ba3d6", emoji: "🔷" },
+  { label: "Azul Royal", primary: "#2563eb", accent: "#3b82f6", emoji: "💎" },
+  { label: "Esmeralda", primary: "#059669", accent: "#10b981", emoji: "💚" },
+  { label: "Roxo", primary: "#7c3aed", accent: "#8b5cf6", emoji: "💜" },
+  { label: "Âmbar", primary: "#d97706", accent: "#f59e0b", emoji: "🟡" },
+  { label: "Vermelho", primary: "#dc2626", accent: "#ef4444", emoji: "❤️" },
+];
+
+/** Mensagens de cobrança prontas, oferecidas na aba Mensagem Padrão. */
+export const BILLING_PRESETS = [
+  {
+    label: "Formal",
+    text: "[Nome da Empresa]: Sr(a) [Nome do Cliente], identificamos um atraso em sua parcela de empréstimo. O valor pendente é de R$ [Valor da Parcela]. Por favor, entre em contato para regularizar.",
+  },
+  {
+    label: "Amigável",
+    text: "Olá [Nome do Cliente]! 😊 Aqui é da [Nome da Empresa]. Notamos que sua parcela de R$ [Valor da Parcela] ainda não foi paga. Podemos ajudar? Entre em contato conosco!",
+  },
+  {
+    label: "Urgente",
+    text: "⚠️ [Nome da Empresa] informa: [Nome do Cliente], sua parcela de R$ [Valor da Parcela] está em atraso. Regularize imediatamente para evitar juros adicionais e restrições no seu CPF.",
+  },
+];
+
+/** Templates de mensagem prontos, oferecidos na aba Templates. */
+export const TEMPLATE_PRESETS: { name: string; content: string; trigger_days: number | null }[] = [
+  { name: "Lembrete Amigável", content: "Olá [Nome], tudo bem? 😊 Passando para lembrar que sua parcela de R$ [Valor] vence hoje. Qualquer dúvida, estamos à disposição!", trigger_days: 0 },
+  { name: "Cobrança 1 Dia", content: "Olá [Nome], notamos que sua parcela de R$ [Valor] venceu ontem. Por favor, realize o pagamento o quanto antes para evitar juros adicionais. Obrigado!", trigger_days: 1 },
+  { name: "Cobrança 3 Dias", content: "Prezado(a) [Nome], sua parcela de R$ [Valor] está com [Dias] dias de atraso. Entre em contato para negociarmos. Evite a negativação do seu nome.", trigger_days: 3 },
+  { name: "Cobrança 7 Dias", content: "⚠️ [Nome], sua parcela de R$ [Valor] está com [Dias] dias de atraso. Caso o pagamento não seja regularizado, medidas adicionais poderão ser tomadas. Entre em contato urgente.", trigger_days: 7 },
+  { name: "Cobrança 15 Dias", content: "🚨 [Nome], informamos que sua dívida de R$ [Valor] com [Dias] dias de atraso será encaminhada para negativação. Regularize imediatamente para evitar restrições no seu CPF.", trigger_days: 15 },
+  { name: "Cobrança 30 Dias", content: "[Nome], sua dívida de R$ [Valor] está com [Dias] dias de atraso. Seu nome será incluído nos órgãos de proteção ao crédito. Entre em contato HOJE para negociar e evitar maiores consequências.", trigger_days: 30 },
+  { name: "Confirmação de Pagamento", content: "✅ [Nome], confirmamos o recebimento do pagamento de R$ [Valor]. Obrigado pela pontualidade! Qualquer dúvida, estamos à disposição.", trigger_days: null },
+  { name: "Acordo / Negociação", content: "Olá [Nome], gostaríamos de oferecer uma condição especial para regularizar sua parcela de R$ [Valor] em atraso há [Dias] dias. Entre em contato para negociarmos. 🤝", trigger_days: null },
+];
