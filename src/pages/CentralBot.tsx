@@ -14,11 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 
 const WhatsAppConfig = lazy(() => import("./WhatsAppConfig"));
 const AgenteIA = lazy(() => import("./AgenteIA"));
-const Automacoes = lazy(() => import("./Automacoes"));
-const BotPerformance = lazy(() => import("./BotPerformance"));
-const CobrancasReguas = lazy(() => import("./CobrancasReguas"));
 
-const VALID_TABS = ["overview", "bot", "reguas", "automacoes", "agente", "performance"] as const;
+const VALID_TABS = ["overview", "bot", "agente"] as const;
 type TabKey = (typeof VALID_TABS)[number];
 
 const Fallback = () => (
@@ -260,24 +257,15 @@ const CentralBot = () => {
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
-        <TabsList className="grid w-full grid-cols-6 h-12 rounded-2xl bg-card border border-border p-1">
+        <TabsList className="grid w-full grid-cols-3 h-12 rounded-2xl bg-card border border-border p-1">
           <TabsTrigger value="overview" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold text-xs sm:text-sm flex items-center gap-1.5">
             <Activity size={14} /><span className="hidden sm:inline">Visão Geral</span>
           </TabsTrigger>
           <TabsTrigger value="bot" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold text-xs sm:text-sm flex items-center gap-1.5">
             <MessageCircle size={14} /><span className="hidden sm:inline">WhatsApp</span>
           </TabsTrigger>
-          <TabsTrigger value="reguas" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold text-xs sm:text-sm flex items-center gap-1.5">
-            <CalendarClock size={14} /><span className="hidden sm:inline">Réguas</span>
-          </TabsTrigger>
-          <TabsTrigger value="automacoes" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold text-xs sm:text-sm flex items-center gap-1.5">
-            <Zap size={14} /><span className="hidden sm:inline">Automações</span>
-          </TabsTrigger>
           <TabsTrigger value="agente" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold text-xs sm:text-sm flex items-center gap-1.5">
             <Sparkles size={14} /><span className="hidden sm:inline">Agente IA</span>
-          </TabsTrigger>
-          <TabsTrigger value="performance" className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-semibold text-xs sm:text-sm flex items-center gap-1.5">
-            <BarChart3 size={14} /><span className="hidden sm:inline">Performance</span>
           </TabsTrigger>
         </TabsList>
 
@@ -287,17 +275,8 @@ const CentralBot = () => {
         <TabsContent value="bot" className="mt-5 focus-visible:outline-none">
           <Suspense fallback={<Fallback />}><WhatsAppConfig /></Suspense>
         </TabsContent>
-        <TabsContent value="reguas" className="mt-5 focus-visible:outline-none">
-          <Suspense fallback={<Fallback />}><CobrancasReguas /></Suspense>
-        </TabsContent>
-        <TabsContent value="automacoes" className="mt-5 focus-visible:outline-none">
-          <Suspense fallback={<Fallback />}><Automacoes /></Suspense>
-        </TabsContent>
         <TabsContent value="agente" className="mt-5 focus-visible:outline-none">
           <Suspense fallback={<Fallback />}><AgenteIA /></Suspense>
-        </TabsContent>
-        <TabsContent value="performance" className="mt-5 focus-visible:outline-none">
-          <Suspense fallback={<Fallback />}><BotPerformance /></Suspense>
         </TabsContent>
       </Tabs>
     </div>

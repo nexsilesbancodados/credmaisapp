@@ -17,7 +17,7 @@ import {
   CheckCircle2, ExternalLink, Trash2, Copy, DollarSign,
   Search, ArrowUpDown, CalendarDays, AlertTriangle, Users,
 } from "lucide-react";
-import InvestidorPerfil from "./InvestidorPerfil";
+
 
 
 const brl = (n: number) => (n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -136,9 +136,6 @@ export default function Investidores() {
     void load();
   };
 
-  if (expandedId) {
-    return <InvestidorPerfil investorId={expandedId} onBack={() => { setExpandedId(null); void load(); }} />;
-  }
 
   // Enriched list: filter + sort + search
   const enriched = useMemo(() => {
