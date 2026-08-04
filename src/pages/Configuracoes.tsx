@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { EssencialConfig } from "@/components/Configuracoes/EssencialConfig";
+import { AparenciaConfig } from "@/components/Configuracoes/AparenciaConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { supabase } from "@/integrations/supabase/client";
