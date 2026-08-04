@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 const WhatsAppConfig = lazy(() => import("./WhatsAppConfig"));
 const AgenteIA = lazy(() => import("./AgenteIA"));
 
-const VALID_TABS = ["overview", "bot", "reguas", "automacoes", "agente", "performance"] as const;
+const VALID_TABS = ["overview", "bot", "agente"] as const;
 type TabKey = (typeof VALID_TABS)[number];
 
 const Fallback = () => (
