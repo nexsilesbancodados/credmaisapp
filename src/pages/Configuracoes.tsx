@@ -1955,6 +1955,4 @@ const Configuracoes = () => {
     </div>
   );
 };
-
-
 export default Configuracoes;
