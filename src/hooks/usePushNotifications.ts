@@ -19,13 +19,16 @@ export function usePushNotifications() {
     queryKey: ["push-settings", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase
-        .from("settings")
-        .select("push_notifications_enabled")
-        .eq("user_id", user.id)
-        .single()
-        .catch(() => null);
-      return data;
+      try {
+        const { data } = await supabase
+          .from("settings")
+          .select("push_notifications_enabled")
+          .eq("user_id", user.id)
+          .single();
+        return data;
+      } catch {
+        return null;
+      }
     },
     enabled: !!user,
     staleTime: 60_000,
