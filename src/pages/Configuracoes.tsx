@@ -532,16 +532,18 @@ const Configuracoes = () => {
 
         {/* Conteúdo */}
         <div className="rounded-2xl border border-border/30 bg-card/30 backdrop-blur-md p-6 md:p-8 space-y-8 animate-fade-in shadow-xl min-w-0">
-
-        {tab === "marca" && (
-          <>
+          {tab === "empresa" && <EssencialConfig form={form} setForm={setForm} inputCls={inputCls} />}
+          {tab === "marca" && <AparenciaConfig form={form} setForm={setForm} inputCls={inputCls} />}
+          {!["empresa", "marca"].includes(tab) && (
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center"><Palette size={16} className="text-primary" /></div>
+              <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center"><Settings size={16} className="text-primary" /></div>
               <div>
-                <h2 className="font-semibold text-foreground">White Label Completo</h2>
-                <p className="text-xs text-muted-foreground">Personalize toda a identidade visual do sistema</p>
+                <h2 className="font-semibold text-foreground">Configurações</h2>
+                <p className="text-xs text-muted-foreground">Seção em transição para o novo layout.</p>
               </div>
             </div>
+          )}
+
 
             {/* Identity Section */}
             <div className="space-y-6 p-6 rounded-2xl border border-border/20 bg-background/20 backdrop-blur-sm">
