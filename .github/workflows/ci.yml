@@ -38,6 +38,26 @@ jobs:
       - name: Build de produção
         run: npx vite build
 
+  contratos:
+    name: Garantias em produção (E2E)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Estes testes batem no ambiente publicado e verificam o que precisa valer
+    # sem sessão: rota de admin fechada, cron exigindo segredo, RLS não vazando
+    # dado de cliente. São as garantias que já foram quebradas antes.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test e2e/dinheiro.spec.ts
+
   segredos:
     name: Nenhum segredo no diff
     runs-on: ubuntu-latest

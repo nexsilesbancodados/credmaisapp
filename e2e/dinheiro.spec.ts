@@ -1,0 +1,140 @@
+import { test, expect } from "@playwright/test";
+
+/**
+ * Caminho do dinheiro — o que não pode acontecer.
+ *
+ * Estes testes não fazem login: rodam contra o app publicado e cobrem as
+ * garantias que valem SEM sessão. É de propósito. Os furos que apareceram neste
+ * sistema foram todos de porta aberta: função de admin sem checagem, webhook sem
+ * segredo, portal com token eterno. Um teste que só roda logado não pega nada
+ * disso.
+ *
+ * Fluxos que exigem sessão (pagar, estornar) precisam de uma conta de teste
+ * dedicada — não usar conta real, porque cada execução mexeria em dinheiro de
+ * cliente. Ver `docs/verificar-razao.sql` para a conferência do razão.
+ */
+
+const SUPABASE = "https://bnupitnrxyferelwroas.supabase.co";
+const ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg";
+
+test.describe("rotas de administração não podem estar abertas", () => {
+  // A admin-create-lifetime já rodou exposta na internet: criava conta vitalícia
+  // e, para e-mail existente, TROCAVA A SENHA do dono — tomada de conta direta.
+  for (const fn of ["admin-create-lifetime", "admin-create-trial"]) {
+    test(`${fn} recusa quem não é admin`, async ({ request }) => {
+      const semCredencial = await request.post(`${SUPABASE}/functions/v1/${fn}`, {
+        data: { email: "invasor@example.com", password: "SenhaQualquer123", name: "probe" },
+        failOnStatusCode: false,
+      });
+      expect(semCredencial.status()).toBe(401);
+
+      const comAnon = await request.post(`${SUPABASE}/functions/v1/${fn}`, {
+        headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
+        data: { email: "invasor@example.com", password: "SenhaQualquer123", name: "probe" },
+        failOnStatusCode: false,
+      });
+      expect(comAnon.status()).toBe(401);
+    });
+  }
+
+  test("a função de restaurar backup exige admin", async ({ request }) => {
+    const res = await request.post(`${SUPABASE}/functions/v1/backup-restore`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
+      data: { user_id: "00000000-0000-0000-0000-000000000000" },
+      failOnStatusCode: false,
+    });
+    expect(res.status()).toBe(401);
+  });
+
+  test("a função de teste seed-test-user não existe mais", async ({ request }) => {
+    const res = await request.post(`${SUPABASE}/functions/v1/seed-test-user`, {
+      data: {},
+      failOnStatusCode: false,
+    });
+    expect(res.status()).toBe(404);
+  });
+});
+
+test.describe("automações só rodam com o segredo do cron", () => {
+  // Sem esse gate, qualquer um dispara cobrança em massa e recálculo de juros.
+  for (const fn of ["auto-backup", "auto-late-fees", "auto-collection", "investor-notify"]) {
+    test(`${fn} recusa segredo inválido`, async ({ request }) => {
+      const res = await request.post(`${SUPABASE}/functions/v1/${fn}`, {
+        headers: { "x-cron-secret": "segredo-invalido-de-teste" },
+        data: {},
+        failOnStatusCode: false,
+      });
+      expect(res.status()).toBe(401);
+    });
+  }
+});
+
+test.describe("dados de cliente não vazam sem sessão", () => {
+  for (const tabela of ["clients", "contracts", "contract_installments", "profiles", "settings"]) {
+    test(`${tabela} não devolve linha para visitante`, async ({ request }) => {
+      const res = await request.get(`${SUPABASE}/rest/v1/${tabela}?select=id&limit=5`, {
+        headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
+        failOnStatusCode: false,
+      });
+      // Ou a RLS barra (4xx), ou devolve vazio. O que não pode é vir dado.
+      if (res.ok()) expect(await res.json()).toEqual([]);
+      else expect(res.status()).toBeGreaterThanOrEqual(400);
+    });
+  }
+
+  test("os erros de tela só são legíveis por admin", async ({ request }) => {
+    const res = await request.get(`${SUPABASE}/rest/v1/client_errors?select=mensagem&limit=5`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
+      failOnStatusCode: false,
+    });
+    if (res.ok()) expect(await res.json()).toEqual([]);
+  });
+});
+
+test.describe("configuração da plataforma", () => {
+  test("é legível por visitante (a tela de login precisa) mas não gravável", async ({ request }) => {
+    const leitura = await request.get(
+      `${SUPABASE}/rest/v1/platform_settings?select=allow_new_registrations`,
+      { headers: { apikey: ANON, Authorization: `Bearer ${ANON}` }, failOnStatusCode: false },
+    );
+    expect(leitura.ok()).toBeTruthy();
+    expect((await leitura.json()).length).toBe(1);
+
+    const escrita = await request.patch(`${SUPABASE}/rest/v1/platform_settings?id=eq.true`, {
+      headers: {
+        apikey: ANON,
+        Authorization: `Bearer ${ANON}`,
+        Prefer: "return=representation",
+      },
+      data: { maintenance_mode: true },
+      failOnStatusCode: false,
+    });
+    // A RLS não deixa a linha ser alcançada: nenhuma linha alterada.
+    if (escrita.ok()) expect(await escrita.json()).toEqual([]);
+    else expect(escrita.status()).toBeGreaterThanOrEqual(400);
+  });
+});
+
+test.describe("portal do cliente", () => {
+  test("token inválido não abre dossiê nenhum", async ({ request }) => {
+    const res = await request.post(`${SUPABASE}/rest/v1/rpc/portal_login_by_token`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" },
+      data: { _token: "00000000-0000-0000-0000-000000000000" },
+      failOnStatusCode: false,
+    });
+    expect(res.ok()).toBeTruthy();
+    expect(await res.json()).toBeNull();
+  });
+
+  test("login exige CPF e data de nascimento juntos", async ({ request }) => {
+    // O login só por CPF já existiu e entregava o dossiê inteiro de quem
+    // soubesse o número. A função foi removida — precisa continuar removida.
+    const res = await request.post(`${SUPABASE}/rest/v1/rpc/portal_client_login_cpf`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" },
+      data: { _cpf: "12345678901" },
+      failOnStatusCode: false,
+    });
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+  });
+});

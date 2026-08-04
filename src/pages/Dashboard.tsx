@@ -22,6 +22,7 @@ import ExecutiveKPIs from "@/components/dashboard/ExecutiveKPIs";
 import BentoKPI from "@/components/dashboard/BentoKPI";
 import { formatBR } from "@/lib/dateUtils";
 import { fetchAll } from "@/lib/fetchAll";
+import { computeDashboardMetrics } from "@/lib/dashboardMetrics";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
@@ -41,9 +42,16 @@ const Dashboard = () => {
   const { data, isLoading, error: dashError, refetch: refetchDash } = useQuery({
     queryKey: ["dashboard-data", user?.id],
     queryFn: async () => {
+      // Só as colunas que as métricas usam. Antes vinha `select("*")` das ~1.700
+      // parcelas e de todos os contratos, com anexos e observações que a tela nem
+      // abre — payload grande à toa, e no celular isso pesa.
       const [contracts, installments, clients, goals, profits] = await Promise.all([
-        fetchAll((f, t) => supabase.from("contracts").select("*, clients(name, cpf_cnpj)").eq("user_id", user!.id).range(f, t)),
-        fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user!.id).range(f, t)),
+        fetchAll((f, t) => supabase.from("contracts")
+          .select("id, capital, total_interest, num_installments, status, created_at, client_id, clients(name, cpf_cnpj)")
+          .eq("user_id", user!.id).range(f, t)),
+        fetchAll((f, t) => supabase.from("contract_installments")
+          .select("id, contract_id, client_id, amount, paid_amount, late_fee, due_date, paid_at, status")
+          .eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("clients").select("id, name, credit_score, status").eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("goals").select("*").eq("user_id", user!.id).range(f, t)),
         supabase.from("profits").select("amount, date").eq("user_id", user!.id).order("date", { ascending: false }).limit(30),
@@ -56,101 +64,9 @@ const Dashboard = () => {
     enabled: !!user,
   });
 
-  const metrics = useMemo(() => {
-    if (!data) return null;
-    const { contracts, installments, clients, goals, profits } = data;
-    const now = new Date();
-
-    // ⚡ FOCO: apenas contratos ativos (exclui "completed"/quitados).
-    // O histórico de contratos encerrados vive em /historico-financeiro.
-    const activeContracts = contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
-    const activeIds = new Set(activeContracts.map((c: any) => c.id));
-    const activeInstallments = installments.filter((i: any) => activeIds.has(i.contract_id));
-
-    const capitalNaRua = activeContracts.reduce((s: number, c: any) => s + Number(c.capital), 0);
-    const lucroAReceber = activeContracts.reduce((s: number, c: any) => s + Number(c.total_interest), 0);
-    // Lucro já recebido dentro de contratos AINDA ATIVOS
-    const lucroRecebido = 0;
-
-    const totalInstallments = activeInstallments.length;
-    const overdueInstallments = activeInstallments.filter(
-      (i: any) => i.status === "pending" && new Date(i.due_date) < now
-    );
-    const paidInstallments = activeInstallments.filter((i: any) => i.status === "paid");
-    const taxaInadimplencia = totalInstallments > 0
-      ? (overdueInstallments.length / totalInstallments) * 100
-      : 0;
-
-    const totalReceived = paidInstallments.reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount || 0), 0);
-    const totalOverdueAmount = overdueInstallments.reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
-
-    const todayStr = now.toISOString().split("T")[0];
-    const vencendoHoje = activeInstallments.filter(
-      (i: any) => i.status === "pending" && i.due_date.startsWith(todayStr)
-    );
-
-    const in7days = new Date(now.getTime() + 7 * 86400000);
-    const proximos7 = activeInstallments.filter((i: any) => {
-      if (i.status !== "pending") return false;
-      const d = new Date(i.due_date);
-      return d > now && d <= in7days;
-    });
-
-    const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(now);
-      day.setDate(day.getDate() - (6 - i));
-      const dayStr = day.toISOString().split("T")[0];
-      const count = paidInstallments.filter((p: any) => p.paid_at?.startsWith(dayStr)).length;
-      return { day: day.toLocaleDateString("pt-BR", { weekday: "short" }).slice(0, 3), count };
-    });
-    const maxActivity = Math.max(...weeklyActivity.map(w => w.count), 1);
-
-    const recentPayments = paidInstallments
-      .sort((a: any, b: any) => new Date(b.paid_at).getTime() - new Date(a.paid_at).getTime())
-      .slice(0, 6);
-
-    const overdueList = overdueInstallments.map((i: any) => {
-      const contract = contracts.find((c: any) => c.id === i.contract_id);
-      const daysOverdue = Math.floor((now.getTime() - new Date(i.due_date).getTime()) / 86400000);
-      return { ...i, clientName: contract?.clients?.name || "—", daysOverdue, contractId: i.contract_id };
-    }).sort((a: any, b: any) => b.daysOverdue - a.daysOverdue);
-
-    const paidToday = paidInstallments.filter((p: any) => p.paid_at?.startsWith(todayStr));
-    const paidTodayAmount = paidToday.reduce((s: number, p: any) => s + Number(p.paid_amount || p.amount), 0);
-
-    // Lucro operacional considera SÓ contratos ativos (juros já recebidos deles)
-    const totalCapitalReturned = paidInstallments.reduce((s: number, i: any) => {
-      const contract = activeContracts.find((c: any) => c.id === i.contract_id);
-      if (!contract) return s;
-      const capitalPerInstallment = Number(contract.capital) / Number(contract.num_installments);
-      return s + capitalPerInstallment;
-    }, 0);
-    const interestEarned = Math.max(0, totalReceived - totalCapitalReturned);
-    const totalProfitAmount = interestEarned;
-
-    const roi = capitalNaRua > 0 ? ((totalProfitAmount / capitalNaRua) * 100) : 0;
-
-    // Totais mostrados agora refletem só o que está NA RUA
-    const totalLent = capitalNaRua;
-    const pendingReceivable = activeInstallments
-      .filter((i: any) => i.status === "pending" || i.status === "overdue" || (i.status !== "paid" && !i.paid_at))
-      .reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
-
-    return {
-      capitalNaRua, lucroRecebido, lucroAReceber, taxaInadimplencia,
-      totalReceived, totalOverdueAmount, roi,
-      totalLent, pendingReceivable,
-      contratosAtivos: activeContracts.length,
-      contratosAtraso: contracts.filter((c: any) => c.status === "overdue").length,
-      totalContratos: activeContracts.length,
-      totalClientes: clients.length,
-      overdueCount: overdueInstallments.length,
-      vencendoHoje: vencendoHoje.length,
-      proximos7: proximos7.length,
-      overdueList, recentPayments, goals, contracts: activeContracts,
-      weeklyActivity, maxActivity, paidTodayAmount, totalProfitAmount,
-    };
-  }, [data]);
+  // O cálculo mora em lib/dashboardMetrics para poder ser testado. Ficando aqui
+  // dentro, o filtro errado de inadimplência passou meses sem ninguém notar.
+  const metrics = useMemo(() => (data ? computeDashboardMetrics(data as any) : null), [data]);
 
   // ⚠️ IMPORTANTE: todos os hooks antes de qualquer early return
   const deltaReceived = useMemo(() => {

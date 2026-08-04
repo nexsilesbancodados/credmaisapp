@@ -130,6 +130,54 @@ describe("totalDue e breakdown", () => {
   });
 });
 
+describe("teto de juros do contrato", () => {
+  // `max_interest_cap_percent` era preenchido no cadastro do empréstimo, gravado
+  // no banco e nunca lido: o operador definia um limite que não limitava nada.
+  const base = { amount: 100, due_date: venceEm(-60), status: "pending" };
+
+  it("sem teto, os juros crescem sem limite", () => {
+    // 60 dias a 4% ao dia composto passam de 9x o valor da parcela
+    expect(computeLateFee(base)).toBeGreaterThan(900);
+  });
+
+  it("com teto de 100%, os juros param no valor da parcela", () => {
+    expect(computeLateFee({ ...base, max_interest_cap_percent: 100 })).toBe(100);
+  });
+
+  it("teto de 50% limita à metade da parcela", () => {
+    expect(computeLateFee({ ...base, max_interest_cap_percent: 50 })).toBe(50);
+  });
+
+  it("teto não infla juros quando ainda não foi atingido", () => {
+    const doisDias = { amount: 100, due_date: venceEm(-2), status: "pending", max_interest_cap_percent: 100 };
+    expect(computeLateFee(doisDias)).toBeCloseTo(8.16, 2); // continua o composto normal
+  });
+
+  it("teto zero ou ausente é tratado como sem teto", () => {
+    expect(computeLateFee({ ...base, max_interest_cap_percent: 0 })).toBeGreaterThan(900);
+    expect(computeLateFee({ ...base, max_interest_cap_percent: null })).toBeGreaterThan(900);
+  });
+
+  it("lê o teto também quando o contrato vem aninhado na parcela", () => {
+    // Cobranças e Detalhe do Cliente trazem `select("*, contracts(...)")`
+    expect(computeLateFee({ ...base, contracts: { max_interest_cap_percent: 100 } })).toBe(100);
+  });
+
+  it("a taxa diária também é lida do contrato aninhado", () => {
+    const inst = { amount: 100, due_date: venceEm(-2), status: "pending", contracts: { daily_interest_percent: 1 } };
+    expect(dailyRateOf(inst)).toBe(1);
+    expect(computeLateFee(inst)).toBeCloseTo(2.01, 2);
+  });
+
+  it("o breakdown respeita o teto, sem divergir do total", () => {
+    const comTeto = { ...base, max_interest_cap_percent: 100 };
+    const b = computeLateFeeBreakdown(comTeto);
+    expect(b.juros).toBe(100);
+    expect(b.withFees).toBe(200);
+    expect(b.total).toBe(computeLateFee(comTeto));
+  });
+});
+
 describe("independência da hora do dia", () => {
   it("o valor não muda se o cálculo roda de manhã ou de noite", () => {
     const p = { amount: 100, due_date: venceEm(-3), status: "pending" };
