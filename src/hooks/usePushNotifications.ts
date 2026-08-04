@@ -14,33 +14,38 @@ export function usePushNotifications() {
   const { user } = useAuth();
   const lastSeenRef = useRef<number>(0);
 
+  // ALWAYS call useQuery (never conditionally) — enabled flag controls the fetch
   const { data: settings } = useQuery({
     queryKey: ["push-settings", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("settings")
-        .select("push_notifications_enabled")
-        .eq("user_id", user!.id)
-        .single();
-      return data;
+      if (!user) return null;
+      try {
+        const { data } = await supabase
+          .from("settings")
+          .select("push_notifications_enabled")
+          .eq("user_id", user.id)
+          .single();
+        return data;
+      } catch {
+        return null;
+      }
     },
     enabled: !!user,
     staleTime: 60_000,
   });
 
-  // Request permission when enabled
+  // Request permission when enabled — ALWAYS call useEffect
   useEffect(() => {
-    if (!settings?.push_notifications_enabled) return;
+    if (!user || !settings?.push_notifications_enabled) return;
     if (typeof Notification === "undefined") return;
     if (Notification.permission === "default") {
       Notification.requestPermission().catch(() => {});
     }
-  }, [settings?.push_notifications_enabled]);
+  }, [user, settings?.push_notifications_enabled]);
 
-  // Subscribe to new notifications
+  // Subscribe to new notifications — ALWAYS call useEffect
   useEffect(() => {
-    if (!user) return;
-    if (!settings?.push_notifications_enabled) return;
+    if (!user || !settings?.push_notifications_enabled) return;
     if (typeof Notification === "undefined") return;
 
     // Initialize last-seen
