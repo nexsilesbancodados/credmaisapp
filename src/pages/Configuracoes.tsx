@@ -41,7 +41,10 @@ const Configuracoes = () => {
   const { data: settings } = useQuery({
     queryKey: ["settings", user?.id],
     queryFn: async () => {
-      const { data } = await (supabase as any).from("settings_safe").select("*").eq("user_id", user!.id).maybeSingle();
+      // Sem `as any`: é justamente esse cast que deixava o form ler/gravar colunas
+      // que não existem no banco (foi assim que `hubla_checkout_url` passou batido
+      // e o salvamento quebrou o link de cadastro).
+      const { data } = await supabase.from("settings_safe").select("*").eq("user_id", user!.id).maybeSingle();
       return data;
     },
     enabled: !!user,

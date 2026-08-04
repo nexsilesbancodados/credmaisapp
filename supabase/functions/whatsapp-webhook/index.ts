@@ -429,11 +429,17 @@ serve(async (req) => {
   // SEGURANÇA (C2): o Evolution não assina o payload, então exigimos um segredo
   // compartilhado. Configure o webhook do Evolution com `?secret=<valor>` na URL
   // (ou header x-webhook-secret) e defina EVOLUTION_WEBHOOK_SECRET nos secrets.
-  // FAIL-SAFE: só passa a EXIGIR quando o env estiver setado — assim o deploy do
-  // código não derruba a recepção antes de você configurar o segredo no Evolution.
-  // Guard desativado temporariamente para destravar recepção do Evolution.
-  // Para reativar: crie EVOLUTION_WEBHOOK_SECRET e configure `?secret=<valor>` na URL do webhook no Evolution.
-  if (false && !checkSharedSecret(req, "EVOLUTION_WEBHOOK_SECRET", "x-webhook-secret")) {
+  //
+  // FAIL-SAFE: `checkSharedSecret` só EXIGE o segredo quando o env está definido.
+  //
+  // HISTÓRICO: este guard chegou a ficar anulado por um `if (false && ...)` posto
+  // como medida temporária para destravar a recepção. Com o env já configurado,
+  // isso deixava o webhook aberto na internet: dava para forjar mensagem de
+  // qualquer telefone, extrair a dívida e a chave PIX do cliente pelo bot e, com
+  // `bot_auto_confirm_payment` ligado, dar baixa em parcela com comprovante falso.
+  // Não reintroduza o curto-circuito — se a recepção parar, o certo é acertar a
+  // URL do webhook no painel do Evolution.
+  if (!checkSharedSecret(req, "EVOLUTION_WEBHOOK_SECRET", "x-webhook-secret")) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

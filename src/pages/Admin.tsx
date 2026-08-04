@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Activity, Terminal, Lock, Globe, Settings2, CreditCard
 } from "lucide-react";
 import SupportInbox from "@/components/admin/SupportInbox";
+import GrantAccessDialog from "@/components/admin/GrantAccessDialog";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +85,7 @@ const Admin = () => {
   } | null>(null);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const fetchUsers = async () => {
     const { data } = await supabase
@@ -301,6 +303,12 @@ const Admin = () => {
 
   return (
     <div className="space-y-6">
+      <GrantAccessDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onDone={fetchUsers}
+      />
+
       {/* Header */}
       <div className="page-hero animate-fade-in">
         <div className="page-hero-content flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -316,6 +324,9 @@ const Admin = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setCreateOpen(true)} className="btn-ghost">
+              <UserCheck size={14} /> Liberar acesso
+            </button>
             <a href="/admin/bot-audit" className="btn-ghost">
               <Activity size={14} /> Bot Audit
             </a>

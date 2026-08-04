@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { guard as rateLimitGuard } from "../_shared/rate_limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,10 @@ const PLANS = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Público por necessidade (checkout antes do login) — freio por IP contra abuso.
+  const rl = await rateLimitGuard(req, "mp-pref", 10, 0.1, corsHeaders);
+  if (rl) return rl;
 
   try {
     const token = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");

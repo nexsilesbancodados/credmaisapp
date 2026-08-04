@@ -1,8 +1,8 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { loadPdfLib } from "@/utils/pdfLib";
 import { formatBR } from "@/lib/dateUtils";
 
-export const generatePortalReceiptPdf = (client: any, installment: any, company: any) => {
+export const generatePortalReceiptPdf = async (client: any, installment: any, company: any) => {
+  const { jsPDF, autoTable } = await loadPdfLib();
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
@@ -72,7 +72,8 @@ export const generatePortalReceiptPdf = (client: any, installment: any, company:
   doc.save(`Recibo_Parcela_${installment.installment_number}_${client.name.replace(/\s+/g, "_")}.pdf`);
 };
 
-export const generatePortalStatementPdf = (client: any, contracts: any[], company: any) => {
+export const generatePortalStatementPdf = async (client: any, contracts: any[], company: any) => {
+  const { jsPDF, autoTable } = await loadPdfLib();
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const fmt = (v: number) => `R$ ${Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
