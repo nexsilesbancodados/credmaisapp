@@ -222,6 +222,13 @@ const NovoCliente = () => {
     if (settings.default_late_fee) setLateFeePercent(settings.default_late_fee.toString());
     if (settings.default_daily_interest) setDailyInterestPercent(settings.default_daily_interest.toString());
     if (settings.default_frequency) setFrequency(settings.default_frequency as Frequency);
+    // Sem estes, o assinante redigitava o mesmo numero de parcelas e a mesma
+    // forma de pagamento em todo contrato. O teto de juros nem isso: ficava
+    // escondido nas condicoes avancadas e por isso os 249 contratos da base
+    // estavam todos sem teto nenhum.
+    if (settings.default_num_installments) setNumInstallments(String(settings.default_num_installments));
+    if (settings.default_payment_method) setPaymentMethod(settings.default_payment_method as typeof paymentMethod);
+    if (settings.default_max_interest_cap) setMaxInterestCap(String(settings.default_max_interest_cap));
     defaultsAppliedRef.current = true;
   }, [settings]);
 

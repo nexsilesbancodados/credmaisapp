@@ -19,6 +19,7 @@ const formVazio: SettingsForm = {
   sidebar_style: "default", login_title: "", login_subtitle: "",
   footer_text: "", border_radius: "16", font_family: "default",
   default_interest_rate: "10", default_late_fee: "0", default_daily_interest: "4",
+  default_num_installments: "", default_payment_method: "pix", default_max_interest_cap: "",
   default_frequency: "monthly",
   whatsapp_api_url: "", whatsapp_api_key: "", whatsapp_instance: "",
   n8n_webhook_url: "", push_notifications_enabled: false,

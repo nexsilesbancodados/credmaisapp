@@ -67,6 +67,42 @@ const PadroesSection = ({ ctx }: SectionProps) => {
                   <option value="daily">Diário</option><option value="weekly">Semanal</option><option value="biweekly">Quinzenal</option><option value="monthly">Mensal</option>
                 </select>
               </div>
+
+              <div>
+                <label className="text-label mb-1.5 block">Nº de parcelas padrão</label>
+                <input
+                  type="number" min="1" step="1" placeholder="Ex: 6"
+                  value={form.default_num_installments}
+                  onChange={(e) => setForm({ ...form, default_num_installments: e.target.value })}
+                  className={inputCls}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Deixe em branco para digitar a cada empréstimo.</p>
+              </div>
+
+              <div>
+                <label className="text-label mb-1.5 block">Forma de pagamento padrão</label>
+                <select value={form.default_payment_method} onChange={(e) => setForm({ ...form, default_payment_method: e.target.value })} className={inputCls}>
+                  <option value="pix">PIX</option>
+                  <option value="cash">Dinheiro</option>
+                  <option value="boleto">Boleto</option>
+                  <option value="transfer">Transferência</option>
+                </select>
+              </div>
+
+              <div className="col-span-2">
+                <label className="text-label mb-1.5 block">Teto dos juros de atraso (%)</label>
+                <input
+                  type="number" min="0" step="1" placeholder="Ex: 100 — os juros nunca passam do valor da parcela"
+                  value={form.default_max_interest_cap}
+                  onChange={(e) => setForm({ ...form, default_max_interest_cap: e.target.value })}
+                  className={inputCls}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Limita quanto os juros de atraso podem crescer. Com 100%, uma parcela de R$ 100
+                  nunca acumula mais de R$ 100 de juros, por mais tempo que fique em aberto.
+                  Em branco, não há teto. Vale para os contratos criados a partir de agora.
+                </p>
+              </div>
             </div>
           </>
     </>

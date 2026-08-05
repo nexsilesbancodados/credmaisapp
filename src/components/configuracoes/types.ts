@@ -37,6 +37,9 @@ export interface SettingsForm {
   default_late_fee: string;
   default_daily_interest: string;
   default_frequency: string;
+  default_num_installments: string;
+  default_payment_method: string;
+  default_max_interest_cap: string;
 
   // Integrações
   whatsapp_api_url: string;

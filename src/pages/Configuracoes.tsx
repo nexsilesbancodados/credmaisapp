@@ -66,6 +66,7 @@ const Configuracoes = () => {
     sidebar_style: "default", login_title: "", login_subtitle: "",
     footer_text: "", border_radius: "16", font_family: "default",
     default_interest_rate: "10", default_late_fee: "0", default_daily_interest: "4", default_frequency: "monthly",
+    default_num_installments: "", default_payment_method: "pix", default_max_interest_cap: "",
     whatsapp_api_url: "", whatsapp_api_key: "", whatsapp_instance: "",
     n8n_webhook_url: "", push_notifications_enabled: false,
     pix_key: "", pix_key_type: "cpf", billing_message: "",
@@ -129,6 +130,9 @@ const Configuracoes = () => {
         default_late_fee: "0",
         default_daily_interest: String(s.default_daily_interest || 4),
         default_frequency: s.default_frequency || "monthly",
+        default_num_installments: s.default_num_installments ? String(s.default_num_installments) : "",
+        default_payment_method: s.default_payment_method || "pix",
+        default_max_interest_cap: s.default_max_interest_cap ? String(s.default_max_interest_cap) : "",
         whatsapp_api_url: s.whatsapp_api_url || "",
         whatsapp_instance: s.whatsapp_instance || "",
         whatsapp_api_key: "", // never loaded from server; type new value to replace
@@ -240,6 +244,9 @@ const Configuracoes = () => {
       default_late_fee: 0,
       default_daily_interest: parseFloat(form.default_daily_interest),
       default_frequency: form.default_frequency,
+      default_num_installments: form.default_num_installments ? Number(form.default_num_installments) : null,
+      default_payment_method: form.default_payment_method || null,
+      default_max_interest_cap: form.default_max_interest_cap ? Number(form.default_max_interest_cap) : null,
       whatsapp_api_url: form.whatsapp_api_url || null,
       whatsapp_instance: form.whatsapp_instance.trim() || null,
       // whatsapp_api_key intentionally omitted — saved via edge function settings-set-secret

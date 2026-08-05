@@ -1645,6 +1645,10 @@ export type Database = {
           custom_contract_template: string | null
           default_daily_interest: number | null
           default_frequency: string | null
+          default_num_installments: number | null
+          default_payment_method: string | null
+          default_max_interest_cap: number | null
+          default_term_months: number | null
           default_interest_rate: number | null
           default_late_fee: number | null
           favicon_url: string | null
@@ -1708,6 +1712,10 @@ export type Database = {
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
@@ -1771,6 +1779,10 @@ export type Database = {
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
@@ -2434,6 +2446,10 @@ export type Database = {
           custom_contract_template: string | null
           default_daily_interest: number | null
           default_frequency: string | null
+          default_num_installments: number | null
+          default_payment_method: string | null
+          default_max_interest_cap: number | null
+          default_term_months: number | null
           default_interest_rate: number | null
           default_late_fee: number | null
           favicon_url: string | null
@@ -2496,6 +2512,10 @@ export type Database = {
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
@@ -2558,6 +2578,10 @@ export type Database = {
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
