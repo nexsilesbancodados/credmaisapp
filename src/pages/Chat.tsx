@@ -400,9 +400,12 @@ const Chat = () => {
         file_url: signedUrl, file_name: file.name, file_type: file.type,
       };
       if (scope.kind === "channel") payload.channel_id = scope.id; else payload.dm_thread_id = scope.id;
-      await supabase.from("chat_messages").insert(payload);
+      // O arquivo subia para o storage mas a mensagem podia falhar em silêncio:
+      // o anexo ficava órfão e ninguém no chat via nada.
+      const { error: msgErr } = await supabase.from("chat_messages").insert(payload);
+      if (msgErr) throw msgErr;
     } catch (e: any) {
-      toast.error("Erro no upload: " + e.message);
+      toast.error("Erro ao enviar arquivo: " + e.message);
     } finally { setUploading(false); }
   };
 
