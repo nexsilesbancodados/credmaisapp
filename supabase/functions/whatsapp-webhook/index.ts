@@ -683,7 +683,7 @@ serve(async (req) => {
 
         // Reverse calc: lead disse "posso pagar X/mês"
         if (understood?.kind === "reverse_calc" && understood.monthly_payment) {
-          const rate = Number(settings?.default_interest_rate || profile?.default_interest_rate || 15);
+          const rate = Number(settings?.default_interest_rate || 15);
           const term = lead.term_months || Number(settings?.default_term_months || 6);
           const amount = sdrMod.reverseCalcAmount(understood.monthly_payment, term, rate);
           lead.amount_requested = amount;
@@ -731,7 +731,7 @@ serve(async (req) => {
           pixKey: profile?.pix_key || undefined,
           pixKeyType: profile?.pix_key_type || undefined,
           ownerName: profile?.name || undefined,
-          rate: Number(settings.default_interest_rate ?? profile?.default_interest_rate ?? 15),
+          rate: Number(settings.default_interest_rate ?? 15),
           term: Number(settings.default_term_months ?? 6),
           minAmount: Number(settings.min_loan_amount ?? 100),
           maxAmount: Number(settings.max_loan_amount ?? 100000),
@@ -812,10 +812,12 @@ serve(async (req) => {
             human_takeover_reason: decision.handoffReason || "SDR handoff",
             updated_at: new Date().toISOString(),
           }).eq("id", convoId);
+          // `notifications` não tem coluna `title`. Com ela no payload, o aviso
+          // nunca era gravado: o dono não ficava sabendo que um lead pediu
+          // atendimento humano. O título virou a primeira linha da mensagem.
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "Lead pronto para atendimento",
-            message: `${lead.name || "Lead"} (${senderPhone}) — ${decision.handoffReason || "aguardando consultor"}`,
+            message: `Lead pronto para atendimento: ${lead.name || "Lead"} (${senderPhone}) — ${decision.handoffReason || "aguardando consultor"}`,
             type: "info",
           });
         }
@@ -824,8 +826,8 @@ serve(async (req) => {
         if (lead.stage === "new" && decision.stage !== "new") {
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "Novo lead no WhatsApp",
-            message: `${senderPhone} iniciou uma conversa de empréstimo`,
+            
+            message: ["Novo lead no WhatsApp", `${senderPhone} iniciou uma conversa de empréstimo`].filter(Boolean).join(" — "),
             type: "info",
           });
         }
@@ -1019,8 +1021,8 @@ serve(async (req) => {
           }
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "Cliente pediu atendimento humano",
-            message: `${client.name || senderPhone}: ${txtRaw.slice(0, 180) || "sem detalhes"}`,
+            
+            message: ["Cliente pediu atendimento humano", `${client.name || senderPhone}: ${txtRaw.slice(0, 180) || "sem detalhes"}`].filter(Boolean).join(" — "),
             type: "warning",
           });
           await botSay(
@@ -1165,8 +1167,8 @@ serve(async (req) => {
           }
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "Cliente quer renegociar",
-            message: `${client.name || senderPhone} pediu renegociação via menu WhatsApp.`,
+            
+            message: ["Cliente quer renegociar", `${client.name || senderPhone} pediu renegociação via menu WhatsApp.`].filter(Boolean).join(" — "),
             type: "info",
           });
           const link = await buildPortalDeepLink();
@@ -1326,7 +1328,7 @@ serve(async (req) => {
       await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "escalate_to_human", toolInput: { reason: "client_requested_human" } });
       await botSay("👤 Chamando um atendente humano...");
       await escalateToHuman(supabase, convoId!, "Cliente pediu atendente humano");
-      await supabase.from("notifications").insert({ user_id: userId, title: "🚨 Atendimento humano solicitado", message: `${client.name} pediu para falar com um humano.`, type: "warning" });
+      await supabase.from("notifications").insert({ user_id: userId,  message: ["🚨 Atendimento humano solicitado", `${client.name} pediu para falar com um humano.`].filter(Boolean).join(" — "), type: "warning" });
       return new Response(JSON.stringify({ status: "human" }), { headers: corsHeaders });
     }
     if (matchesAny(incomingText, PIX_WORDS) && profile?.pix_key) {
@@ -1361,7 +1363,11 @@ serve(async (req) => {
       supabase.from("audit_logs").select("action, created_at, details").eq("entity_id", client.id).eq("entity_type", "whatsapp_bot").order("created_at", { ascending: false }).limit(10),
       supabase.from("contract_installments").select("id").eq("client_id", client.id).eq("status", "paid"),
       supabase.from("contract_installments").select("amount, paid_amount, paid_at, installment_number, payment_method").eq("client_id", client.id).eq("status", "paid").order("paid_at", { ascending: false }).limit(5),
-      supabase.from("whatsapp_notes").select("content, created_by, created_at").eq("client_id", client.id).order("created_at", { ascending: false }).limit(8),
+      // A tabela guarda `conversation_id` e `author_name` — não `client_id` nem
+      // `created_by`. Com os nomes errados a consulta devolvia 400, e as anotações
+      // que a equipe escreve sobre o cliente NUNCA chegavam ao contexto da IA:
+      // o bot atendia sem saber de nada que foi combinado por fora.
+      supabase.from("whatsapp_notes").select("content, author_name, created_at").eq("conversation_id", convoId).order("created_at", { ascending: false }).limit(8),
       supabase.from("audit_logs").select("created_at, details").eq("entity_id", client.id).eq("entity_type", "whatsapp_bot").eq("action", "promise_to_pay").order("created_at", { ascending: false }).limit(5),
       supabase.from("message_templates").select("name, content").eq("user_id", userId).limit(8),
     ]);
@@ -1431,7 +1437,7 @@ serve(async (req) => {
           pixKey: profile?.pix_key || undefined,
           pixKeyType: profile?.pix_key_type || undefined,
           ownerName: profile?.name || undefined,
-          rate: Number(settings.default_interest_rate ?? profile?.default_interest_rate ?? 15),
+          rate: Number(settings.default_interest_rate ?? 15),
           term: Number(settings.default_term_months ?? 6),
           minAmount: Number(settings.min_loan_amount ?? 100),
           maxAmount: Number(settings.max_loan_amount ?? 100000),
@@ -1499,7 +1505,7 @@ serve(async (req) => {
     })).filter(p => p.date && p.date >= todayStr);
 
     // Notas humanas e templates como referência
-    const humanNotesText = (humanNotes || []).map(n => `- [${n.created_by || 'humano'} em ${(n.created_at || '').slice(0,10)}] ${n.content}`).join("\n").slice(0, 1500);
+    const humanNotesText = (humanNotes || []).map(n => `- [${n.author_name || 'humano'} em ${(n.created_at || '').slice(0,10)}] ${n.content}`).join("\n").slice(0, 1500);
     const recentPaidText = (recentPaid || []).map(p => `- Parcela #${p.installment_number}: R$ ${Number(p.paid_amount || p.amount).toFixed(2)} em ${(p.paid_at || '').slice(0,10)}${p.payment_method ? ` (${p.payment_method})` : ''}`).join("\n");
     const templatesText = (messageTemplates || []).map(t => `• ${t.name}: ${t.content.slice(0, 120)}`).join("\n").slice(0, 800);
 
@@ -1806,8 +1812,8 @@ Ex6 — "queria mais 3 mil emprestado":
       result.needs_human = true;
       await supabase.from("notifications").insert({
         user_id: userId,
-        title: "🚨 Bot escalou para humano",
-        message: `Cliente ${client.name}: motivo = ${preEscalate}. Assuma a conversa quando puder.`,
+        
+        message: ["🚨 Bot escalou para humano", `Cliente ${client.name}: motivo = ${preEscalate}. Assuma a conversa quando puder.`].filter(Boolean).join(" — "),
         type: "warning",
       });
     }
@@ -1847,8 +1853,8 @@ Ex6 — "queria mais 3 mil emprestado":
         if (critical) {
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "⚠️ IA quase enviou dado incorreto",
-            message: `Cliente ${client.name}: bot corrigido automaticamente (${v.reasons.slice(0,2).join("; ")}). Revise a conversa.`,
+            
+            message: ["⚠️ IA quase enviou dado incorreto", `Cliente ${client.name}: bot corrigido automaticamente (${v.reasons.slice(0,2).join("; ")}). Revise a conversa.`].filter(Boolean).join(" — "),
             type: "warning",
           });
         }
@@ -1927,9 +1933,10 @@ Ex6 — "queria mais 3 mil emprestado":
               user_id: userId,
               client_id: client.id,
               conversation_id: convoId,
-              action_type: "tool_recovery",
+              // Não existe `action_type` nesta tabela; o campo derrubava o insert
+              // inteiro. O tipo da ação já vive em `tool_name`/`tool_input`.
               tool_name: "runAgentWithTools",
-              tool_input: { trigger: "guardrail_block", reasons: g.reasons.slice(0, 5) },
+              tool_input: { motivo: "tool_recovery", trigger: "guardrail_block", reasons: g.reasons.slice(0, 5) },
               tool_output: { tools_used: toolRun.tools_used.map(t => ({ name: t.name, ok: (t.output as any).ok })), handoff: toolRun.handoff, motivo: toolRun.handoff_motivo, reply_len: toolRun.reply.length },
             });
             if (toolRun.reply && !toolRun.handoff) {
@@ -1968,8 +1975,8 @@ Ex6 — "queria mais 3 mil emprestado":
           if (!recovered) {
             await supabase.from("notifications").insert({
               user_id: userId,
-              title: "🛑 Bot bloqueado pelo guardrail",
-              message: `Cliente ${client.name}: ${g.reasons.slice(0, 3).join(", ")}. Assuma a conversa.`,
+              
+              message: ["🛑 Bot bloqueado pelo guardrail", `Cliente ${client.name}: ${g.reasons.slice(0, 3).join(", ")}. Assuma a conversa.`].filter(Boolean).join(" — "),
               type: "warning",
             });
           }
@@ -2038,7 +2045,10 @@ Ex6 — "queria mais 3 mil emprestado":
         const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
         const { data: portalHits } = await supabase
           .from("portal_sessions")
-          .select("id, created_at")
+          // A chave da tabela é `token`; não existe `id`. Pedindo `id` a consulta
+          // devolvia 400 e o bot nunca percebia que o cliente tinha aberto o
+          // portal — a intenção "abriu_portal" jamais era registrada.
+          .select("token, created_at")
           .eq("client_id", client.id)
           .gte("created_at", since)
           .limit(1);
@@ -2150,8 +2160,8 @@ Ex6 — "queria mais 3 mil emprestado":
       const reasonsTxt = receiptCheck?.reasons.join(", ") || "sem evidência";
       await supabase.from("notifications").insert({
         user_id: userId,
-        title: receiptCheck?.duplicate ? "⚠️ Comprovante reutilizado" : "Possível pagamento — revisar",
-        message: `Cliente ${client.name}: ${reasonsTxt} (risco ${receiptCheck?.riskScore || 0}/100). Confirme manualmente.`,
+        
+        message: [receiptCheck?.duplicate ? "⚠️ Comprovante reutilizado" : "Possível pagamento — revisar", `Cliente ${client.name}: ${reasonsTxt} (risco ${receiptCheck?.riskScore || 0}/100). Confirme manualmente.`].filter(Boolean).join(" — "),
         type: receiptCheck?.duplicate ? "error" : "warning",
       });
       // Registra a tentativa (com hash, se houver) para auditoria/anti-replay
@@ -2191,15 +2201,29 @@ Ex6 — "queria mais 3 mil emprestado":
         else if (freq === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
         else nextDate.setDate(nextDate.getDate() + 1); // Default +1 day
 
-        await supabase.from("contract_installments").update({ 
-          due_date: nextDate.toISOString(),
-          notes: `Renovação via juros: R$ ${receiptValue}. Próximo venc: ${nextDate.toLocaleDateString('pt-BR')}`
-        }).eq("id", target.id);
+        // `contract_installments` NÃO tem coluna `notes`. Mandar esse campo fazia
+        // o Postgres recusar a gravação INTEIRA — inclusive o `due_date`. Ou seja:
+        // desde 30/05 o cliente pagava só os juros para rolar a dívida e o
+        // vencimento não andava, e a parcela seguia acumulando atraso.
+        // O vencimento é o que importa; o texto vai para o registro de auditoria.
+        const { error: renovErr } = await supabase.from("contract_installments")
+          .update({ due_date: nextDate.toISOString() })
+          .eq("id", target.id);
+        if (renovErr) console.error("[webhook] renovação: due_date não avançou:", renovErr);
+
+        await supabase.from("audit_logs").insert({
+          user_id: userId, entity_type: "installment", action: "renovacao_juros",
+          entity_id: target.id,
+          details: {
+            valor_juros: receiptValue,
+            proximo_vencimento: nextDate.toISOString().slice(0, 10),
+          },
+        }).then(() => {}, () => {});
 
         await supabase.from("notifications").insert({
           user_id: userId,
-          title: "Renovação de Contrato",
-          message: `Cliente ${client.name} pagou juros de R$ ${receiptValue.toFixed(2)}. Dívida renovada para ${nextDate.toLocaleDateString('pt-BR')}.`,
+          
+          message: ["Renovação de Contrato", `Cliente ${client.name} pagou juros de R$ ${receiptValue.toFixed(2)}. Dívida renovada para ${nextDate.toLocaleDateString('pt-BR')}.`].filter(Boolean).join(" — "),
           type: "info"
         });
         await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "renew_contract_interest_only", toolInput: { contract_id: target.contract_id, installment_id: target.id, valor: receiptValue, nova_data: nextDate.toISOString() } });
@@ -2239,17 +2263,14 @@ Ex6 — "queria mais 3 mil emprestado":
             toolInput: { installment_id: target.id, erro: razaoErr.message },
             success: false, errorMessage: razaoErr.message,
           });
-        } else {
-          // O RPC não guarda observação; o rastro de que veio da IA fica aqui.
-          await supabase.from("contract_installments")
-            .update({ notes: `Confirmado via IA. Valor Rec: ${receiptValue}` })
-            .eq("id", target.id);
         }
+        // Não existe `contract_installments.notes`. A observação que eu gravava
+        // aqui derrubava a escrita inteira sem avisar — e era redundante: o
+        // `logBotAction` logo abaixo já registra a baixa, o valor e a parcela.
 
         await supabase.from("notifications").insert({
           user_id: userId,
-          title: "Pagamento Recebido",
-          message: `Cliente ${client.name} pagou R$ ${receiptValue.toFixed(2)}. Parcela #${target.installment_number} baixada.`,
+          message: `Pagamento recebido — cliente ${client.name} pagou R$ ${receiptValue.toFixed(2)}. Parcela #${target.installment_number} baixada.`,
           type: "success"
         });
         await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "mark_installment_paid", toolInput: { installment_id: target.id, valor: receiptValue, parcela: target.installment_number } });
@@ -2278,7 +2299,7 @@ Ex6 — "queria mais 3 mil emprestado":
         human_takeover_reason: result.summary || "Bot recomendou revisão humana, mas continuará respondendo",
         updated_at: new Date().toISOString(),
       }).eq("id", convoId);
-      await supabase.from("notifications").insert({ user_id: userId, title: "🚨 Intervenção Humana", message: `Cliente ${client.name} solicita atendimento humano ou negociação.`, type: "warning" });
+      await supabase.from("notifications").insert({ user_id: userId,  message: ["🚨 Intervenção Humana", `Cliente ${client.name} solicita atendimento humano ou negociação.`].filter(Boolean).join(" — "), type: "warning" });
       await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "escalate_to_human", toolInput: { reason: result.summary || "ai_detected" } });
     }
 
@@ -2289,7 +2310,7 @@ Ex6 — "queria mais 3 mil emprestado":
       });
       // Adiciona uma nota na conversa
       await supabase.from("whatsapp_notes").insert({
-        user_id: userId, client_id: client.id, content: `Promessa de pagamento para: ${result.promise_date}`, created_by: 'bot'
+        user_id: userId, conversation_id: convoId, content: `Promessa de pagamento para: ${result.promise_date}`, author_name: 'bot'
       });
       await logBotAction(supabase, { userId, clientId: client.id, conversationId: convoId, toolName: "register_payment_promise", toolInput: { data: result.promise_date, contexto: incomingText.slice(0,200) } });
     }

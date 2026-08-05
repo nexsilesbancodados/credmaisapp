@@ -85,7 +85,10 @@ const Overview = () => {
       const [msgs, actions] = await Promise.all([
         supabase.from("whatsapp_messages").select("id", { count: "exact", head: true })
           .eq("user_id", user!.id).gte("created_at", sinceIso),
-        supabase.from("bot_actions_log").select("id, action, success", { count: "exact" })
+        // A coluna se chama `tool_name`. Pedindo `action`, o PostgREST devolvia
+        // 400 e a consulta inteira falhava: o painel mostrava 0 ações e 100% de
+        // sucesso desde sempre, mesmo com o bot trabalhando.
+        supabase.from("bot_actions_log").select("id, tool_name, success", { count: "exact" })
           .eq("user_id", user!.id).gte("created_at", sinceIso).limit(200),
       ]);
       const total = actions.data?.length || 0;

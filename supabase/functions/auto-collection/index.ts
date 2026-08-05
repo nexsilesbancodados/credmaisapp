@@ -408,10 +408,13 @@ ${extraDiversity}`;
               } as any);
               if (guarda.block) {
                 console.warn(`[auto-collection] mensagem da IA bloqueada (${guarda.reasons.join(", ")}) — usando o texto padrão`);
+                // Campos de `audit_logs` num insert de `bot_actions_log`: o
+                // registro era recusado e o bloqueio da IA não deixava rastro.
                 await supabase.from("bot_actions_log").insert({
-                  user_id: userId, entity_type: "auto_collection", action: "ai_reply_blocked",
-                  entity_id: client.id, success: false,
-                  details: { reasons: guarda.reasons, preview: message.slice(0, 200) },
+                  user_id: userId, client_id: client.id,
+                  tool_name: "ai_reply_blocked", success: false,
+                  tool_input: { origem: "auto_collection" },
+                  tool_output: { reasons: guarda.reasons, preview: message.slice(0, 200) },
                 }).then(() => {}, () => {});
                 message = ""; // cai no template/mensagem padrão logo abaixo
               }

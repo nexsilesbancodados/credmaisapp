@@ -143,8 +143,12 @@ export async function executeTool(
         if (!clientId) return { ok: false, error: "client_id obrigatório" };
         let q = ctx.supabase
           .from("contract_installments")
+          // A multa e o juro diário ficam no CONTRATO, não na parcela. Pedindo os
+          // dois como colunas da parcela, o PostgREST devolvia 400 e a ferramenta
+          // inteira falhava: a IA nunca conseguia listar as parcelas em aberto de
+          // ninguém. Aqui eles vêm pelo contrato.
           .select(
-            "id, installment_number, amount, paid_amount, due_date, status, late_fee_percent, daily_interest_percent",
+            "id, installment_number, amount, paid_amount, due_date, status, contracts:contract_id ( late_fee_percent, daily_interest_percent )",
           )
           .eq("client_id", clientId)
           .neq("status", "paid")
@@ -162,11 +166,12 @@ export async function executeTool(
                 86400000,
             ),
           );
+          const ct = r.contracts || {};
           const multa = overdueDays > 0
-            ? saldo * (Number(r.late_fee_percent || 0) / 100)
+            ? saldo * (Number(ct.late_fee_percent || 0) / 100)
             : 0;
           const juros = overdueDays > 0
-            ? saldo * (Number(r.daily_interest_percent || 0) / 100) * overdueDays
+            ? saldo * (Number(ct.daily_interest_percent || 0) / 100) * overdueDays
             : 0;
           return {
             installment_id: r.id,
