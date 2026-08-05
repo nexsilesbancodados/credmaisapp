@@ -21,6 +21,7 @@ import { findFaqMatch, FAQ_COUNT } from "../_shared/faq_knowledge.ts";
 import { identifyClient, loadClientInstallments, auditDecision, todayInSP, samePhoneBR } from "../_shared/agent_core.ts";
 import { runAgentWithTools } from "../_shared/agent_tools.ts";
 import { normalizeSnapshot, transition, saveSnapshot, type AgentState } from "../_shared/agent_fsm.ts";
+import { isEmAtraso, isEmAberto } from "../_shared/installmentStatus.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2211,13 +2212,40 @@ Ex6 — "queria mais 3 mil emprestado":
         if (!target) target = installments.find(i => Number(i.amount) === receiptValue);
         if (!target) target = installments[0];
 
-        await supabase.from("contract_installments").update({ 
-          status: "paid", 
-          paid_at: new Date().toISOString(), 
-          paid_amount: receiptValue || target.amount, 
-          notes: `Confirmado via IA. Valor Rec: ${receiptValue}` 
-        }).eq("id", target.id);
-        
+        // A baixa passa pelo RPC, que numa transação só marca a parcela, lança o
+        // lucro (juros reais do contrato), lança o caixa e conclui o contrato.
+        //
+        // Antes era um `.update()` direto: a parcela era baixada e o pagamento
+        // NUNCA aparecia em Lucros nem no caixa. Como este tenant tem
+        // `bot_auto_confirm_payment` ligado, toda baixa automática por
+        // comprovante saía fora do razão.
+        //
+        // A ordem importa: o RPC calcula "dinheiro novo" como
+        // (valor informado − já pago). Se a parcela fosse atualizada antes, esse
+        // cálculo daria zero e o caixa não seria lançado.
+        const valorPago = receiptValue || target.amount;
+        const { error: razaoErr } = await supabase.rpc("system_register_payment", {
+          _installment_id: target.id,
+          _paid_total: valorPago,
+          _method: "pix",
+          _origem: "bot WhatsApp",
+        });
+
+        if (razaoErr) {
+          console.error("[whatsapp-webhook] falha ao lançar no razão:", razaoErr.message);
+          await logBotAction(supabase, {
+            userId, clientId: client.id, conversationId: convoId,
+            toolName: "ledger_error",
+            toolInput: { installment_id: target.id, erro: razaoErr.message },
+            success: false, errorMessage: razaoErr.message,
+          });
+        } else {
+          // O RPC não guarda observação; o rastro de que veio da IA fica aqui.
+          await supabase.from("contract_installments")
+            .update({ notes: `Confirmado via IA. Valor Rec: ${receiptValue}` })
+            .eq("id", target.id);
+        }
+
         await supabase.from("notifications").insert({
           user_id: userId,
           title: "Pagamento Recebido",
@@ -2228,8 +2256,16 @@ Ex6 — "queria mais 3 mil emprestado":
       }
 
       // Se não houver mais parcelas atrasadas, volta o cliente para 'active'
-      const { data: stillOverdue } = await supabase.from("contract_installments").select("id").eq("client_id", client.id).eq("status", "overdue");
-      if (!stillOverdue?.length) {
+      // Em aberto E vencida — não só status "overdue". Filtrando por um status
+      // só, uma parcela ainda "pending" mas já vencida passava despercebida e o
+      // cliente voltava para "active" devendo.
+      const { data: aindaAbertas } = await supabase
+        .from("contract_installments")
+        .select("id, status, due_date")
+        .eq("client_id", client.id)
+        .not("status", "in", '("paid","cancelled")');
+      const stillOverdue = (aindaAbertas || []).filter((i: any) => isEmAtraso(i));
+      if (!stillOverdue.length) {
         await supabase.from("clients").update({ status: 'active' }).eq("id", client.id);
       }
     }
