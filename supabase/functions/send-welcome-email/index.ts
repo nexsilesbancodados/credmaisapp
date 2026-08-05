@@ -17,9 +17,20 @@ serve(async (req) => {
   try {
     // SEGURANÇA (M3): sem auth, qualquer um enviava e-mail com a marca CredMais para
     // qualquer destinatário (spam/phishing + queima de cota Brevo). Aceita um usuário
-    // autenticado OU um segredo interno (INTERNAL_FN_SECRET) para chamadas server-side.
+    // autenticado OU um segredo interno para chamadas server-side.
+    //
+    // O guard genérico `checkSharedSecret` é fail-SAFE de propósito: se a variável
+    // não estiver definida, ele deixa passar, para não derrubar um cron por causa
+    // de configuração faltando. Aqui isso é a decisão errada — `INTERNAL_FN_SECRET`
+    // nunca tinha sido criada, então a porta ficou escancarada: em 05/08 eu chamei
+    // esta função da internet, sem credencial nenhuma, e ela enviou o e-mail.
+    //
+    // Quem manda e-mail em nome da empresa fecha por padrão.
+    const segredoInterno = Deno.env.get("INTERNAL_FN_SECRET");
     const user = await getCallerUser(req);
-    if (!user && !checkSharedSecret(req, "INTERNAL_FN_SECRET", "x-internal-secret")) {
+    const chamadaInterna = Boolean(segredoInterno) &&
+      checkSharedSecret(req, "INTERNAL_FN_SECRET", "x-internal-secret");
+    if (!user && !chamadaInterna) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -51,7 +62,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "erro" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
