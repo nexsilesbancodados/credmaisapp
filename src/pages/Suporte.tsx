@@ -167,13 +167,23 @@ const Suporte = () => {
       setCreating(false);
       return;
     }
-    await supabase.from("support_ticket_messages").insert({
+    // Se a primeira mensagem falhar, o ticket existe VAZIO: você acha que
+    // descreveu o problema e o suporte recebe um chamado sem texto. O erro
+    // precisa aparecer.
+    const { error: msgError } = await supabase.from("support_ticket_messages").insert({
       ticket_id: ticket.id,
       sender_id: user.id,
       sender_role: "user",
       sender_name: profile?.name || "Usuário",
       message: newMessage.trim(),
     });
+    if (msgError) {
+      toast({
+        title: "Ticket criado, mas a mensagem não foi enviada",
+        description: "Abra o ticket e escreva novamente para o suporte receber sua descrição.",
+        variant: "destructive",
+      });
+    }
     // Triagem IA em background — não bloqueia UX
     supabase.functions.invoke("support-triage", { body: { ticket_id: ticket.id } }).catch(() => {});
     toast({ title: "Ticket aberto!", description: "Você receberá uma resposta em breve." });
