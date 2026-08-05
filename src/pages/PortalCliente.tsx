@@ -287,7 +287,9 @@ const PortalCliente = () => {
       if (!data) {
         if (!silent) {
           recordPortalLoginAttempt(false);
-          toast({ title: "CPF não encontrado", description: "Confira o número e tente novamente.", variant: "destructive" });
+          // Mensagem única de propósito: se ela distinguisse "CPF não existe"
+          // de "faltou a data", viraria um jeito de descobrir quem é cliente.
+          toast({ title: "Não foi possível acessar", description: "Confira o CPF. Se o seu credor pedir a data de nascimento, preencha também.", variant: "destructive" });
         }
         sessionStorage.removeItem(SESSION_KEY);
         return;
@@ -331,9 +333,11 @@ const PortalCliente = () => {
     }
     setCpfError(null);
     setBirthError(null);
-    // Só o CPF. A data de nascimento continua sendo conferida quando chega
-    // preenchida (sessão salva, link do bot), mas não é mais pedida no acesso.
-    await doLogin(cleanCpf, "", false);
+    // A data vai como o cliente digitou — em branco, se ele não digitou. Quem
+    // exige é o credor dele, pela configuração do portal; a função no banco
+    // recusa do mesmo jeito que recusaria um CPF desconhecido, para não
+    // confirmar a ninguém que aquele CPF é cliente da casa.
+    await doLogin(cleanCpf, birthDate, false);
   };
 
   const handleLogout = async () => {
@@ -527,6 +531,25 @@ const PortalCliente = () => {
                     )}
                   </div>
 
+                  {/* Opcional de propósito. Este portal atende vários credores,
+                      e cada um decide se exige a data (Configurações → Portal).
+                      Como a página não sabe de qual credor é o CPF antes do
+                      envio, o campo fica visível para todos e quem não precisa
+                      simplesmente deixa em branco. */}
+                  <div className="space-y-2">
+                    <label className="ml-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
+                      <CalendarDays size={11} /> Data de nascimento
+                      <span className="font-semibold normal-case tracking-normal text-white/35">— só se o seu credor pedir</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      max={new Date().toISOString().slice(0, 10)}
+                      className="portal-input w-full rounded-2xl px-5 py-4 text-center font-mono text-lg tracking-wider"
+                    />
+                  </div>
+
                   <button
                     type="submit"
                     disabled={loading || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf))}
@@ -550,7 +573,7 @@ const PortalCliente = () => {
                 <div className="grid grid-cols-3 gap-2 pt-2">
                   {[
                     { icon: Lock, label: "Criptografado" },
-                    { icon: Shield, label: "Acesso por CPF" },
+                    { icon: Shield, label: "Acesso protegido" },
                     { icon: BadgeCheck, label: "LGPD" },
                   ].map(({ icon: I, label }) => (
                     <div key={label} className="flex flex-col items-center gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] px-2 py-3 text-center">
@@ -965,7 +988,8 @@ const PortalCliente = () => {
                 <ol className="ml-4 list-decimal space-y-1.5 text-sm text-white/75">
                   <li>Digite seu <strong className="text-white">CPF completo</strong> (11 dígitos).</li>
                   <li>Use o mesmo CPF cadastrado com o credor.</li>
-                  <li>Se receber "CPF não encontrado", confirme os dados com o credor.</li>
+                  <li>Alguns credores também pedem a <strong className="text-white">data de nascimento</strong>. Se o acesso não abrir só com o CPF, preencha o campo de data.</li>
+                  <li>Se ainda assim não abrir, confirme os dados com o credor.</li>
                   <li>Após muitas tentativas, aguarde alguns minutos e tente de novo.</li>
                 </ol>
               </div>
