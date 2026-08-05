@@ -127,14 +127,26 @@ test.describe("portal do cliente", () => {
     expect(await res.json()).toBeNull();
   });
 
-  test("login exige CPF e data de nascimento juntos", async ({ request }) => {
-    // O login só por CPF já existiu e entregava o dossiê inteiro de quem
-    // soubesse o número. A função foi removida — precisa continuar removida.
+  test("a função antiga de login por CPF continua removida", async ({ request }) => {
+    // `portal_client_login_cpf` foi apagada em 01/08. O acesso por CPF voltou,
+    // mas passa pela `portal_client_login` — que aplica limite de tentativas e
+    // confere a data de nascimento quando ela vem preenchida. A porta velha,
+    // sem nada disso, precisa continuar fechada.
     const res = await request.post(`${SUPABASE}/rest/v1/rpc/portal_client_login_cpf`, {
       headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" },
       data: { _cpf: "12345678901" },
       failOnStatusCode: false,
     });
     expect(res.status()).toBeGreaterThanOrEqual(400);
+  });
+
+  test("CPF que não existe não vaza nada", async ({ request }) => {
+    const res = await request.post(`${SUPABASE}/rest/v1/rpc/portal_client_login`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" },
+      data: { _cpf: "00000000000" },
+      failOnStatusCode: false,
+    });
+    expect(res.ok()).toBeTruthy();
+    expect(await res.json()).toBeNull();
   });
 });

@@ -118,7 +118,7 @@ const PortalCliente = () => {
   useEffect(() => {
     if (!helpOpen || portalData) return;
     const clean = onlyDigits(cpf);
-    if (clean.length !== 11 || !isValidCPF(clean) || !birthDate) {
+    if (clean.length !== 11 || !isValidCPF(clean)) {
       setHelpContact(null);
       return;
     }
@@ -126,7 +126,7 @@ const PortalCliente = () => {
     setHelpContactLoading(true);
     (async () => {
       try {
-        const { data } = await (supabase as any).rpc("portal_lookup_creditor_contact", { _cpf: clean, _birth_date: birthDate });
+        const { data } = await (supabase as any).rpc("portal_lookup_creditor_contact", { _cpf: clean, _birth_date: birthDate || null });
         if (!cancelled) setHelpContact(data || null);
       } catch {
         if (!cancelled) setHelpContact(null);
@@ -270,7 +270,9 @@ const PortalCliente = () => {
     try {
       const { data, error } = await supabase.rpc("portal_client_login" as never, {
         _cpf: cleanCpf,
-        _birth_date: birthDateInput,
+        // Vazio significa "não confere data": a função aceita NULL e busca só
+        // pelo CPF. Quando vem preenchida, a data ainda é exigida.
+        _birth_date: birthDateInput || null,
       } as never);
 
       if (error) {
@@ -285,7 +287,7 @@ const PortalCliente = () => {
       if (!data) {
         if (!silent) {
           recordPortalLoginAttempt(false);
-          toast({ title: "CPF ou data de nascimento não encontrados", description: "Confira os dados e tente novamente.", variant: "destructive" });
+          toast({ title: "CPF não encontrado", description: "Confira o número e tente novamente.", variant: "destructive" });
         }
         sessionStorage.removeItem(SESSION_KEY);
         return;
@@ -327,14 +329,11 @@ const PortalCliente = () => {
       toast({ title: "CPF inválido", description: "Os dígitos verificadores não conferem.", variant: "destructive" });
       return;
     }
-    if (!birthDate) {
-      setBirthError("Informe sua data de nascimento.");
-      toast({ title: "Data de nascimento obrigatória", description: "Digite sua data de nascimento para acessar.", variant: "destructive" });
-      return;
-    }
     setCpfError(null);
     setBirthError(null);
-    await doLogin(cleanCpf, birthDate, false);
+    // Só o CPF. A data de nascimento continua sendo conferida quando chega
+    // preenchida (sessão salva, link do bot), mas não é mais pedida no acesso.
+    await doLogin(cleanCpf, "", false);
   };
 
   const handleLogout = async () => {
@@ -528,38 +527,9 @@ const PortalCliente = () => {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="ml-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
-                      <CalendarDays size={11} /> Data de nascimento
-                    </label>
-                    <input
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => {
-                        setBirthDate(e.target.value);
-                        if (birthTouched) {
-                          setBirthError(e.target.value ? null : "Informe sua data de nascimento.");
-                        }
-                      }}
-                      onBlur={() => {
-                        setBirthTouched(true);
-                        setBirthError(birthDate ? null : "Informe sua data de nascimento.");
-                      }}
-                      required
-                      aria-invalid={!!birthError}
-                      aria-describedby={birthError ? "birth-error" : undefined}
-                      className={`portal-input w-full rounded-2xl px-5 py-4 text-center font-mono text-lg tracking-wider ${birthError ? "border-red-500/60 focus:border-red-500" : ""}`}
-                    />
-                    {birthError && (
-                      <p id="birth-error" className="ml-1 flex items-center gap-1.5 text-xs text-red-400">
-                        <AlertTriangle size={12} /> {birthError}
-                      </p>
-                    )}
-                  </div>
-
                   <button
                     type="submit"
-                    disabled={loading || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf)) || !birthDate}
+                    disabled={loading || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf))}
                     className="portal-btn-primary flex w-full items-center justify-center gap-2 py-5 text-base disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? <Clock className="animate-spin" size={18} /> : <ArrowRight size={18} />}
@@ -580,7 +550,7 @@ const PortalCliente = () => {
                 <div className="grid grid-cols-3 gap-2 pt-2">
                   {[
                     { icon: Lock, label: "Criptografado" },
-                    { icon: Shield, label: "CPF + data de nascimento" },
+                    { icon: Shield, label: "Acesso por CPF" },
                     { icon: BadgeCheck, label: "LGPD" },
                   ].map(({ icon: I, label }) => (
                     <div key={label} className="flex flex-col items-center gap-1.5 rounded-xl border border-white/5 bg-white/[0.02] px-2 py-3 text-center">
