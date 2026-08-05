@@ -117,6 +117,16 @@ const NovoCliente = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
   const [nascimento, setNascimento] = useState("");
+  // No celular o foco automático abria o teclado por cima do formulário e ainda
+  // rolava a página até o meio: quem entrava em "novo cliente" caía no bloco de
+  // Endereço, sem nunca ver o campo de nome.
+  //
+  // A medida é feita aqui, de forma síncrona: `useIsMobile` devolve `false` no
+  // primeiro render (o valor real só chega no efeito) e `autoFocus` só vale na
+  // montagem — usá-lo daria foco automático no celular do mesmo jeito.
+  const [focarNoNome] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
+  );
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
@@ -748,7 +758,11 @@ const NovoCliente = () => {
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
       {/* Header */}
       <div className="page-hero animate-fade-in">
-        <div className="page-hero-content flex items-center gap-3">
+        {/* `flex-wrap`: numa tela de 360px o botão Express disputava a linha com
+            o título e sobravam ~100px para ele — "Cadastrar Novo Cliente" saía
+            quebrado quase letra a letra. No celular o botão desce para a linha
+            de baixo; no computador nada muda. */}
+        <div className="page-hero-content flex flex-wrap items-center gap-3">
           <button
             onClick={() => {
               if (isNewContractOnly) {
@@ -765,8 +779,8 @@ const NovoCliente = () => {
           <div className="page-hero-icon">
             <User size={22} />
           </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-shimmer">
+          <div className="flex-1 min-w-[9rem]">
+            <h1 className="text-lg sm:text-xl font-bold text-shimmer">
               {isNewContractOnly ? `Novo Contrato${existingClient?.name ? ` — ${existingClient.name}` : ""}` : "Cadastrar Novo Cliente"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -779,7 +793,7 @@ const NovoCliente = () => {
             <button
               type="button"
               onClick={() => setExpressMode(!expressMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors ${expressMode ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+              className={`flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors sm:w-auto sm:justify-start ${expressMode ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
               title="Reduz o formulário aos campos essenciais"
             >
               ⚡ {expressMode ? "Express ON" : "Modo Express"}
@@ -842,7 +856,7 @@ const NovoCliente = () => {
               <div className="flex-1 space-y-3">
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1.5 block">Nome Completo *</label>
-                  <input type="text" placeholder="Nome do Cliente" value={nome} onChange={(e) => setNome(e.target.value)} onBlur={() => markTouched("nome")} className={`${INPUT} ${errors.nome ? "border-destructive ring-1 ring-destructive/30" : ""}`} autoFocus />
+                  <input type="text" placeholder="Nome do Cliente" value={nome} onChange={(e) => setNome(e.target.value)} onBlur={() => markTouched("nome")} className={`${INPUT} ${errors.nome ? "border-destructive ring-1 ring-destructive/30" : ""}`} autoFocus={focarNoNome} />
                   {errors.nome && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.nome}</p>}
                 </div>
                 <div>
