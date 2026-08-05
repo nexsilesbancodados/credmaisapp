@@ -1637,6 +1637,8 @@ export type Database = {
           bot_use_ai: boolean | null
           bot_work_days: Json | null
           company_cnpj: string | null
+          company_address: string | null
+          company_phone: string | null
           company_logo_url: string | null
           company_name: string | null
           created_at: string
@@ -1698,6 +1700,8 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
@@ -1759,6 +1763,8 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
@@ -2420,6 +2426,8 @@ export type Database = {
           bot_use_ai: boolean | null
           bot_work_days: Json | null
           company_cnpj: string | null
+          company_address: string | null
+          company_phone: string | null
           company_logo_url: string | null
           company_name: string | null
           created_at: string | null
@@ -2480,6 +2488,8 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string | null
@@ -2540,6 +2550,8 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string | null

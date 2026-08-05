@@ -18,6 +18,8 @@ export interface SettingsForm {
   // Empresa e marca
   company_name: string;
   company_cnpj: string;
+  company_address: string;
+  company_phone: string;
   company_logo_url: string;
   favicon_url: string;
   primary_color: string;

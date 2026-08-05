@@ -685,6 +685,20 @@ const NovoCliente = () => {
       companyName: settings?.company_name || "CREDMAIS APP",
       companyCnpj: settings?.company_cnpj || "",
       companyLogoUrl: settings?.company_logo_url || undefined,
+      companyAddress: settings?.company_address || "",
+      companyPhone: settings?.company_phone || "",
+      // Estes campos o formulário já coletava e gravava no contrato, mas nunca
+      // chegavam ao documento: quem pedia avalista gerava contrato sem citá-lo.
+      paymentMethod,
+      guaranteeType: guaranteeType === "none" ? null : guaranteeType,
+      guaranteeDescription,
+      guarantorName,
+      guarantorCpf,
+      guarantorPhone,
+      gracePeriods: Number(gracePeriods) || 0,
+      graceDays: Number(graceDays) || 0,
+      earlyPaymentDiscountPercent: Number(earlyDiscount) || 0,
+      maxInterestCapPercent: maxInterestCap ? Number(maxInterestCap) : null,
       customTemplate: (settings as any)?.custom_contract_template || null,
       installments: previewInstallments,
     };

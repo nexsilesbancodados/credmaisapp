@@ -61,7 +61,7 @@ const Configuracoes = () => {
   });
 
   const [form, setForm] = useState({
-    company_name: "", company_cnpj: "", company_logo_url: "", favicon_url: "",
+    company_name: "", company_cnpj: "", company_address: "", company_phone: "", company_logo_url: "", favicon_url: "",
     primary_color: "#4a86c8", accent_color: "#6ba3d6", theme_mode: "dark",
     sidebar_style: "default", login_title: "", login_subtitle: "",
     footer_text: "", border_radius: "16", font_family: "default",
@@ -112,6 +112,8 @@ const Configuracoes = () => {
         ...prev,
         company_name: s.company_name || "",
         company_cnpj: s.company_cnpj || "",
+        company_address: s.company_address || "",
+        company_phone: s.company_phone || "",
         company_logo_url: s.company_logo_url || "",
         favicon_url: s.favicon_url || "",
         primary_color: s.primary_color || "#4a86c8",
@@ -222,6 +224,7 @@ const Configuracoes = () => {
     const payload: any = {
       user_id: user.id,
       company_name: form.company_name || null, company_cnpj: form.company_cnpj || null,
+      company_address: form.company_address || null, company_phone: form.company_phone || null,
       company_logo_url: form.company_logo_url || null,
       favicon_url: form.favicon_url || null,
       primary_color: form.primary_color,

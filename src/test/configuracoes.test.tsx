@@ -13,7 +13,8 @@ import { DEFAULT_MODULES } from "@/contexts/WhiteLabelContext";
 // todas de uma vez para que a quebra apareça no CI, não no cliente.
 
 const formVazio: SettingsForm = {
-  company_name: "", company_cnpj: "", company_logo_url: "", favicon_url: "",
+  company_name: "", company_cnpj: "", company_address: "", company_phone: "",
+  company_logo_url: "", favicon_url: "",
   primary_color: "#4a86c8", accent_color: "#6ba3d6", theme_mode: "dark",
   sidebar_style: "default", login_title: "", login_subtitle: "",
   footer_text: "", border_radius: "16", font_family: "default",
