@@ -74,6 +74,19 @@ serve(async (req) => {
   // retenção removeria. Serve para inspecionar antes de deixar rodar de verdade.
   const apenasConferir = new URL(req.url).searchParams.get("conferir") === "1";
 
+  // TRAVA DE SEGURANÇA — apagar backup é irreversível.
+  //
+  // O backup roda todo dia; a limpeza NÃO roda sozinha. Enquanto
+  // `BACKUP_RETENTION_ENABLED` não for definido como "1" nos secrets, esta
+  // função só GRAVA: nenhum arquivo é removido, nem por retenção nem por
+  // pasta órfã. Assim o comportamento padrão é acumular — que desperdiça
+  // espaço, mas nunca perde histórico.
+  //
+  // Para ligar: defina o secret e rode antes com ?conferir=1 para ver o que
+  // sairia.
+  const limpezaAutorizada = Deno.env.get("BACKUP_RETENTION_ENABLED") === "1";
+  const podeApagar = limpezaAutorizada && !apenasConferir;
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -108,7 +121,7 @@ serve(async (req) => {
           backedUp++;
         }
 
-        removidosPorRetencao += await aplicarRetencao(supabase, p.id, agora, apenasConferir);
+        removidosPorRetencao += await aplicarRetencao(supabase, p.id, agora, !podeApagar);
       } catch (e) {
         errors.push(`${p.id}: ${e instanceof Error ? e.message : "?"}`);
       }
@@ -132,7 +145,7 @@ serve(async (req) => {
           .list(pasta.name, { limit: 1000 });
         const caminhos = (arquivos || []).map((a: any) => `${pasta.name}/${a.name}`);
         if (!caminhos.length) continue;
-        if (apenasConferir) { pastasOrfasRemovidas++; continue; }
+        if (!podeApagar) { pastasOrfasRemovidas++; continue; }
         const { error: rmErr } = await supabase.storage.from("backups").remove(caminhos);
         if (!rmErr) pastasOrfasRemovidas++;
       }
@@ -142,10 +155,15 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        modo: apenasConferir ? "conferencia (nada foi alterado)" : "execucao",
+        modo: apenasConferir
+          ? "conferencia (nada foi alterado)"
+          : podeApagar ? "execucao (com limpeza)" : "execucao (limpeza DESLIGADA)",
+        limpeza_autorizada: limpezaAutorizada,
         message: apenasConferir
           ? "Simulação: nenhum arquivo foi gravado nem apagado."
-          : `Backup de ${backedUp} usuário(s)`,
+          : podeApagar
+            ? `Backup de ${backedUp} usuário(s)`
+            : `Backup de ${backedUp} usuário(s). Nenhum arquivo apagado — defina BACKUP_RETENTION_ENABLED=1 para ligar a limpeza.`,
         backedUp,
         removidosPorRetencao,
         pastasOrfasRemovidas,
