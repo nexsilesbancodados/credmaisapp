@@ -1,3 +1,8 @@
+-- ATENCAO: o valor do CRON_SECRET foi REMOVIDO deste arquivo.
+-- Ele estava aqui em texto puro, num repositorio publico, protegendo os 11 cron
+-- jobs. Esta migration ja rodou em producao; o arquivo fica como registro.
+-- Para rotacionar (e passar a guardar o segredo no Vault, fora do Git), use
+-- docs/rotacionar-cron-secret.sql.
 BEGIN;
 -- Security hardening: remove portal login by CPF only and require birth date as second factor.
 -- Also rotate all pg_cron HTTP triggers to include the mandatory CRON_SECRET header.
@@ -57,7 +62,7 @@ SELECT cron.unschedule('auto-cleanup-weekly');
 SELECT cron.schedule('auto-late-fees-daily', '0 3 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-late-fees',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -66,7 +71,7 @@ $job$);
 SELECT cron.schedule('auto-notifications-daily', '0 6 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-notifications',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -75,7 +80,7 @@ $job$);
 SELECT cron.schedule('auto-collection-hourly', '0 * * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-collection',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -84,7 +89,7 @@ $job$);
 SELECT cron.schedule('check-overdue-daily', '0 7 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/check-overdue',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -93,7 +98,7 @@ $job$);
 SELECT cron.schedule('auto-subscription-daily', '0 2 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-subscription-check',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -102,7 +107,7 @@ $job$);
 SELECT cron.schedule('auto-backup-daily', '0 4 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-backup',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -111,7 +116,7 @@ $job$);
 SELECT cron.schedule('auto-birthday-daily', '0 9 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-birthday',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -120,7 +125,7 @@ $job$);
 SELECT cron.schedule('auto-credit-score-daily', '0 5 * * *', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-credit-score',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);
@@ -129,7 +134,7 @@ $job$);
 SELECT cron.schedule('auto-cleanup-weekly', '0 1 * * 1', $job$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/auto-cleanup',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
 $job$);

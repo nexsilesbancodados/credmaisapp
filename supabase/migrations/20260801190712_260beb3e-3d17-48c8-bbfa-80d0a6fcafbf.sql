@@ -1,3 +1,8 @@
+-- ATENCAO: o valor do CRON_SECRET foi REMOVIDO deste arquivo.
+-- Ele estava aqui em texto puro, num repositorio publico, protegendo os 11 cron
+-- jobs. Esta migration ja rodou em producao; o arquivo fica como registro.
+-- Para rotacionar (e passar a guardar o segredo no Vault, fora do Git), use
+-- docs/rotacionar-cron-secret.sql.
 BEGIN;
 -- Rotate remaining cron jobs to include the mandatory CRON_SECRET header.
 
@@ -11,7 +16,7 @@ SELECT cron.schedule(
   '* * * * *',
   $$ SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/whatsapp-schedule-runner',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := jsonb_build_object('time', now())
   ); $$
 );
@@ -25,7 +30,7 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url := 'https://bnupitnrxyferelwroas.supabase.co/functions/v1/whatsapp-followup',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"46acf04c77693e72dfff21391c61996837903e824b60063c0922fc52f94b2786"}'::jsonb,
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJudXBpdG5yeHlmZXJlbHdyb2FzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNjU3MTUsImV4cCI6MjA5MDc0MTcxNX0.oFDPafl8-vTfEQ-a1KNgph8sTO4zynEH9_erKycncWg","x-cron-secret":"SEGREDO_REMOVIDO_VER_docs/rotacionar-cron-secret.sql"}'::jsonb,
     body := '{}'::jsonb
   );
   $$
