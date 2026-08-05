@@ -287,6 +287,15 @@ serve(async (req) => {
         };
         const totalLateFees = insts.reduce((s, i) => s + liveLateFee(i), 0);
         const totalAmount = insts.reduce((s, i) => s + Number(i.amount) + liveLateFee(i), 0);
+        // A taxa aparecia como "4% ao dia" escrito à mão na mensagem e no
+        // prompt da IA, enquanto o cálculo já usava a taxa do contrato. Hoje os
+        // 74 contratos em atraso são todos 4%, então o número está certo — mas
+        // no dia em que uma taxa mudar, o cliente receberia por escrito um
+        // percentual que não é o dele. Aqui o texto passa a sair do dado.
+        const taxasNoLote = [...new Set(insts.map((i: any) => Number(i.daily_interest_percent) > 0 ? Number(i.daily_interest_percent) : 4))];
+        const taxaTexto = taxasNoLote.length === 1
+          ? `${String(taxasNoLote[0]).replace(".", ",")}% ao dia`
+          : "juros diários do contrato";
         let message = "";
         const daysOverdue = Math.max(0, selectedDays);
         const daysUntilDue = Math.max(0, -selectedDays);
@@ -355,7 +364,7 @@ serve(async (req) => {
 CLIENTE: ${client.name}
 ${isPreDue ? `PARCELA VENCE EM ${daysUntilDue} DIA(S)` : `PARCELA EM ATRASO: ${daysOverdue} DIA(S)`}
 VALOR TOTAL ATUALIZADO (com juros de atraso): R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
-${totalLateFees > 0 ? `JUROS DE ATRASO JÁ INCLUÍDOS: R$ ${totalLateFees.toFixed(2)} (4% ao dia) — SEMPRE informe o valor total atualizado com os juros.` : ""}
+${totalLateFees > 0 ? `JUROS DE ATRASO JÁ INCLUÍDOS: R$ ${totalLateFees.toFixed(2)} (${taxaTexto}) — SEMPRE informe o valor total atualizado com os juros.` : ""}
 SCORE: ${client.credit_score ?? 100}/100
 HISTÓRICO: ${paidCount}/${totalHist} pagas (${reliability}% confiabilidade)
 INTENÇÕES RECENTES:
@@ -484,10 +493,10 @@ ${extraDiversity}`;
           } else if (has("abriu_portal")) {
             message += `\n\n(Vi que você abriu o portal recentemente — se precisar de ajuda pra concluir, me chama por aqui.)`;
           }
-          // Detalhamento dos juros de atraso (4% ao dia) sempre visível
+          // Detalhamento dos juros de atraso sempre visível
           if (totalLateFees > 0 && !/juros/i.test(message)) {
             const principal = totalAmount - totalLateFees;
-            message += `\n\nDetalhe: parcela(s) R$ ${principal.toFixed(2)} + juros de atraso R$ ${totalLateFees.toFixed(2)} (4% ao dia · ${daysOverdue} dia(s))\nTotal atualizado: R$ ${totalAmount.toFixed(2)}`;
+            message += `\n\nDetalhe: parcela(s) R$ ${principal.toFixed(2)} + juros de atraso R$ ${totalLateFees.toFixed(2)} (${taxaTexto} · ${daysOverdue} dia(s))\nTotal atualizado: R$ ${totalAmount.toFixed(2)}`;
           }
         }
 
