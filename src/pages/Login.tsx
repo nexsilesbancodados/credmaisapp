@@ -89,12 +89,16 @@ const Login = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [touched, setTouched] = useState<{ email?: boolean; password?: boolean; name?: boolean }>({});
   const navigate = useNavigate();
+  // Estes três ficavam DEPOIS do `return` logo abaixo. Quando `hasPortalSession()`
+  // mudava de valor entre dois renders — é o que acontece ao sair do portal do
+  // cliente neste mesmo navegador — a quantidade de hooks mudava junto e o React
+  // derrubava a tela de login inteira (erro #310).
+  const { toast } = useToast();
+  const { config } = useWhiteLabel();
 
   // Se este navegador possui sessão do portal do cliente, não permitir acesso
   // à tela de login do credor — devolve o cliente ao portal dele.
-  if (hasPortalSession()) {
-    return <Navigate to="/portal-cliente" replace />;
-  }
+  const temSessaoDoPortal = hasPortalSession();
 
   const sanitizeNext = (raw: string | null): string | null => {
     if (!raw) return null;
@@ -104,8 +108,6 @@ const Login = () => {
     return raw;
   };
   const nextPath = sanitizeNext(searchParams.get("next"));
-  const { toast } = useToast();
-  const { config } = useWhiteLabel();
   const logoSrc = config.companyLogo || eagleLogo;
   const brandTitle = config.loginTitle || config.companyName || "CREDMAIS APP";
   const brandSubtitle = config.loginSubtitle || "SISTEMA DE GESTÃO DE EMPRÉSTIMOS";
@@ -261,6 +263,13 @@ const Login = () => {
         <span>{msg}</span>
       </p>
     ) : null;
+
+  // O desvio para o portal do cliente acontece aqui embaixo, com todos os hooks
+  // já chamados — o comportamento é o mesmo de antes, sem o risco de mudar a
+  // quantidade de hooks entre um render e outro.
+  if (temSessaoDoPortal) {
+    return <Navigate to="/portal-cliente" replace />;
+  }
 
   return (
     <div

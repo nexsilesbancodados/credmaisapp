@@ -116,6 +116,17 @@ const NovoCliente = () => {
   const [telefone, setTelefone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
+  const [nascimento, setNascimento] = useState("");
+  // No celular o foco automático abria o teclado por cima do formulário e ainda
+  // rolava a página até o meio: quem entrava em "novo cliente" caía no bloco de
+  // Endereço, sem nunca ver o campo de nome.
+  //
+  // A medida é feita aqui, de forma síncrona: `useIsMobile` devolve `false` no
+  // primeiro render (o valor real só chega no efeito) e `autoFocus` só vale na
+  // montagem — usá-lo daria foco automático no celular do mesmo jeito.
+  const [focarNoNome] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches,
+  );
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
@@ -236,7 +247,7 @@ const NovoCliente = () => {
       try {
         if (!nome && !capital && !cpfCnpj) return;
         const draft = {
-          nome, email, telefone, whatsapp, cpfCnpj, cep, rua, numero, complemento, bairro, cidade, estado,
+          nome, email, telefone, whatsapp, cpfCnpj, nascimento, cep, rua, numero, complemento, bairro, cidade, estado,
           capital, capitalDisplay, loanMode, frequency, dailyMode, taxaJuros, numInstallments,
           valueMode, installmentValue, installmentValueDisplay, startDate, firstDueDate, autoFirstDue,
           lateFeePercent, dailyInterestPercent, notes, gracePeriods, graceDays, paymentMethod, step,
@@ -247,7 +258,7 @@ const NovoCliente = () => {
       } catch {}
     }, 900);
     return () => clearTimeout(t);
-  }, [user, DRAFT_KEY, nome, email, telefone, whatsapp, cpfCnpj, cep, rua, numero, complemento,
+  }, [user, DRAFT_KEY, nome, email, telefone, whatsapp, cpfCnpj, nascimento, cep, rua, numero, complemento,
       bairro, cidade, estado, capital, capitalDisplay, loanMode, frequency, dailyMode, taxaJuros,
       numInstallments, valueMode, installmentValue, installmentValueDisplay, startDate, firstDueDate,
       autoFirstDue, lateFeePercent, dailyInterestPercent, notes, gracePeriods, graceDays, paymentMethod, step]);
@@ -291,7 +302,7 @@ const NovoCliente = () => {
       if (!raw) return;
       const d = JSON.parse(raw);
       setNome(d.nome || ""); setEmail(d.email || ""); setTelefone(d.telefone || ""); setWhatsapp(d.whatsapp || "");
-      setCpfCnpj(d.cpfCnpj || ""); setCep(d.cep || ""); setRua(d.rua || ""); setNumero(d.numero || "");
+      setCpfCnpj(d.cpfCnpj || ""); setNascimento(d.nascimento || ""); setCep(d.cep || ""); setRua(d.rua || ""); setNumero(d.numero || "");
       setComplemento(d.complemento || ""); setBairro(d.bairro || ""); setCidade(d.cidade || ""); setEstado(d.estado || "");
       setCapital(d.capital || ""); setCapitalDisplay(d.capitalDisplay || "");
       if (d.loanMode) setLoanMode(d.loanMode);
@@ -521,6 +532,8 @@ const NovoCliente = () => {
           phone: telefone.trim() || null,
           whatsapp: whatsapp.trim() || null,
           cpf_cnpj: cpfCnpj.trim() || null,
+          // Coluna date: em branco tem que virar NULL, senão o Postgres recusa.
+          birth_date: nascimento || null,
           client_type: "loan",
           status: "Ativo",
           avatar_url,
@@ -745,7 +758,11 @@ const NovoCliente = () => {
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
       {/* Header */}
       <div className="page-hero animate-fade-in">
-        <div className="page-hero-content flex items-center gap-3">
+        {/* `flex-wrap`: numa tela de 360px o botão Express disputava a linha com
+            o título e sobravam ~100px para ele — "Cadastrar Novo Cliente" saía
+            quebrado quase letra a letra. No celular o botão desce para a linha
+            de baixo; no computador nada muda. */}
+        <div className="page-hero-content flex flex-wrap items-center gap-3">
           <button
             onClick={() => {
               if (isNewContractOnly) {
@@ -762,8 +779,8 @@ const NovoCliente = () => {
           <div className="page-hero-icon">
             <User size={22} />
           </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-shimmer">
+          <div className="flex-1 min-w-[9rem]">
+            <h1 className="text-lg sm:text-xl font-bold text-shimmer">
               {isNewContractOnly ? `Novo Contrato${existingClient?.name ? ` — ${existingClient.name}` : ""}` : "Cadastrar Novo Cliente"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -776,7 +793,7 @@ const NovoCliente = () => {
             <button
               type="button"
               onClick={() => setExpressMode(!expressMode)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-colors ${expressMode ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+              className={`flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors sm:w-auto sm:justify-start ${expressMode ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
               title="Reduz o formulário aos campos essenciais"
             >
               ⚡ {expressMode ? "Express ON" : "Modo Express"}
@@ -839,7 +856,7 @@ const NovoCliente = () => {
               <div className="flex-1 space-y-3">
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1.5 block">Nome Completo *</label>
-                  <input type="text" placeholder="Nome do Cliente" value={nome} onChange={(e) => setNome(e.target.value)} onBlur={() => markTouched("nome")} className={`${INPUT} ${errors.nome ? "border-destructive ring-1 ring-destructive/30" : ""}`} autoFocus />
+                  <input type="text" placeholder="Nome do Cliente" value={nome} onChange={(e) => setNome(e.target.value)} onBlur={() => markTouched("nome")} className={`${INPUT} ${errors.nome ? "border-destructive ring-1 ring-destructive/30" : ""}`} autoFocus={focarNoNome} />
                   {errors.nome && <p className="text-xs text-destructive mt-1 flex items-center gap-1"><AlertCircle size={12} /> {errors.nome}</p>}
                 </div>
                 <div>
@@ -849,6 +866,11 @@ const NovoCliente = () => {
                   {touched.cpfCnpj && cpfCnpj.trim() && !errors.cpfCnpj && cpfCnpj.replace(/\D/g, "").length >= 11 && (
                     <p className="text-xs text-success mt-1 flex items-center gap-1"><Check size={12} /> {cpfCnpj.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ"} válido</p>
                   )}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Data de nascimento</label>
+                  <input type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} className={INPUT} max={new Date().toISOString().slice(0, 10)} />
+                  <p className="text-xs text-muted-foreground mt-1">É com ela, junto do CPF, que o cliente entra no portal.</p>
                 </div>
               </div>
             </div>

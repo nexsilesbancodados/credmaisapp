@@ -32,6 +32,9 @@ jobs:
       - name: Typecheck
         run: npx tsc --noEmit -p tsconfig.app.json
 
+      - name: Regras de hooks do React (quebra de tela)
+        run: node scripts/checar-hooks.mjs
+
       - name: Testes
         run: npx vitest run
 

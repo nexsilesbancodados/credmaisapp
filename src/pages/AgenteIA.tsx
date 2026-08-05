@@ -188,6 +188,35 @@ const isEvolutionInstanceConnected = (payload: unknown) => {
   return statuses.some((status) => status === "open" || status === "connected");
 };
 
+/**
+ * Rola ATE O FIM a lista que contem o elemento, e nada mais.
+ *
+ * Antes os dois efeitos de conversa chamavam `scrollIntoView` no marcador do
+ * fim da lista. Como a lista fica na parte de baixo de uma pagina longa, quem
+ * rolava era a JANELA: abrir o Agente de IA no celular jogava a pessoa 607px
+ * para baixo, com o cabecalho e as abas fora da tela. E a conversa ja nasce com
+ * a mensagem de boas-vindas, entao acontecia sempre.
+ */
+const rolarListaAteOFim = (ref: React.RefObject<HTMLDivElement>) => {
+  let el: HTMLElement | null = ref.current?.parentElement ?? null;
+  while (el) {
+    const overflow = getComputedStyle(el).overflowY;
+    if ((overflow === "auto" || overflow === "scroll") && el.scrollHeight > el.clientHeight) {
+      // Mexer no `scrollTop` de um container faz o navegador reposicionar a
+      // janela junto (ancoragem de rolagem). Guardamos onde a pagina estava e
+      // devolvemos na mesma hora: a lista anda, a pagina fica parada.
+      const paginaX = window.scrollX;
+      const paginaY = window.scrollY;
+      el.scrollTop = el.scrollHeight;
+      if (window.scrollX !== paginaX || window.scrollY !== paginaY) {
+        window.scrollTo(paginaX, paginaY);
+      }
+      return;
+    }
+    el = el.parentElement;
+  }
+};
+
 const AgenteIA = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -610,7 +639,11 @@ const AgenteIA = () => {
   }, [selectedChat, tab, whatsappStatus]);
 
   useEffect(() => {
-    chatScrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Sem `block: "nearest"` isto rolava a PÁGINA inteira, não só a lista — e
+    // rodava também na montagem, com a conversa ainda vazia: quem abria a tela
+    // caía 600px abaixo do cabeçalho, sem entender o que tinha acontecido.
+    if (!chatMessages?.length) return;
+    rolarListaAteOFim(chatScrollRef);
   }, [chatMessages]);
 
   const sendReply = async () => {
@@ -664,7 +697,9 @@ const AgenteIA = () => {
   };
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Mesmo caso do outro: só rola quando existe mensagem, e só o necessário.
+    if (!messages?.length) return;
+    rolarListaAteOFim(scrollRef);
   }, [messages]);
 
   const buildContext = () => {

@@ -211,7 +211,9 @@ serve(async (req) => {
 
     const { data: expiringSoon } = await supabase
       .from("profiles")
-      .select("id, full_name, email, trial_ends_at")
+      // A coluna do nome em profiles e "name". Com "full_name" a consulta
+      // devolvia 400 e ninguem era avisado do fim do teste gratis.
+      .select("id, name, email, trial_ends_at")
       .gte("trial_ends_at", `${threeDaysStr}T00:00:00Z`)
       .lte("trial_ends_at", `${threeDaysStr}T23:59:59Z`);
 
@@ -227,9 +229,9 @@ serve(async (req) => {
         });
 
         // Send Email via Brevo
-        const emailTemplate = templates.trialExpiring(user.full_name || user.email, 3);
+        const emailTemplate = templates.trialExpiring(user.name || user.email, 3);
         await sendEmail({
-          to: [{ email: user.email, name: user.full_name }],
+          to: [{ email: user.email, name: user.name }],
           subject: emailTemplate.subject,
           htmlContent: emailTemplate.html,
         });
@@ -249,7 +251,8 @@ serve(async (req) => {
       const endDate = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
       const monthName = lastMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
-      const { data: users } = await supabase.from("profiles").select("id, full_name, email");
+      // Mesmo caso: a coluna e "name". O relatorio mensal por e-mail nunca saiu.
+      const { data: users } = await supabase.from("profiles").select("id, name, email");
 
       if (users) {
         for (const user of users) {
@@ -264,7 +267,7 @@ serve(async (req) => {
           const balance = totalProfit - totalExpense;
 
           if (totalProfit > 0 || totalExpense > 0) {
-            const emailTemplate = templates.monthlyReport(user.full_name || user.email, monthName, {
+            const emailTemplate = templates.monthlyReport(user.name || user.email, monthName, {
               profit: totalProfit.toLocaleString("pt-BR", { minimumFractionDigits: 2 }),
               expenses: totalExpense.toLocaleString("pt-BR", { minimumFractionDigits: 2 }),
               balance: balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 }),
@@ -274,7 +277,7 @@ serve(async (req) => {
             });
 
             await sendEmail({
-              to: [{ email: user.email, name: user.full_name }],
+              to: [{ email: user.email, name: user.name }],
               subject: emailTemplate.subject,
               htmlContent: emailTemplate.html,
             });

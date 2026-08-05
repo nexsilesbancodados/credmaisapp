@@ -216,18 +216,19 @@ export async function auditDecision(
   },
 ): Promise<void> {
   try {
+    // Esta tabela não tem `entity_type`, `action`, `entity_id` nem `details` —
+    // esses são os campos de `audit_logs`. Com eles no payload, TODO registro do
+    // agente era recusado: a tela de auditoria do bot ficava vazia mesmo com o
+    // bot trabalhando, e não havia como investigar reclamação de cliente.
     await supabase.from("bot_actions_log").insert({
       user_id: params.userId,
-      entity_type: "whatsapp_agent_v2",
-      action: params.intent,
-      entity_id: params.clientId ?? null,
+      client_id: params.clientId ?? null,
+      conversation_id: params.conversationId ?? null,
+      tool_name: params.intent,
       success: params.outcome === "ok",
       error_message: params.outcome === "error" ? (params.details?.error || "error") : null,
-      details: {
-        conversation_id: params.conversationId ?? null,
-        outcome: params.outcome,
-        ...(params.details || {}),
-      },
+      tool_input: { origem: "whatsapp_agent_v2", outcome: params.outcome },
+      tool_output: { ...(params.details || {}) },
     });
   } catch (_e) {
     // silencioso — auditoria nunca deve derrubar o agente

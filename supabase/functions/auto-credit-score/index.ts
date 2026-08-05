@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -57,7 +58,11 @@ serve(async (req) => {
       insts.forEach((i, idx) => {
         const due = new Date(i.due_date).getTime();
         const isRecent = idx < 10;
-        if (i.status === "pending" && due < now) {
+        // Era `status === "pending" && vencida`, e o auto-late-fees das 03:00
+        // já marcou as vencidas como "overdue" — o score não enxergava atraso
+        // nenhum. Em 2026-08-05, 52 dos 67 clientes inadimplentes eram
+        // invisíveis aqui e pontuavam 94/100 como se estivessem em dia.
+        if (isEmAtraso(i, new Date(now))) {
           const days = Math.floor((now - due) / 86400000);
           currentOverdue.push(days);
           // Parcelas atrasadas mais recentes pesam mais (peso 8/5/3)

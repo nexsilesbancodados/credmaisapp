@@ -32,6 +32,7 @@ const formVazio: SettingsForm = {
   portal_title: "", portal_subtitle: "", portal_welcome_message: "",
   portal_primary_color: "", portal_logo_url: "", portal_contact_phone: "",
   portal_contact_email: "",
+  portal_require_birth_date: false,
   custom_contract_template: "", modules_enabled: { ...DEFAULT_MODULES },
 };
 

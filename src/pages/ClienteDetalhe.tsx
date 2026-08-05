@@ -308,12 +308,15 @@ const ClienteDetalhe = () => {
 
   // Actions
   const startEdit = () => {
-    setEditData({ name: client?.name || "", phone: client?.phone || "", email: client?.email || "", cpf_cnpj: client?.cpf_cnpj || "", whatsapp: client?.whatsapp || "" });
+    setEditData({ name: client?.name || "", phone: client?.phone || "", email: client?.email || "", cpf_cnpj: client?.cpf_cnpj || "", whatsapp: client?.whatsapp || "", birth_date: (client as any)?.birth_date || "" });
     setEditMode(true);
   };
 
   const saveEdit = async () => {
-    const { error } = await supabase.from("clients").update(editData).eq("id", id!);
+    // `birth_date` é uma coluna date: string vazia faz o Postgres recusar a
+    // gravação inteira. Campo em branco significa "sem data", não "".
+    const payload = { ...editData, birth_date: editData.birth_date || null };
+    const { error } = await supabase.from("clients").update(payload).eq("id", id!);
     if (error) { toast({ ...friendlyError(error, "Não foi possível salvar o cliente."), variant: "destructive" }); return; }
     toast({ title: "Cliente atualizado!" }); setEditMode(false); inv("client-detail");
   };

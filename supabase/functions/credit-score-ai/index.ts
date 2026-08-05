@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
@@ -53,7 +54,9 @@ serve(async (req) => {
         if (diff <= 1) onTime++;
         else { late++; totalLateDays += Math.floor(diff); }
         paidValue += Number(i.amount || 0);
-      } else if (i.status === "pending") {
+      } else if (isEmAberto(i)) {
+        // "em aberto" cobre pending E overdue: contar só pending escondia a
+        // inadimplência de quem já passou pela virada da madrugada.
         if (due < now) { overdueNow++; totalLateDays += Math.floor((now - due) / 86400000); }
         pendingValue += Number(i.amount || 0);
       }

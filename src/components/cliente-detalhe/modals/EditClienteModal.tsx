@@ -14,6 +14,9 @@ const FIELDS = [
   { k: "whatsapp", l: "WhatsApp", t: "tel" },
   { k: "email", l: "E-mail", t: "email" },
   { k: "cpf_cnpj", l: "CPF/CNPJ", t: "text" },
+  // Sem este campo, o cliente não consegue entrar no portal: o login pede
+  // CPF + data de nascimento, e a data só existia na importação por planilha.
+  { k: "birth_date", l: "Data de nascimento (usada no login do portal)", t: "date" },
 ];
 
 export default function EditClienteModal({ editData, setEditData, onClose, onSave }: Props) {

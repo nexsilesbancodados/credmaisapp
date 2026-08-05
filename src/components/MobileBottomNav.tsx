@@ -119,6 +119,8 @@ const moreGroups = [
 
 const MobileBottomNav = () => {
   const location = useLocation();
+  // Telas de preencher formulário: o botão flutuante atrapalha mais do que ajuda.
+  const emFormulario = /^\/(clientes\/novo|configuracoes)/.test(location.pathname);
   const navigate = useNavigate();
   const { user, isPlatformAdmin } = useAuth();
   const { mode } = useAppMode();
@@ -229,8 +231,14 @@ const MobileBottomNav = () => {
           onClick={() => setShowFab(false)}
         />
       )}
-      {/* Ações rápidas são de operação — não fazem sentido no painel do dono */}
-      <div className={`fixed right-4 z-30 flex-col items-end gap-2.5 ${isPlatformMode ? "hidden" : "flex"}`} style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}>
+      {/* Ações rápidas são de operação — não fazem sentido no painel do dono.
+          Também somem nas telas de formulário: ali o botão flutuante fica por
+          cima dos campos e do botão de avançar, e oferecer "novo cliente" a
+          quem já está cadastrando um cliente não ajuda em nada. */}
+      <div
+        className={`fixed right-4 z-30 flex-col items-end gap-2.5 ${isPlatformMode || emFormulario ? "hidden" : "flex"}`}
+        style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         {showFab && fabActions.map((a, i) => (
           <button
             key={a.label}

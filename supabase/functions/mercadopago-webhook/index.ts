@@ -228,13 +228,39 @@ serve(async (req) => {
 
     if (subError) throw subError;
 
-    // Mantém o plano do perfil sincronizado (define o acesso a IA/automações)
+    // Mantém o plano do perfil sincronizado e DEFINE A VALIDADE DO ACESSO.
+    //
+    // O webhook não gravava `subscription_expires_at`, então o perfil ficava com
+    // NULL. O `auto-subscription-check` bloqueia quem tem
+    // `subscription_expires_at < agora` — e NULL nunca satisfaz um `<`. Ou seja:
+    // quem pagasse uma vez ficava com acesso para sempre, sem nunca ser cobrado
+    // de novo nem avisado de vencimento. Em 2026-08-05 havia 2 assinaturas
+    // nesse estado (de maio e julho, R$ 99,90 cada, um preço que nem existe
+    // mais na tabela atual).
+    //
+    // 31 dias dá um dia de folga sobre o ciclo mensal: o webhook da renovação
+    // estende antes de o acesso cair.
     if (subscriptionStatus === "active" && userData?.id) {
+      const patch: Record<string, unknown> = { plan_tier: planTier };
+
+      // Vitalício concedido manualmente pelo dono do app nunca é rebaixado.
+      const { data: perfilAtual } = await supabase
+        .from("profiles")
+        .select("subscription_type")
+        .eq("id", userData.id)
+        .maybeSingle();
+
+      if (perfilAtual?.subscription_type !== "lifetime") {
+        patch.subscription_type = "monthly";
+        patch.subscription_expires_at = new Date(Date.now() + 31 * 86400000).toISOString();
+        patch.is_blocked = false; // renovou: destrava quem estava bloqueado
+      }
+
       const { error: profErr } = await supabase
         .from("profiles")
-        .update({ plan_tier: planTier })
+        .update(patch)
         .eq("id", userData.id);
-      if (profErr) console.error("profile plan_tier update failed:", profErr);
+      if (profErr) console.error("profile update failed:", profErr);
     }
 
     // Send activation email

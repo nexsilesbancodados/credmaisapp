@@ -26,10 +26,18 @@ serve(async (req) => {
     const now = new Date();
     const in7days = new Date(now.getTime() + 7 * 86400000);
 
-    // 1) Bloquear contas com assinatura vencida
+    // 1) Bloquear contas com assinatura vencida.
+    //
+    // Só entram perfis COM data de vencimento no passado. Quem está com NULL
+    // não é tocado aqui de propósito: são os vitalícios e os casos legados que
+    // o webhook antigo deixou sem data. Bloquear em massa por NULL derrubaria
+    // gente que pagou — o conserto certo é o webhook passar a gravar a data,
+    // e ele já faz isso. Os legados aparecem no relatório abaixo para o dono
+    // resolver um a um.
     const { data: expired } = await supabase
       .from("profiles")
       .select("id, name, email, subscription_expires_at, is_blocked")
+      .not("subscription_expires_at", "is", null)
       .lt("subscription_expires_at", now.toISOString())
       .eq("is_blocked", false);
 
@@ -78,8 +86,40 @@ serve(async (req) => {
       warned++;
     }
 
+    // 3) Relatório: assinaturas ativas cujo perfil ficou SEM data de vencimento.
+    // Essas pessoas têm acesso que nunca expira e nunca é cobrado de novo.
+    // Não bloqueamos automaticamente — é decisão de negócio —, mas o dono
+    // precisa enxergá-las.
+    // O join por chave estrangeira não serve aqui: a maioria das assinaturas
+    // tem `user_id` nulo (o webhook só vincula quando encontra o perfil na
+    // hora). O casamento precisa ser por e-mail, como faz o ProtectedRoute.
+    const [{ data: ativas }, { data: perfis }] = await Promise.all([
+      supabase.from("subscriptions").select("email, user_id, amount_paid, updated_at").eq("status", "active"),
+      supabase.from("profiles").select("id, email, subscription_type, subscription_expires_at"),
+    ]);
+
+    const porId = new Map((perfis || []).map((p: any) => [p.id, p]));
+    const porEmail = new Map((perfis || []).map((p: any) => [String(p.email || "").toLowerCase(), p]));
+
+    const semPrazo = (ativas || [])
+      .filter((s: any) => {
+        const p = (s.user_id && porId.get(s.user_id)) || porEmail.get(String(s.email || "").toLowerCase());
+        if (!p) return true;                                   // ativa sem perfil nenhum
+        if (p.subscription_type === "lifetime") return false;   // vitalício é intencional
+        return p.subscription_expires_at == null;               // acesso que nunca vence
+      })
+      .map((s: any) => s.email);
+    if (semPrazo.length) {
+      console.warn(`[assinaturas] ${semPrazo.length} ativa(s) sem data de vencimento:`, semPrazo.join(", "));
+    }
+
     return new Response(
-      JSON.stringify({ message: `${blocked} bloqueada(s), ${warned} avisada(s)`, blocked, warned }),
+      JSON.stringify({
+        message: `${blocked} bloqueada(s), ${warned} avisada(s)`,
+        blocked,
+        warned,
+        ativas_sem_data_de_vencimento: semPrazo,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {

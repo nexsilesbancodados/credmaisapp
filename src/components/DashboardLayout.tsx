@@ -70,9 +70,25 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-dvh bg-background relative overflow-x-hidden">
-      {/* Static mesh gradients — no animation (animated blur is one of the heaviest paints). */}
-      <div className="pointer-events-none absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[80px] -z-10" />
-      <div className="pointer-events-none absolute bottom-0 right-0 w-[480px] h-[480px] bg-indigo-500/[0.03] rounded-full blur-[70px] -z-10" />
+      {/* Static mesh gradients — no animation (animated blur is one of the heaviest paints).
+       *
+       * Ficam dentro de uma camada `fixed` que corta o que passa da tela. Antes
+       * eram `absolute` soltos aqui: o primeiro tem 600px de largura começando a
+       * 25% da tela, então num celular de 360px a borda direita caía em 690px e
+       * ESTE container passava a ter 690px de área rolável.
+       *
+       * O estrago aparecia no cadastro de cliente, que dá foco automático no
+       * campo Nome: o navegador rolava o container para revelar o campo, o app
+       * inteiro deslizava 280px para fora da tela — e o `overflow-x-hidden` daqui
+       * escondia a barra, então não havia como rolar de volta. No celular a tela
+       * simplesmente ficava preta com um pedaço de formulário na borda.
+       *
+       * `fixed` + `overflow-hidden` faz o enfeite não somar largura para ninguém.
+       */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[80px]" />
+        <div className="absolute bottom-0 right-0 w-[480px] h-[480px] bg-indigo-500/[0.03] rounded-full blur-[70px]" />
+      </div>
 
       {/* Desktop: sidebar */}
       {!isMobile && (

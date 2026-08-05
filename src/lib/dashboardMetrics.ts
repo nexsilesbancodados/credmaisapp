@@ -41,32 +41,19 @@ export interface DashboardInput {
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 
-/** Parcela encerrada: não entra em nenhuma conta de pendência. */
-export const isEncerrada = (i: MetricsInstallment) =>
-  i.status === "paid" || i.status === "cancelled";
+// As três definições vivem em `supabase/functions/_shared/installmentStatus.ts`
+// e são reexportadas aqui. Compartilhar em vez de copiar é proposital: o mesmo
+// conceito precisa valer no navegador e nos crons, e foi a divergência entre os
+// dois que deixou 265 parcelas fora da cobrança automática.
+export {
+  isEncerrada,
+  isEmAberto,
+  isEmAtraso,
+  venceHoje,
+  diasEmAtraso,
+} from "../../supabase/functions/_shared/installmentStatus";
 
-/** Em aberto: qualquer coisa que não foi paga nem cancelada. */
-export const isEmAberto = (i: MetricsInstallment) => !isEncerrada(i);
-
-/** Compara só a data (o horário do vencimento não deve mudar o resultado). */
-const diaDe = (iso: string): number => {
-  const d = new Date(iso);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-};
-
-/** Em atraso: em aberto E vencida antes de hoje. */
-export function isEmAtraso(i: MetricsInstallment, agora: Date): boolean {
-  if (!isEmAberto(i) || !i.due_date) return false;
-  const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
-  return diaDe(i.due_date) < hoje;
-}
-
-/** Vence hoje: em aberto E com vencimento no dia de hoje. */
-export function venceHoje(i: MetricsInstallment, agora: Date): boolean {
-  if (!isEmAberto(i) || !i.due_date) return false;
-  const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
-  return diaDe(i.due_date) === hoje;
-}
+import { isEmAberto, isEmAtraso, venceHoje } from "../../supabase/functions/_shared/installmentStatus";
 
 export function computeDashboardMetrics(data: DashboardInput, agora: Date = new Date()) {
   const { contracts, installments, clients, goals } = data;

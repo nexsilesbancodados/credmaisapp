@@ -9,7 +9,6 @@ import {
 import { toast } from "sonner";
 import { friendlyError } from "@/lib/friendlyError";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useConfirm } from "@/components/ConfirmProvider";
 import { getSignedUploadUrl } from "@/lib/storage";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
@@ -34,7 +33,10 @@ const URL_RE = /(https?:\/\/[^\s]+)/i;
 
 const fmtTime = (s: string) => new Date(s).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 const fmtDay = (s: string) => {
-  const confirm = useConfirm();
+  // Havia um `useConfirm()` aqui dentro, sem uso nenhum: esta função só formata
+  // data. Como ela é chamada durante o render, uma vez por mensagem, o React
+  // contava aquilo como hook do componente que a chamou — e a quantidade variava
+  // conforme o número de mensagens, derrubando a tela de conversas.
   const d = new Date(s); const today = new Date(); const y = new Date(); y.setDate(y.getDate() - 1);
   if (d.toDateString() === today.toDateString()) return "Hoje";
   if (d.toDateString() === y.toDateString()) return "Ontem";

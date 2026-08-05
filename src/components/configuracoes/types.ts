@@ -79,6 +79,8 @@ export interface SettingsForm {
   portal_logo_url: string;
   portal_contact_phone: string;
   portal_contact_email: string;
+  /** Exige data de nascimento junto do CPF no acesso do cliente. Por assinante. */
+  portal_require_birth_date: boolean;
 
   // Contrato e módulos
   custom_contract_template: string;

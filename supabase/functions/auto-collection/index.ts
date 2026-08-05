@@ -110,7 +110,51 @@ serve(async (req) => {
       const apiUrl = (settings.whatsapp_api_url || "").replace(/\/$/, "");
       const apiKey = settings.whatsapp_api_key || "";
       const instanceName = settings.whatsapp_instance || "";
-      const waConfigured = apiUrl && apiKey && instanceName;
+      let waConfigured = !!(apiUrl && apiKey && instanceName);
+
+      // A sessão do WhatsApp cai sozinha (celular sem bateria, aparelho
+      // desconectado, sessão expirada) e NADA no sistema avisava: o robô seguia
+      // tentando enviar, cada envio falhava, e o erro morria numa resposta HTTP
+      // que ninguém lê. Foi o que aconteceu de 25/07 em diante — 11 dias de
+      // silêncio sem um único registro.
+      //
+      // Agora a conexão é conferida ANTES de montar as mensagens, e o dono é
+      // avisado uma vez por dia para reconectar.
+      if (waConfigured) {
+        let conectado = false;
+        try {
+          const est = await fetch(`${apiUrl}/instance/connectionState/${instanceName}`, {
+            headers: { apikey: apiKey },
+          });
+          if (est.ok) {
+            const j = await est.json();
+            conectado = (j?.instance?.state || j?.state) === "open";
+          }
+        } catch (_) { conectado = false; }
+
+        if (!conectado) {
+          waConfigured = false;
+          const jaAvisou = await supabase
+            .from("audit_logs").select("id", { count: "exact", head: true })
+            .eq("user_id", userId).eq("entity_type", "auto_collection")
+            .eq("action", "whatsapp_desconectado")
+            .gte("created_at", `${todayStr}T00:00:00Z`);
+          if (!jaAvisou.count) {
+            await supabase.from("notifications").insert({
+              user_id: userId,
+              message: "WhatsApp desconectado — as cobranças automáticas não estão saindo. Reconecte em Configurações → WhatsApp escaneando o QR.",
+              type: "warning",
+              link: "/configuracoes/whatsapp",
+            }).then(() => {}, () => {});
+            await supabase.from("audit_logs").insert({
+              user_id: userId, entity_type: "auto_collection",
+              action: "whatsapp_desconectado", entity_id: null,
+              details: { instancia: instanceName },
+            }).then(() => {}, () => {});
+          }
+          errors.push("WhatsApp desconectado — cobranças por WhatsApp suspensas nesta rodada");
+        }
+      }
 
       const { count: sentToday } = await supabase
         .from("audit_logs").select("id", { count: "exact", head: true })
@@ -287,6 +331,15 @@ serve(async (req) => {
         };
         const totalLateFees = insts.reduce((s, i) => s + liveLateFee(i), 0);
         const totalAmount = insts.reduce((s, i) => s + Number(i.amount) + liveLateFee(i), 0);
+        // A taxa aparecia como "4% ao dia" escrito à mão na mensagem e no
+        // prompt da IA, enquanto o cálculo já usava a taxa do contrato. Hoje os
+        // 74 contratos em atraso são todos 4%, então o número está certo — mas
+        // no dia em que uma taxa mudar, o cliente receberia por escrito um
+        // percentual que não é o dele. Aqui o texto passa a sair do dado.
+        const taxasNoLote = [...new Set(insts.map((i: any) => Number(i.daily_interest_percent) > 0 ? Number(i.daily_interest_percent) : 4))];
+        const taxaTexto = taxasNoLote.length === 1
+          ? `${String(taxasNoLote[0]).replace(".", ",")}% ao dia`
+          : "juros diários do contrato";
         let message = "";
         const daysOverdue = Math.max(0, selectedDays);
         const daysUntilDue = Math.max(0, -selectedDays);
@@ -355,7 +408,7 @@ serve(async (req) => {
 CLIENTE: ${client.name}
 ${isPreDue ? `PARCELA VENCE EM ${daysUntilDue} DIA(S)` : `PARCELA EM ATRASO: ${daysOverdue} DIA(S)`}
 VALOR TOTAL ATUALIZADO (com juros de atraso): R$ ${totalAmount.toFixed(2)} (${insts.length} parcela(s))
-${totalLateFees > 0 ? `JUROS DE ATRASO JÁ INCLUÍDOS: R$ ${totalLateFees.toFixed(2)} (4% ao dia) — SEMPRE informe o valor total atualizado com os juros.` : ""}
+${totalLateFees > 0 ? `JUROS DE ATRASO JÁ INCLUÍDOS: R$ ${totalLateFees.toFixed(2)} (${taxaTexto}) — SEMPRE informe o valor total atualizado com os juros.` : ""}
 SCORE: ${client.credit_score ?? 100}/100
 HISTÓRICO: ${paidCount}/${totalHist} pagas (${reliability}% confiabilidade)
 INTENÇÕES RECENTES:
@@ -399,10 +452,13 @@ ${extraDiversity}`;
               } as any);
               if (guarda.block) {
                 console.warn(`[auto-collection] mensagem da IA bloqueada (${guarda.reasons.join(", ")}) — usando o texto padrão`);
+                // Campos de `audit_logs` num insert de `bot_actions_log`: o
+                // registro era recusado e o bloqueio da IA não deixava rastro.
                 await supabase.from("bot_actions_log").insert({
-                  user_id: userId, entity_type: "auto_collection", action: "ai_reply_blocked",
-                  entity_id: client.id, success: false,
-                  details: { reasons: guarda.reasons, preview: message.slice(0, 200) },
+                  user_id: userId, client_id: client.id,
+                  tool_name: "ai_reply_blocked", success: false,
+                  tool_input: { origem: "auto_collection" },
+                  tool_output: { reasons: guarda.reasons, preview: message.slice(0, 200) },
                 }).then(() => {}, () => {});
                 message = ""; // cai no template/mensagem padrão logo abaixo
               }
@@ -484,10 +540,10 @@ ${extraDiversity}`;
           } else if (has("abriu_portal")) {
             message += `\n\n(Vi que você abriu o portal recentemente — se precisar de ajuda pra concluir, me chama por aqui.)`;
           }
-          // Detalhamento dos juros de atraso (4% ao dia) sempre visível
+          // Detalhamento dos juros de atraso sempre visível
           if (totalLateFees > 0 && !/juros/i.test(message)) {
             const principal = totalAmount - totalLateFees;
-            message += `\n\nDetalhe: parcela(s) R$ ${principal.toFixed(2)} + juros de atraso R$ ${totalLateFees.toFixed(2)} (4% ao dia · ${daysOverdue} dia(s))\nTotal atualizado: R$ ${totalAmount.toFixed(2)}`;
+            message += `\n\nDetalhe: parcela(s) R$ ${principal.toFixed(2)} + juros de atraso R$ ${totalLateFees.toFixed(2)} (${taxaTexto} · ${daysOverdue} dia(s))\nTotal atualizado: R$ ${totalAmount.toFixed(2)}`;
           }
         }
 
@@ -539,8 +595,27 @@ ${extraDiversity}`;
                 });
                 await supabase.from("clients").update({ bot_memory: serializeMemory(memUpd) }).eq("id", clientId);
               } catch (memErr) { console.error("[memory] auto-collection push failed:", memErr); }
-            } else { errors.push(`${client.name}: ${await sendResp.text()}`); }
-          } catch (err) { errors.push(`${client.name}: ${err instanceof Error ? err.message : "Erro envio"}`); }
+            } else {
+              // Falha de envio precisa deixar rastro no banco. Antes ela só
+              // entrava neste array, que vira a resposta HTTP do cron — ou seja,
+              // era descartada. O dono não tinha como saber que a cobrança não saiu.
+              const motivo = (await sendResp.text()).slice(0, 300);
+              errors.push(`${client.name}: ${motivo}`);
+              await supabase.from("audit_logs").insert({
+                user_id: userId, entity_type: "auto_collection", action: "message_failed",
+                entity_id: clientId,
+                details: { client_name: client.name, phone: recipient, channel: "whatsapp", status: sendResp.status, motivo },
+              }).then(() => {}, () => {});
+            }
+          } catch (err) {
+            const motivo = err instanceof Error ? err.message : "Erro envio";
+            errors.push(`${client.name}: ${motivo}`);
+            await supabase.from("audit_logs").insert({
+              user_id: userId, entity_type: "auto_collection", action: "message_failed",
+              entity_id: clientId,
+              details: { client_name: client.name, phone: recipient, channel: "whatsapp", motivo },
+            }).then(() => {}, () => {});
+          }
         }
 
         const shouldEmail = email && (
