@@ -75,9 +75,12 @@ jobs:
         run: |
           set -uo pipefail
           PADROES='(ghp_[A-Za-z0-9]{20,}|sbp_[a-f0-9]{40,}|service_role.{0,40}eyJ|SUPABASE_SERVICE_ROLE_KEY\s*=\s*["'"'"']?eyJ|x-cron-secret"\s*:\s*"[a-f0-9]{32,}|hubla_webhook_token\s*=\s*'"'"'[A-Za-z0-9]{20,})'
+          # O próprio arquivo é excluído: ele contém os padrões escritos por
+          # extenso e casaria consigo mesmo em toda execução.
           if grep -rInE "$PADROES" \
                --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist \
-               --exclude=package-lock.json --exclude=bun.lock . ; then
+               --exclude-dir=test-results --exclude-dir=playwright-report \
+               --exclude=package-lock.json --exclude=bun.lock --exclude=ci.yml . ; then
             echo "::error::Possível segredo versionado. Mova o valor para os secrets do Supabase ou para o Vault."
             exit 1
           fi
