@@ -87,6 +87,19 @@ serve(async (req) => {
   const limpezaAutorizada = Deno.env.get("BACKUP_RETENTION_ENABLED") === "1";
   const podeApagar = limpezaAutorizada && !apenasConferir;
 
+  // ?somente_orfaos=1 → apaga APENAS as pastas de contas que não existem mais,
+  // sem gravar backup novo e sem aplicar retenção nos backups de quem está
+  // ativo. Existe porque as duas coisas estavam amarradas no mesmo interruptor:
+  // para cumprir a LGPD e sumir com o dado de quem pediu exclusão, era preciso
+  // ligar a retenção geral junto — e aí o histórico de quem continua cliente
+  // começava a ser podado sem ninguém ter pedido.
+  //
+  // Não depende de `BACKUP_RETENTION_ENABLED`: apagar pasta de conta que não
+  // existe mais não é retenção, é obrigação. Mas continua respeitando
+  // `?conferir=1` para inspecionar antes.
+  const somenteOrfaos = new URL(req.url).searchParams.get("somente_orfaos") === "1";
+  const podeApagarOrfaos = somenteOrfaos ? !apenasConferir : podeApagar;
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -104,7 +117,9 @@ serve(async (req) => {
     let removidosPorRetencao = 0;
     const errors: string[] = [];
 
-    for (const p of profiles || []) {
+    // No modo `somente_orfaos` a varredura por usuario e pulada inteira: nada
+    // e gravado e nada e podado de quem esta ativo.
+    for (const p of somenteOrfaos ? [] : (profiles || [])) {
       try {
         if (!apenasConferir) {
           const dump: Record<string, unknown[]> = {};
@@ -145,7 +160,7 @@ serve(async (req) => {
           .list(pasta.name, { limit: 1000 });
         const caminhos = (arquivos || []).map((a: any) => `${pasta.name}/${a.name}`);
         if (!caminhos.length) continue;
-        if (!podeApagar) { pastasOrfasRemovidas++; continue; }
+        if (!podeApagarOrfaos) { pastasOrfasRemovidas++; continue; }
         const { error: rmErr } = await supabase.storage.from("backups").remove(caminhos);
         if (!rmErr) pastasOrfasRemovidas++;
       }
@@ -155,15 +170,25 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        // O relato precisa dizer a verdade sobre o que a chamada fez. Antes, no
+        // modo `somente_orfaos`, ele apagava 26 pastas e devolvia "Nenhum
+        // arquivo apagado — defina BACKUP_RETENTION_ENABLED=1": a mensagem
+        // genérica não conhecia esse caminho.
         modo: apenasConferir
           ? "conferencia (nada foi alterado)"
-          : podeApagar ? "execucao (com limpeza)" : "execucao (limpeza DESLIGADA)",
+          : somenteOrfaos
+            ? "execucao (apenas pastas de contas excluidas)"
+            : podeApagar ? "execucao (com limpeza)" : "execucao (limpeza DESLIGADA)",
         limpeza_autorizada: limpezaAutorizada,
         message: apenasConferir
-          ? "Simulação: nenhum arquivo foi gravado nem apagado."
-          : podeApagar
-            ? `Backup de ${backedUp} usuário(s)`
-            : `Backup de ${backedUp} usuário(s). Nenhum arquivo apagado — defina BACKUP_RETENTION_ENABLED=1 para ligar a limpeza.`,
+          ? somenteOrfaos
+            ? `Simulação: ${pastasOrfasRemovidas} pasta(s) de conta excluída seriam apagadas. Nada foi alterado.`
+            : "Simulação: nenhum arquivo foi gravado nem apagado."
+          : somenteOrfaos
+            ? `${pastasOrfasRemovidas} pasta(s) de conta excluída apagada(s). Nenhum backup novo gravado e nenhuma retenção aplicada a conta ativa.`
+            : podeApagar
+              ? `Backup de ${backedUp} usuário(s)`
+              : `Backup de ${backedUp} usuário(s). Nenhum arquivo apagado — defina BACKUP_RETENTION_ENABLED=1 para ligar a limpeza.`,
         backedUp,
         removidosPorRetencao,
         pastasOrfasRemovidas,
