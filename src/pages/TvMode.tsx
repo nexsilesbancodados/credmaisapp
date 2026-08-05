@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -43,7 +44,7 @@ export default function TvMode() {
     const capital = active.reduce((s: number, c: any) => s + Number(c.capital), 0);
     const paid = data.installments.filter((i: any) => i.status === "paid");
     const received = paid.reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount), 0);
-    const overdue = data.installments.filter((i: any) => i.status === "pending" && new Date(i.due_date) < today);
+    const overdue = data.installments.filter((i: any) => isEmAtraso(i, today));
     const overdueAmt = overdue.reduce((s: number, i: any) => s + Number(i.amount), 0);
     const paidToday = paid.filter((p: any) => p.paid_at?.startsWith(todayStr));
     const paidTodayAmt = paidToday.reduce((s: number, p: any) => s + Number(p.paid_amount || p.amount), 0);

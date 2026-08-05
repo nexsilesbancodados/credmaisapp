@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -271,7 +272,7 @@ const Analises = () => {
     const multas = paidInRange.reduce((s: number, i: any) => s + Number(i.late_fee || 0), 0);
 
     // ─── Atraso (saldo atual — não filtrado pelo período)
-    const overdueAll = installments.filter((i: any) => i.status === "pending" && dueDayStr(i.due_date) < todayStr);
+    const overdueAll = installments.filter((i: any) => isEmAtraso(i, new Date()));
     const overdueAmount = overdueAll.reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
     const overdueClients = new Set(overdueAll.map((i: any) => i.client_id)).size;
     const ag = (min: number, max: number) => overdueAll.filter((i: any) => {
@@ -287,7 +288,7 @@ const Analises = () => {
     const activeContracts = contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
     const capitalAtivo = activeContracts.reduce((s: number, c: any) => s + Number(c.capital || 0), 0);
     const aReceberTotal = installments
-      .filter((i: any) => i.status === "pending")
+      .filter((i: any) => isEmAberto(i))
       .reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
     const quitados = contracts.filter((c: any) => {
       const insts = installments.filter((i: any) => i.contract_id === c.id);
@@ -336,8 +337,8 @@ const Analises = () => {
     const forecast7Amount = upcoming7.reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
 
     // ─── Vence hoje / amanhã
-    const dueToday = installments.filter((i: any) => i.status === "pending" && dueDayStr(i.due_date) === todayStr);
-    const dueTomorrow = installments.filter((i: any) => i.status === "pending" && dueDayStr(i.due_date) === tomorrowStr);
+    const dueToday = installments.filter((i: any) => isEmAberto(i) && dueDayStr(i.due_date) === todayStr);
+    const dueTomorrow = installments.filter((i: any) => isEmAberto(i) && dueDayStr(i.due_date) === tomorrowStr);
 
     // ─── Comparação com período anterior
     const rangeMs = rangeEnd.getTime() - rangeStart.getTime();
@@ -433,7 +434,7 @@ const Analises = () => {
     const paidRows = paidInRange.map(decorateInst).sort((a: any, b: any) => new Date(b.paid_at).getTime() - new Date(a.paid_at).getTime());
     const contractsRows = contractsInRange.map(decorateContract).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const activeRows = activeContracts.map(decorateContract);
-    const pendingRows = installments.filter((i: any) => i.status === "pending").map(decorateInst).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+    const pendingRows = installments.filter((i: any) => isEmAberto(i)).map(decorateInst).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
     const dueTodayRows = dueToday.map(decorateInst);
     const dueTomorrowRows = dueTomorrow.map(decorateInst);
     const upcomingRows = upcoming.map(decorateInst).sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());

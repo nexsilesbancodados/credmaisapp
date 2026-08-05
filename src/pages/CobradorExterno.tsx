@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -237,7 +238,7 @@ const CobradorExterno = () => {
     );
   }
 
-  const allPending = installments.filter((i: any) => i.status === "pending");
+  const allPending = installments.filter((i: any) => isEmAberto(i));
   const allOverdue = allPending.filter((i: any) => new Date(i.due_date) < now);
   const allPaid = installments.filter((i: any) => i.status === "paid");
   const totalPending = allPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
@@ -414,9 +415,9 @@ const CobradorExterno = () => {
               const clientAll = installments.filter((i: any) => i.client_id === a.client_id);
               let clientFiltered: any[] = [];
               if (tab === "pendentes") {
-                clientFiltered = clientAll.filter((i: any) => i.status === "pending");
+                clientFiltered = clientAll.filter((i: any) => isEmAberto(i));
               } else if (tab === "atrasadas") {
-                clientFiltered = clientAll.filter((i: any) => i.status === "pending" && new Date(i.due_date) < now);
+                clientFiltered = clientAll.filter((i: any) => isEmAtraso(i, now));
               } else {
                 clientFiltered = clientAll.filter((i: any) => i.status === "paid");
               }
@@ -424,7 +425,7 @@ const CobradorExterno = () => {
               if (clientFiltered.length === 0) return null;
 
               const isExpanded = expandedClient === a.client_id;
-              const clientTotalPending = clientAll.filter((i: any) => i.status === "pending");
+              const clientTotalPending = clientAll.filter((i: any) => isEmAberto(i));
               const clientTotalOverdue = clientTotalPending.filter((i: any) => new Date(i.due_date) < now);
               const clientPendingAmount = clientTotalPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
 
@@ -497,7 +498,7 @@ const CobradorExterno = () => {
 
                       <div className="divide-y divide-border/30">
                         {clientFiltered.map((inst: any) => {
-                          const isOverdue = inst.status === "pending" && new Date(inst.due_date) < now;
+                          const isOverdue = isEmAtraso(inst, now);
                           const daysLate = isOverdue ? Math.floor((now.getTime() - new Date(inst.due_date).getTime()) / 86400000) : 0;
                           const isPaid = inst.status === "paid";
 
@@ -572,8 +573,8 @@ const CobradorExterno = () => {
             {filteredAssignments.every((a: any) => {
               const clientAll = installments.filter((i: any) => i.client_id === a.client_id);
               let filtered: any[];
-              if (tab === "pendentes") filtered = clientAll.filter((i: any) => i.status === "pending");
-              else if (tab === "atrasadas") filtered = clientAll.filter((i: any) => i.status === "pending" && new Date(i.due_date) < now);
+              if (tab === "pendentes") filtered = clientAll.filter((i: any) => isEmAberto(i));
+              else if (tab === "atrasadas") filtered = clientAll.filter((i: any) => isEmAtraso(i, now));
               else filtered = clientAll.filter((i: any) => i.status === "paid");
               return filtered.length === 0;
             }) && (
