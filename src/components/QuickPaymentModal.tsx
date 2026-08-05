@@ -110,9 +110,14 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
 
   const handlePay = async (id: string, amount: number) => {
     setSaving(id);
-    const { error } = await supabase.from("contract_installments")
-      .update({ status: "paid", paid_at: new Date().toISOString(), paid_amount: amount, payment_method: method })
-      .eq("id", id);
+    // RPC atômico: baixa + lucro + caixa + conclusão do contrato numa transação.
+    // Antes era `.update()` direto e o pagamento não chegava a Lucros nem ao caixa.
+    const { error } = await supabase.rpc("pay_installment", {
+      _installment_id: id,
+      _paid_total: amount,
+      _mark_paid: true,
+      _method: method,
+    });
     setSaving(null);
     if (error) { toast.error("Erro ao registrar pagamento"); return; }
     setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
@@ -120,9 +125,14 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
       action: {
         label: "Desfazer",
         onClick: async () => {
-          await supabase.from("contract_installments").update({ status: "pending", paid_at: null, paid_amount: null }).eq("id", id);
+          // Estorno pelo RPC: além de reabrir a parcela, remove o lucro e o
+          // caixa lançados por ela. Voltar o status na mão deixaria o dinheiro
+          // registrado no razão sem parcela paga correspondente.
+          const { error: undoErr } = await supabase.rpc("reverse_installment_payment", { _installment_id: id });
+          if (undoErr) { toast.error("Não foi possível desfazer"); return; }
           qc.invalidateQueries({ queryKey: ["quick-pay-installments"] });
           qc.invalidateQueries({ queryKey: ["hoje"] });
+          qc.invalidateQueries({ queryKey: ["dashboard-data"] });
           toast.success("Desfeito");
         }
       }
@@ -136,11 +146,16 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     if (ids.length === 0) return;
     const items = (installments || []).filter((i: any) => selected.has(i.id));
     setBulkSaving(true);
-    const nowIso = new Date().toISOString();
+    // Cada parcela pelo RPC atômico. Em lote continuam sendo transações
+    // independentes: se uma falhar, as outras seguem quitadas e o razão delas
+    // fica correto — melhor do que abortar tudo no meio.
     const updates = await Promise.all(items.map((i: any) =>
-      supabase.from("contract_installments")
-        .update({ status: "paid", paid_at: nowIso, paid_amount: Number(i.amount), payment_method: method })
-        .eq("id", i.id)
+      supabase.rpc("pay_installment", {
+        _installment_id: i.id,
+        _paid_total: Number(i.amount),
+        _mark_paid: true,
+        _method: method,
+      })
     ));
     setBulkSaving(false);
     const failed = updates.filter((r) => r.error).length;
@@ -150,11 +165,13 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
         action: {
           label: "Desfazer",
           onClick: async () => {
+            // Estorno pelo RPC, que também remove lucro e caixa da parcela.
             await Promise.all(items.map((i: any) =>
-              supabase.from("contract_installments").update({ status: "pending", paid_at: null, paid_amount: null }).eq("id", i.id)
+              supabase.rpc("reverse_installment_payment", { _installment_id: i.id })
             ));
             qc.invalidateQueries({ queryKey: ["quick-pay-installments"] });
             qc.invalidateQueries({ queryKey: ["hoje"] });
+            qc.invalidateQueries({ queryKey: ["dashboard-data"] });
             toast.success("Desfeito");
           }
         }

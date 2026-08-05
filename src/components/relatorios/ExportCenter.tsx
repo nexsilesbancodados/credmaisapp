@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Download, FileSpreadsheet, Users, FileSignature, Receipt, Wallet, TrendingUp, Loader2 } from "lucide-react";
 import { formatBR } from "@/lib/dateUtils";
 
-type EntityKey = "clients" | "contracts" | "installments" | "profits" | "expenses";
+type EntityKey = "clients" | "contracts" | "contract_installments" | "transactions" | "profits" | "expenses";
 
 interface EntityDef {
   key: EntityKey;
@@ -21,7 +21,10 @@ interface EntityDef {
 const ENTITIES: EntityDef[] = [
   { key: "clients", label: "Clientes", hint: "Todos os clientes cadastrados", icon: Users, color: "text-primary", dated: false },
   { key: "contracts", label: "Contratos", hint: "Contratos criados no período", icon: FileSignature, color: "text-info", dated: true, dateField: "created_at" },
-  { key: "installments", label: "Parcelas", hint: "Parcelas com vencimento no período", icon: Receipt, color: "text-warning", dated: true, dateField: "due_date" },
+  // Apontava para `installments`, a tabela legada substituída por
+  // `contract_installments` — a exportação de parcelas vinha sempre VAZIA.
+  { key: "contract_installments", label: "Parcelas", hint: "Parcelas com vencimento no período", icon: Receipt, color: "text-warning", dated: true, dateField: "due_date" },
+  { key: "transactions", label: "Caixa", hint: "Entradas e saídas do período", icon: Wallet, color: "text-info", dated: true, dateField: "date" },
   { key: "profits", label: "Lucros", hint: "Lucros lançados no período", icon: TrendingUp, color: "text-success", dated: true, dateField: "date" },
   { key: "expenses", label: "Despesas", hint: "Despesas do período", icon: Wallet, color: "text-destructive", dated: true, dateField: "date" },
 ];
@@ -53,7 +56,7 @@ const ExportCenter = () => {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(today.toISOString().slice(0, 10));
-  const [selected, setSelected] = useState<Set<EntityKey>>(new Set(["contracts", "installments"]));
+  const [selected, setSelected] = useState<Set<EntityKey>>(new Set(["contracts", "contract_installments"]));
   const [busy, setBusy] = useState<EntityKey | "all" | null>(null);
 
   const toggle = (k: EntityKey) => {

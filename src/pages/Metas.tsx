@@ -24,7 +24,10 @@ const Metas = () => {
   const [incrementVal, setIncrementVal] = useState("");
 
   const fetchGoals = async () => {
-    const { data } = await supabase.from("goals").select("*").order("created_at", { ascending: false });
+    // Escopo explícito por dono, além da RLS (ver Anotacoes.tsx).
+    const { data } = await supabase.from("goals").select("*")
+      .eq("user_id", user!.id)
+      .order("created_at", { ascending: false });
     setGoals(data || []);
     setLoading(false);
   };

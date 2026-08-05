@@ -26,7 +26,12 @@ const Anotacoes = () => {
   const [editTitle, setEditTitle] = useState("");
 
   const fetchNotes = async () => {
-    const { data, error } = await supabase.from("notes").select("*").order("created_at", { ascending: false });
+    // Filtro explícito por dono. A RLS já garante o isolamento, mas depender só
+    // dela deixa a tela à mercê de uma policy afrouxada no futuro — e sem o
+    // filtro o Postgres também não usa o índice por user_id.
+    const { data, error } = await supabase.from("notes").select("*")
+      .eq("user_id", user!.id)
+      .order("created_at", { ascending: false });
     if (error) setLoadError(error);
     else { setLoadError(null); setNotes(data || []); }
     setLoading(false);
