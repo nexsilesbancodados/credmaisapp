@@ -1,6 +1,6 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RotateCcw, Home } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useInRouterContext, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { reportError } from "@/lib/reportError";
 
@@ -123,18 +123,32 @@ class ErrorBoundaryInner extends Component<Props, State> {
 
 // Wrapper para auto-resetar quando o usuário troca de rota,
 // evitando ficar "preso" na tela de erro ao navegar pelo menu.
-const ErrorBoundary = ({ children, fallback }: Omit<Props, "resetKey">) => {
-  let pathname = "static";
-  try {
-    // useLocation só funciona dentro do BrowserRouter; protegido por try/catch
-    // pra não quebrar se alguém usar fora do Router.
-    pathname = useLocation().pathname;
-  } catch {}
+const ComRota = ({ children, fallback }: Omit<Props, "resetKey">) => {
+  const { pathname } = useLocation();
   return (
     <ErrorBoundaryInner resetKey={pathname} fallback={fallback}>
       {children}
     </ErrorBoundaryInner>
   );
+};
+
+const ErrorBoundary = ({ children, fallback }: Omit<Props, "resetKey">) => {
+  // Antes isto era `useLocation()` dentro de um try/catch, para funcionar também
+  // fora do Router. Só que um hook chamado condicionalmente é justamente o que
+  // provoca o erro #310 — e aqui o estrago seria o pior possível: quem quebraria
+  // é o componente encarregado de segurar as quebras das outras telas.
+  //
+  // `useInRouterContext` é um hook comum, chamado sempre; quem depende do Router
+  // fica no componente filho, que só é montado quando há Router.
+  const dentroDoRouter = useInRouterContext();
+  if (!dentroDoRouter) {
+    return (
+      <ErrorBoundaryInner resetKey="static" fallback={fallback}>
+        {children}
+      </ErrorBoundaryInner>
+    );
+  }
+  return <ComRota fallback={fallback}>{children}</ComRota>;
 };
 
 export default ErrorBoundary;

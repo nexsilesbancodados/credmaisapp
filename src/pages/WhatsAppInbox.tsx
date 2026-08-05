@@ -308,7 +308,10 @@ export default function WhatsAppInbox() {
     toast({ title: next ? "Bloqueado 🚫" : "Desbloqueado" });
   };
 
-  const useTemplate = (tpl: Template) => {
+  // Renomeada: com o prefixo `use` o ESLint tratava esta funcao comum como
+  // hook. Nao era um hook — mas o nome escondia a diferenca, e um dia alguem
+  // moveria a chamada para o corpo do componente sem perceber.
+  const inserirTemplate = (tpl: Template) => {
     if (!selected) return;
     const name = (selected.contact_name || "").split(" ")[0] || "";
     setDraft(tpl.content.replace(/\{nome\}/gi, name));
@@ -472,7 +475,11 @@ export default function WhatsAppInbox() {
         </div>
       </div>
 
-      <div className="h-[calc(100vh-16rem)] grid grid-cols-[360px_1fr] gap-3">
+      {/* A coluna da lista era fixa em 360px, sem variante para telas pequenas:
+          num celular de 360px sobram 336px depois do padding, então a caixa
+          vazava para fora e a conversa ficava espremida. No celular as duas
+          partes passam a ficar uma embaixo da outra, com altura natural. */}
+      <div className="grid grid-cols-1 gap-3 lg:h-[calc(100vh-16rem)] lg:grid-cols-[360px_1fr]">
         {/* Lista de conversas */}
         <Card className="flex flex-col overflow-hidden rounded-2xl border-border/60">
           <div className="p-3 border-b border-border/60 space-y-2.5 bg-gradient-to-b from-card to-card/50">
@@ -800,7 +807,7 @@ export default function WhatsAppInbox() {
                       <DropdownMenuLabel>Inserir template</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       {templates.map(t => (
-                        <DropdownMenuItem key={t.id} onClick={() => useTemplate(t)} className="flex-col items-start">
+                        <DropdownMenuItem key={t.id} onClick={() => inserirTemplate(t)} className="flex-col items-start">
                           <span className="font-medium">{t.name}</span>
                           <span className="text-[10px] text-muted-foreground line-clamp-1">{t.content}</span>
                         </DropdownMenuItem>

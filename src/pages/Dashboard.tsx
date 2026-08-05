@@ -81,6 +81,14 @@ const Dashboard = () => {
     return ((cur - prev) / prev) * 100;
   }, [data]);
 
+  // Estava lá embaixo, DEPOIS dos dois returns antecipados — exatamente o que o
+  // aviso acima proíbe. `usePlan` usa `useMemo`: enquanto o painel carregava o
+  // componente saía no return do esqueleto e esse hook não rodava; quando os
+  // dados chegavam ele passava a rodar, o React via mais hooks do que no render
+  // anterior e derrubava a tela (erro #310, "Algo deu errado"). O painel é a
+  // primeira tela de todo mundo depois do login.
+  const { hasAutomations } = usePlan();
+
   if (dashError && !data) {
     return (
       <div className="max-w-[1400px] mx-auto">
@@ -112,8 +120,6 @@ const Dashboard = () => {
   const timeStr = currentTime.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const dateStr = currentTime.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
   const firstName = profile?.name?.split(" ")[0] || "Usuário";
-
-  const { hasAutomations } = usePlan();
 
   const quickActions = [
     { label: "Novo cliente",    icon: Users,    path: "/clientes/novo", tone: "from-primary/25 to-primary/5",       ring: "ring-primary/30",    iconColor: "text-primary" },

@@ -464,7 +464,11 @@ const Configuracoes = () => {
   return (
     <div className="max-w-6xl mx-auto pb-20">
       {/* Header sticky */}
-      <div className="sticky top-0 z-30 -mx-4 px-4 py-3 mb-4 bg-background/80 backdrop-blur-xl border-b border-border/30">
+      {/* A margem negativa serve para a faixa encostar nas bordas da tela, e por
+          isso precisa bater com o padding do `main`, que é `px-3` (12px). Com
+          `-mx-4` ela ficava 4px mais larga de cada lado e a página inteira
+          passava a ter 364px num celular de 360. */}
+      <div className="sticky top-0 z-30 -mx-3 px-3 py-3 mb-4 bg-background/80 backdrop-blur-xl border-b border-border/30">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <Settings size={18} className="text-primary" />
