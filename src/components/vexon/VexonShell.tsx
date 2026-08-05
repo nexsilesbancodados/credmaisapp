@@ -8,7 +8,7 @@ import React, { useEffect } from "react";
 import { motion, useScroll, useTransform, type Variants } from "framer-motion";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { ParticleOrb } from "@/components/vexon/ParticleOrb";
+import { ParticleOrb } from "@/components/vexon/ParticleOrbLazy";
 import { TextEffect } from "@/components/vexon/ui/text-effect";
 import Lenis from "lenis";
 

@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, User, CreditC
 import { supabase } from "@/integrations/supabase/client";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import { toast } from "sonner";
-import { ParticleOrb } from "@/components/vexon/ParticleOrb";
+import { ParticleOrb } from "@/components/vexon/ParticleOrbLazy";
 import { TextEffect } from "@/components/vexon/ui/text-effect";
 import { PLANS, PLAN_LIST, normalizeTier, type PlanTier } from "@/lib/plans";
 
