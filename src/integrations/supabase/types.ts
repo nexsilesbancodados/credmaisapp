@@ -1637,12 +1637,18 @@ export type Database = {
           bot_use_ai: boolean | null
           bot_work_days: Json | null
           company_cnpj: string | null
+          company_address: string | null
+          company_phone: string | null
           company_logo_url: string | null
           company_name: string | null
           created_at: string
           custom_contract_template: string | null
           default_daily_interest: number | null
           default_frequency: string | null
+          default_num_installments: number | null
+          default_payment_method: string | null
+          default_max_interest_cap: number | null
+          default_term_months: number | null
           default_interest_rate: number | null
           default_late_fee: number | null
           favicon_url: string | null
@@ -1698,12 +1704,18 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
@@ -1759,12 +1771,18 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
@@ -2420,12 +2438,18 @@ export type Database = {
           bot_use_ai: boolean | null
           bot_work_days: Json | null
           company_cnpj: string | null
+          company_address: string | null
+          company_phone: string | null
           company_logo_url: string | null
           company_name: string | null
           created_at: string | null
           custom_contract_template: string | null
           default_daily_interest: number | null
           default_frequency: string | null
+          default_num_installments: number | null
+          default_payment_method: string | null
+          default_max_interest_cap: number | null
+          default_term_months: number | null
           default_interest_rate: number | null
           default_late_fee: number | null
           favicon_url: string | null
@@ -2480,12 +2504,18 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string | null
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null
@@ -2540,12 +2570,18 @@ export type Database = {
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
           company_cnpj?: string | null
+          company_address?: string | null
+          company_phone?: string | null
           company_logo_url?: string | null
           company_name?: string | null
           created_at?: string | null
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_max_interest_cap?: number | null
+          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
           favicon_url?: string | null

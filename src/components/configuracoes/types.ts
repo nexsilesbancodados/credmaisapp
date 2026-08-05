@@ -18,6 +18,8 @@ export interface SettingsForm {
   // Empresa e marca
   company_name: string;
   company_cnpj: string;
+  company_address: string;
+  company_phone: string;
   company_logo_url: string;
   favicon_url: string;
   primary_color: string;
@@ -35,6 +37,9 @@ export interface SettingsForm {
   default_late_fee: string;
   default_daily_interest: string;
   default_frequency: string;
+  default_num_installments: string;
+  default_payment_method: string;
+  default_max_interest_cap: string;
 
   // Integrações
   whatsapp_api_url: string;

@@ -222,6 +222,13 @@ const NovoCliente = () => {
     if (settings.default_late_fee) setLateFeePercent(settings.default_late_fee.toString());
     if (settings.default_daily_interest) setDailyInterestPercent(settings.default_daily_interest.toString());
     if (settings.default_frequency) setFrequency(settings.default_frequency as Frequency);
+    // Sem estes, o assinante redigitava o mesmo numero de parcelas e a mesma
+    // forma de pagamento em todo contrato. O teto de juros nem isso: ficava
+    // escondido nas condicoes avancadas e por isso os 249 contratos da base
+    // estavam todos sem teto nenhum.
+    if (settings.default_num_installments) setNumInstallments(String(settings.default_num_installments));
+    if (settings.default_payment_method) setPaymentMethod(settings.default_payment_method as typeof paymentMethod);
+    if (settings.default_max_interest_cap) setMaxInterestCap(String(settings.default_max_interest_cap));
     defaultsAppliedRef.current = true;
   }, [settings]);
 
@@ -685,6 +692,20 @@ const NovoCliente = () => {
       companyName: settings?.company_name || "CREDMAIS APP",
       companyCnpj: settings?.company_cnpj || "",
       companyLogoUrl: settings?.company_logo_url || undefined,
+      companyAddress: settings?.company_address || "",
+      companyPhone: settings?.company_phone || "",
+      // Estes campos o formulário já coletava e gravava no contrato, mas nunca
+      // chegavam ao documento: quem pedia avalista gerava contrato sem citá-lo.
+      paymentMethod,
+      guaranteeType: guaranteeType === "none" ? null : guaranteeType,
+      guaranteeDescription,
+      guarantorName,
+      guarantorCpf,
+      guarantorPhone,
+      gracePeriods: Number(gracePeriods) || 0,
+      graceDays: Number(graceDays) || 0,
+      earlyPaymentDiscountPercent: Number(earlyDiscount) || 0,
+      maxInterestCapPercent: maxInterestCap ? Number(maxInterestCap) : null,
       customTemplate: (settings as any)?.custom_contract_template || null,
       installments: previewInstallments,
     };

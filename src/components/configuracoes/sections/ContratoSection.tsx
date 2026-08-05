@@ -1,7 +1,12 @@
 import {
   Settings, Building, Percent, MessageSquare, Webhook, Bell, Save, Plus, Trash2, Check, AlertTriangle, Palette, Upload, Image, Key, CreditCard, Bot, Clock, Shield, Zap, ToggleLeft, Send, Volume2, Sun, Moon, Monitor, Eye, LayoutDashboard, Users, Receipt, Info, Copy, ExternalLink, FileText, RotateCcw, Sparkles, Package,
 } from "lucide-react";
-import { CONTRACT_PLACEHOLDERS, DEFAULT_CONTRACT_TEMPLATE } from "@/utils/contractTemplate";
+import { useMemo, useRef, useState } from "react";
+import {
+  CONTRACT_PLACEHOLDERS, CONTRACT_CONDITIONS, DEFAULT_CONTRACT_TEMPLATE,
+  renderContractTemplate, variaveisDesconhecidas,
+} from "@/utils/contractTemplate";
+import { contratoDeExemplo } from "@/utils/contratoExemplo";
 import type { ModuleKey } from "@/contexts/WhiteLabelContext";
 import InstallAppCard from "@/components/InstallAppCard";
 import { COLOR_PRESETS } from "../constants";
@@ -16,6 +21,44 @@ const ContratoSection = ({ ctx }: SectionProps) => {
     uploadingLogo, uploadingFavicon, uploadingPortalLogo,
     notify,
   } = ctx;
+
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+  const [verPrevia, setVerPrevia] = useState(true);
+
+  const texto = form.custom_contract_template?.trim() ? form.custom_contract_template : DEFAULT_CONTRACT_TEMPLATE;
+  const desconhecidas = useMemo(() => variaveisDesconhecidas(form.custom_contract_template || ""), [form.custom_contract_template]);
+  const previa = useMemo(() => {
+    try {
+      return renderContractTemplate(
+        texto,
+        contratoDeExemplo({
+          nome: form.company_name, cnpj: form.company_cnpj,
+          endereco: form.company_address, telefone: form.company_phone,
+        }),
+      );
+    } catch {
+      return "Não foi possível montar a prévia com este texto.";
+    }
+  }, [texto, form.company_name, form.company_cnpj, form.company_address, form.company_phone]);
+
+  /** Insere a variável onde o cursor está, em vez de só copiar. */
+  const inserirNoCursor = (trecho: string) => {
+    const area = areaRef.current;
+    const atual = form.custom_contract_template || "";
+    if (!area) {
+      setForm({ ...form, custom_contract_template: atual + trecho });
+      return;
+    }
+    const ini = area.selectionStart ?? atual.length;
+    const fim = area.selectionEnd ?? atual.length;
+    const novo = atual.slice(0, ini) + trecho + atual.slice(fim);
+    setForm({ ...form, custom_contract_template: novo });
+    requestAnimationFrame(() => {
+      area.focus();
+      const pos = ini + trecho.length;
+      area.setSelectionRange(pos, pos);
+    });
+  };
 
   return (
     <>
@@ -35,16 +78,13 @@ const ContratoSection = ({ ctx }: SectionProps) => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Variáveis disponíveis (clique para copiar)</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Variáveis disponíveis (clique para inserir onde o cursor está)</label>
               <div className="flex flex-wrap gap-1.5">
                 {CONTRACT_PLACEHOLDERS.map(p => (
                   <button
                     key={p.key}
                     type="button"
-                    onClick={() => {
-                      navigator.clipboard?.writeText(`{{${p.key}}}`);
-                      notify(`✓ {{${p.key}}} copiado`);
-                    }}
+                    onClick={() => inserirNoCursor(`{{${p.key}}}`)}
                     title={p.desc}
                     className="px-2 py-1 rounded-md bg-muted/40 hover:bg-primary/15 text-[11px] font-mono text-foreground border border-border transition-colors"
                   >
@@ -53,6 +93,48 @@ const ContratoSection = ({ ctx }: SectionProps) => {
                 ))}
               </div>
             </div>
+
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                Trechos que só aparecem quando o dado existe
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {CONTRACT_CONDITIONS.map(c => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => inserirNoCursor(`{{#${c.key}}}\n\n{{/${c.key}}}`)}
+                    title={c.desc}
+                    className="px-2 py-1 rounded-md bg-muted/40 hover:bg-primary/15 text-[11px] font-mono text-foreground border border-border transition-colors"
+                  >
+                    {`{{#${c.key}}}`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                A cláusula de avalista, por exemplo, só faz sentido para quem tem avalista. Dentro de{" "}
+                <code className="bg-muted px-1 rounded">{"{{#se_avalista}}…{{/se_avalista}}"}</code> o trecho some
+                por completo nos contratos sem avalista, em vez de imprimir campos em branco.
+              </p>
+            </div>
+
+            {desconhecidas.length > 0 && (
+              <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs">
+                <p className="font-semibold text-destructive flex items-center gap-1.5">
+                  <AlertTriangle size={12} /> Variáveis que o sistema não conhece
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  Estas vão sair no contrato do jeito que estão escritas, na cara do cliente:
+                </p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {desconhecidas.map(v => (
+                    <code key={v} className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive font-mono text-[11px]">
+                      {`{{${v}}}`}
+                    </code>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -77,6 +159,7 @@ const ContratoSection = ({ ctx }: SectionProps) => {
                 </div>
               </div>
               <textarea
+                ref={areaRef}
                 value={form.custom_contract_template}
                 onChange={(e) => setForm({ ...form, custom_contract_template: e.target.value })}
                 rows={20}
@@ -88,6 +171,38 @@ const ContratoSection = ({ ctx }: SectionProps) => {
                   ? "✓ Modelo personalizado ativo — será usado em todos os novos contratos."
                   : "Sem modelo personalizado — o sistema usará o layout padrão."}
               </p>
+            </div>
+
+            {/* Prévia: o assinante escreve o contrato uma vez e precisa ver como
+                ele chega ao cliente ANTES de fechar um empréstimo de verdade. */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Prévia com um cliente de exemplo
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setVerPrevia(v => !v)}
+                  className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-md border border-border hover:bg-accent/30"
+                >
+                  <Eye size={11} /> {verPrevia ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
+              {verPrevia && (
+                <>
+                  <div className="rounded-xl border border-border bg-background/60 p-4 max-h-96 overflow-auto">
+                    <pre className="whitespace-pre-wrap font-sans text-[11px] leading-relaxed text-foreground">
+                      {previa}
+                    </pre>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    Dados inventados, só para conferência: Maria Exemplo, R$ 5.000 em 6x, com
+                    avalista e desconto de antecipação — assim dá para ver também as cláusulas que
+                    só aparecem em alguns contratos.
+                    {!form.custom_contract_template?.trim() && " Como não há modelo próprio, esta é a prévia do modelo padrão do sistema."}
+                  </p>
+                </>
+              )}
             </div>
           </div>
     </>
