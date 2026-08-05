@@ -22,10 +22,12 @@ interface PaymentModalProps {
   ownerProfile: any;
   clientData: any;
   contactPhone?: string | null;
+  /** Token da sessão do portal — credencial do envio de comprovante. */
+  sessionToken?: string | null;
 }
 
 
-export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, clientData, contactPhone }: PaymentModalProps) => {
+export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, clientData, contactPhone, sessionToken }: PaymentModalProps) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -131,6 +133,9 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
       const base64 = btoa(bin);
       const { data, error } = await supabase.functions.invoke("portal-upload-receipt", {
         body: {
+          // O token da sessão do portal é a credencial preferida. O CPF vai
+          // junto só como caminho antigo, para não quebrar sessão já aberta.
+          session_token: sessionToken ?? undefined,
           cpf: (clientData?.cpf_cnpj || "").replace(/\D/g, ""),
           installment_id: installment.id,
           content_type: file.type,

@@ -19,19 +19,19 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    const session_token = String(body.session_token || "").trim();
     const cpf = String(body.cpf || "").replace(/\D/g, "");
     const installment_id = String(body.installment_id || "");
     const content_type = String(body.content_type || "");
     const filename = String(body.filename || "comprovante");
     const file_base64 = String(body.file_base64 || "");
 
-    if (cpf.length < 11 || !installment_id || !file_base64 || !ALLOWED.includes(content_type)) {
+    if ((!session_token && cpf.length < 11) || !installment_id || !file_base64 || !ALLOWED.includes(content_type)) {
       return new Response(JSON.stringify({ error: "Dados inválidos" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate ownership by CPF
     const { data: inst, error: instErr } = await supabase
       .from("contract_installments")
       .select("id, client_id, installment_number, clients:client_id ( cpf_cnpj )")
@@ -39,9 +39,31 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (instErr || !inst) throw new Error("Parcela não encontrada");
-    const dbCpf = String((inst as any).clients?.cpf_cnpj || "").replace(/\D/g, "");
-    if (dbCpf !== cpf) {
-      return new Response(JSON.stringify({ error: "CPF não corresponde à parcela" }), {
+
+    // Autorização.
+    //
+    // Preferimos o token de sessão do portal, que é o mesmo mecanismo do resto
+    // da área do cliente. O CPF sozinho ficou como caminho antigo: ele bastava
+    // para gravar um comprovante na parcela de quem se soubesse o CPF, enquanto
+    // o LOGIN do portal já exige CPF + data de nascimento desde julho. Era a
+    // única porta do portal que continuava com o critério fraco.
+    let autorizado = false;
+
+    if (session_token) {
+      const { data: sess } = await supabase
+        .from("portal_sessions")
+        .select("client_id")
+        .eq("token", session_token)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      autorizado = !!sess && sess.client_id === inst.client_id;
+    } else {
+      const dbCpf = String((inst as any).clients?.cpf_cnpj || "").replace(/\D/g, "");
+      autorizado = dbCpf.length >= 11 && dbCpf === cpf;
+    }
+
+    if (!autorizado) {
+      return new Response(JSON.stringify({ error: "Sem permissão para esta parcela" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

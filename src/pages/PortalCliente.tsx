@@ -952,6 +952,7 @@ const PortalCliente = () => {
         ownerProfile={portalData?.owner || {}}
         clientData={portalData?.client || {}}
         contactPhone={portalData?.branding?.portal_contact_phone || portalData?.client?.whatsapp || portalData?.client?.phone || null}
+        sessionToken={portalData?.session_token || null}
       />
 
       {/* ═══════════ MODAL DE AJUDA ═══════════ */}
