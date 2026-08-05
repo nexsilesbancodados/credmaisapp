@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.ts";
 // Daily AI briefing for the dashboard top card
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
@@ -37,9 +38,11 @@ Deno.serve(async (req) => {
     ]);
 
     const inst = installments || [];
-    const overdue = inst.filter((i: any) => i.status === "pending" && new Date(i.due_date) < today);
-    const dueToday = inst.filter((i: any) => i.status === "pending" && i.due_date.startsWith(todayStr));
-    const next7 = inst.filter((i: any) => i.status === "pending" && new Date(i.due_date) > today && new Date(i.due_date) <= in7);
+    // O resumo diário chegava com a inadimplência quase zerada: filtrava por
+    // "pending" e o cron das 03:00 já tinha marcado as vencidas como "overdue".
+    const overdue = inst.filter((i: any) => isEmAtraso(i, today));
+    const dueToday = inst.filter((i: any) => venceHoje(i, today));
+    const next7 = inst.filter((i: any) => isEmAberto(i) && new Date(i.due_date) > today && new Date(i.due_date) <= in7);
 
     const overdueAmount = overdue.reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
     const dueTodayAmount = dueToday.reduce((s: number, i: any) => s + Number(i.amount || 0), 0);

@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 import { z } from "npm:zod";
@@ -28,7 +29,7 @@ const BiInsightsSchema = z.object({
 
 const buildLocalInsights = (data: { contracts: any[]; installments: any[]; clients: any[] }) => {
   const now = new Date();
-  const overdue = data.installments.filter((i) => i.status === "pending" && new Date(i.due_date) < now);
+  const overdue = data.installments.filter((i) => isEmAtraso(i, now));
   const overdueAmount = overdue.reduce((s, i) => s + Number(i.amount || 0), 0);
   const delinquencyRate = data.installments.length > 0 ? (overdue.length / data.installments.length) * 100 : 0;
   const activeCapital = data.contracts
@@ -40,7 +41,7 @@ const buildLocalInsights = (data: { contracts: any[]; installments: any[]; clien
     const expected = data.installments
       .filter((i) => {
         const due = new Date(i.due_date);
-        return i.status === "pending" && due.getMonth() === target.getMonth() && due.getFullYear() === target.getFullYear();
+        return isEmAberto(i) && due.getMonth() === target.getMonth() && due.getFullYear() === target.getFullYear();
       })
       .reduce((s, i) => s + Number(i.amount || 0), 0);
     const estimated = expected || activeCapital / 4;
@@ -131,11 +132,11 @@ serve(async (req) => {
     // Calculate basic stats
     const totalCapital = data.contracts.reduce((s, c) => s + Number(c.capital), 0);
     const overdueAmount = data.installments
-      .filter(i => i.status === "pending" && new Date(i.due_date) < new Date())
+      .filter(i => isEmAtraso(i))
       .reduce((s, i) => s + Number(i.amount), 0);
     
     const delinquencyRate = data.installments.length > 0 
-      ? (data.installments.filter(i => i.status === "pending" && new Date(i.due_date) < new Date()).length / data.installments.length) * 100 
+      ? (data.installments.filter(i => isEmAtraso(i)).length / data.installments.length) * 100 
       : 0;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
