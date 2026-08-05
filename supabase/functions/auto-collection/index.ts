@@ -4,6 +4,7 @@ import { sendEmail } from "../_shared/brevo.ts";
 import { callAnthropic } from "../_shared/anthropic.ts";
 import { parseMemory, summarizeIntents, lastApproach, pushIntent, serializeMemory } from "../_shared/memory.ts";
 import { renderTemplate, renderMessage } from "../_shared/messageTemplate.ts";
+import { assertReplySafe } from "../_shared/bot_utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -139,11 +140,24 @@ serve(async (req) => {
         : 0;
       const lookAheadDate = new Date(now.getTime() + maxLookAhead * 86400000).toISOString();
 
+      // ATENÇÃO — este filtro paralisava a cobrança automática.
+      //
+      // Era `.eq("status", "pending")`. Só que o `auto-late-fees` roda às 03:00 e
+      // marca toda parcela vencida como "overdue". A partir daí ela sumia daqui
+      // para sempre: o bot só enxergava a parcela na janela entre o vencimento e
+      // a virada da madrugada seguinte.
+      //
+      // Na prática, as réguas de 1, 3, 7, 15 e 30 dias de atraso NUNCA disparavam
+      // — o bot conversava só com quem tinha acabado de vencer. Em 2026-08-05
+      // eram 265 parcelas e R$ 74.459 invisíveis para a cobrança automática, a
+      // mais antiga vencida desde 01/06.
+      //
+      // A regra correta é a mesma do painel: em aberto = não paga e não cancelada.
       const { data: installments } = await supabase
         .from("contract_installments")
         .select("id, amount, due_date, client_id, installment_number, late_fee")
         .eq("user_id", userId)
-        .eq("status", "pending")
+        .not("status", "in", '("paid","cancelled")')
         .lte("due_date", lookAheadDate);
 
       if (!installments?.length) {
@@ -202,10 +216,23 @@ serve(async (req) => {
         }
         if (!matchingRule) continue;
 
-        // Cooldown: pré-vencimento = 1x/dia; atraso segue severidade
-        const cooldownHours = isPreDue ? 20
-          : selectedDays >= 30 ? 5
-          : selectedDays >= 8 ? 8 : 24;
+        // Intervalo mínimo entre duas mensagens para o MESMO cliente.
+        //
+        // Antes era fixo no código (20h antes do vencimento; 5h a partir de 30
+        // dias de atraso, o que permitia ~4 mensagens por dia para a mesma
+        // pessoa) e o campo "Intervalo entre cobranças (h)" de Configurações
+        // nunca era lido — o operador ajustava um número que não ajustava nada.
+        //
+        // Agora o valor configurado manda. A severidade continua encurtando o
+        // intervalo, mas nunca abaixo da metade do que foi configurado, para
+        // "24h" não virar 5h sem o operador saber.
+        const configurado = Number(settings.bot_retry_interval_hours) || 24;
+        const pisoSeveridade = Math.max(1, Math.ceil(configurado / 2));
+        const cooldownHours = isPreDue
+          ? configurado
+          : selectedDays >= 30 ? pisoSeveridade
+          : selectedDays >= 8 ? Math.max(pisoSeveridade, Math.ceil(configurado * 0.75))
+          : configurado;
         const cutoff = new Date(now.getTime() - cooldownHours * 3600000).toISOString();
 
         const { data: alreadySent } = await supabase
@@ -224,6 +251,20 @@ serve(async (req) => {
           .from("contract_installments").select("status, paid_at, due_date")
           .eq("user_id", userId).eq("client_id", clientId)
           .order("due_date", { ascending: false }).limit(20);
+
+        // "Parar ao detectar pagamento": o campo existia em Configurações e nunca
+        // era lido. Se o cliente pagou alguma parcela desde a última cobrança, ele
+        // está respondendo — insistir é o caminho mais curto para irritar quem já
+        // está pagando. Só vale quando o operador liga a opção.
+        if (settings.bot_stop_on_payment !== false) {
+          const ultimaCobranca = alreadySent?.[0]?.created_at as string | undefined;
+          if (ultimaCobranca) {
+            const pagouDepois = history?.some(
+              (h) => h.paid_at && new Date(h.paid_at).getTime() > new Date(ultimaCobranca).getTime(),
+            );
+            if (pagouDepois) { skipped++; continue; }
+          }
+        }
 
         const paidCount = history?.filter(h => h.status === "paid").length || 0;
         const lateCount = history?.filter(h =>
@@ -342,6 +383,29 @@ ${extraDiversity}`;
               });
               const retryTxt = (retry || "").trim();
               if (retryTxt && maxSimVs(retryTxt) < maxSimVs(message)) message = retryTxt;
+            }
+
+            // Guarda-corpo antes de enviar. O webhook do WhatsApp já validava a
+            // resposta da IA; o disparo automático não validava nada — e aqui o
+            // texto vai direto para o devedor, assinado com o nome do credor.
+            // Bloqueia principalmente vazamento de dado de OUTRO cliente e oferta
+            // de acordo quando a negociação está desligada.
+            if (message) {
+              const guarda = assertReplySafe({
+                reply: message,
+                currentClient: client,
+                otherClientsSample: (clients || []).filter((c: any) => c.id !== client.id).slice(0, 25),
+                negotiationEnabled: !!settings.bot_negotiation_enabled,
+              } as any);
+              if (guarda.block) {
+                console.warn(`[auto-collection] mensagem da IA bloqueada (${guarda.reasons.join(", ")}) — usando o texto padrão`);
+                await supabase.from("bot_actions_log").insert({
+                  user_id: userId, entity_type: "auto_collection", action: "ai_reply_blocked",
+                  entity_id: client.id, success: false,
+                  details: { reasons: guarda.reasons, preview: message.slice(0, 200) },
+                }).then(() => {}, () => {});
+                message = ""; // cai no template/mensagem padrão logo abaixo
+              }
             }
           } catch (aiErr) { console.error("Anthropic fail:", aiErr); }
         }

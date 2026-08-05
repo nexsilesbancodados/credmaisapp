@@ -140,10 +140,36 @@ describe("os textos prontos das telas de fato renderizam", () => {
     for (const p of BILLING_PRESETS) {
       const { texto, desconhecidas } = renderTemplate(p.text, vars);
       expect(desconhecidas, `mensagem "${p.label}" usa variável inexistente`).toEqual([]);
-      expect(texto).toContain("Maria Silva");
-      expect(texto).toContain("Crédito Bom");
+      expect(texto, `mensagem "${p.label}" não identifica o cliente`).toContain("Maria Silva");
+      expect(texto, `mensagem "${p.label}" deixou marcador no texto`)
+        .not.toMatch(/\{[a-zA-Z]+\}|\[[A-Za-zÀ-ú ]+\]/);
     }
   });
+});
+
+describe("os textos prontos não ameaçam o cliente", () => {
+  // Quatro dos oito templates afirmavam que o nome seria "incluído nos órgãos de
+  // proteção ao crédito" ou que "medidas adicionais" seriam tomadas. Anunciar
+  // consequência que não vai acontecer é cobrança por ameaça (CDC art. 42 e 71).
+  // Se um dia a negativação for real, o texto pode voltar — conscientemente, não
+  // por vir junto num pacote de mensagens prontas.
+  const AMEACAS = [
+    /negativa[çc]/i,
+    /prote[çc][ãa]o ao cr[ée]dito/i,
+    /restri[çc][õo]es no seu cpf/i,
+    /medidas adicionais/i,
+    /maiores consequ[êe]ncias/i,
+    /serasa|spc/i,
+  ];
+
+  it.each([...TEMPLATE_PRESETS.map((t) => [t.name, t.content]), ...BILLING_PRESETS.map((b) => [b.label, b.text])])(
+    "%s não anuncia consequência que o sistema não executa",
+    (_nome, texto) => {
+      for (const padrao of AMEACAS) {
+        expect(String(texto), `padrão ${padrao} encontrado`).not.toMatch(padrao);
+      }
+    },
+  );
 });
 
 describe("catálogo mostrado na tela", () => {

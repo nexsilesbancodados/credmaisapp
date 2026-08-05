@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { MessageSquare, Check, AlertTriangle, Clock, CheckCircle, CalendarDays } from "lucide-react";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 
 interface Props {
   installments: any[];
@@ -15,14 +16,19 @@ const KanbanView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment }
   const columns = useMemo(() => {
     const now = Date.now();
     const dueTs = (i: any) => (parseLocalDate(i.due_date)?.getTime() ?? new Date(i.due_date).getTime());
-    const overdue = installments.filter((i) => i.status === "overdue");
-    const dueSoon = installments.filter((i) => {
-      if (i.status !== "pending") return false;
+    // A coluna de atraso vinha de `status === "overdue"` e as outras duas
+    // exigiam `status === "pending"`. Uma parcela vencida que o check-overdue
+    // ainda não marcou não caía em nenhuma das três: sumia do quadro.
+    const agora = new Date(now);
+    const abertas = installments.filter((i) => isEmAberto(i as any));
+    const overdue = abertas.filter((i) => isEmAtraso(i as any, agora));
+    const dueSoon = abertas.filter((i) => {
+      if (isEmAtraso(i as any, agora)) return false;
       const days = (dueTs(i) - now) / 86400000;
-      return days >= 0 && days <= 7;
+      return days <= 7;
     });
-    const future = installments.filter((i) => {
-      if (i.status !== "pending") return false;
+    const future = abertas.filter((i) => {
+      if (isEmAtraso(i as any, agora)) return false;
       const days = (dueTs(i) - now) / 86400000;
       return days > 7;
     });
