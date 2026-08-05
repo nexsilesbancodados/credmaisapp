@@ -116,6 +116,7 @@ const NovoCliente = () => {
   const [telefone, setTelefone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
+  const [nascimento, setNascimento] = useState("");
   const [cep, setCep] = useState("");
   const [rua, setRua] = useState("");
   const [numero, setNumero] = useState("");
@@ -236,7 +237,7 @@ const NovoCliente = () => {
       try {
         if (!nome && !capital && !cpfCnpj) return;
         const draft = {
-          nome, email, telefone, whatsapp, cpfCnpj, cep, rua, numero, complemento, bairro, cidade, estado,
+          nome, email, telefone, whatsapp, cpfCnpj, nascimento, cep, rua, numero, complemento, bairro, cidade, estado,
           capital, capitalDisplay, loanMode, frequency, dailyMode, taxaJuros, numInstallments,
           valueMode, installmentValue, installmentValueDisplay, startDate, firstDueDate, autoFirstDue,
           lateFeePercent, dailyInterestPercent, notes, gracePeriods, graceDays, paymentMethod, step,
@@ -247,7 +248,7 @@ const NovoCliente = () => {
       } catch {}
     }, 900);
     return () => clearTimeout(t);
-  }, [user, DRAFT_KEY, nome, email, telefone, whatsapp, cpfCnpj, cep, rua, numero, complemento,
+  }, [user, DRAFT_KEY, nome, email, telefone, whatsapp, cpfCnpj, nascimento, cep, rua, numero, complemento,
       bairro, cidade, estado, capital, capitalDisplay, loanMode, frequency, dailyMode, taxaJuros,
       numInstallments, valueMode, installmentValue, installmentValueDisplay, startDate, firstDueDate,
       autoFirstDue, lateFeePercent, dailyInterestPercent, notes, gracePeriods, graceDays, paymentMethod, step]);
@@ -291,7 +292,7 @@ const NovoCliente = () => {
       if (!raw) return;
       const d = JSON.parse(raw);
       setNome(d.nome || ""); setEmail(d.email || ""); setTelefone(d.telefone || ""); setWhatsapp(d.whatsapp || "");
-      setCpfCnpj(d.cpfCnpj || ""); setCep(d.cep || ""); setRua(d.rua || ""); setNumero(d.numero || "");
+      setCpfCnpj(d.cpfCnpj || ""); setNascimento(d.nascimento || ""); setCep(d.cep || ""); setRua(d.rua || ""); setNumero(d.numero || "");
       setComplemento(d.complemento || ""); setBairro(d.bairro || ""); setCidade(d.cidade || ""); setEstado(d.estado || "");
       setCapital(d.capital || ""); setCapitalDisplay(d.capitalDisplay || "");
       if (d.loanMode) setLoanMode(d.loanMode);
@@ -521,6 +522,8 @@ const NovoCliente = () => {
           phone: telefone.trim() || null,
           whatsapp: whatsapp.trim() || null,
           cpf_cnpj: cpfCnpj.trim() || null,
+          // Coluna date: em branco tem que virar NULL, senão o Postgres recusa.
+          birth_date: nascimento || null,
           client_type: "loan",
           status: "Ativo",
           avatar_url,
@@ -849,6 +852,11 @@ const NovoCliente = () => {
                   {touched.cpfCnpj && cpfCnpj.trim() && !errors.cpfCnpj && cpfCnpj.replace(/\D/g, "").length >= 11 && (
                     <p className="text-xs text-success mt-1 flex items-center gap-1"><Check size={12} /> {cpfCnpj.replace(/\D/g, "").length <= 11 ? "CPF" : "CNPJ"} válido</p>
                   )}
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-1.5 block">Data de nascimento</label>
+                  <input type="date" value={nascimento} onChange={(e) => setNascimento(e.target.value)} className={INPUT} max={new Date().toISOString().slice(0, 10)} />
+                  <p className="text-xs text-muted-foreground mt-1">É com ela, junto do CPF, que o cliente entra no portal.</p>
                 </div>
               </div>
             </div>
