@@ -628,9 +628,10 @@ const PortalCliente = () => {
               <div className="flex items-center gap-2">
                 <NotificationsBell token={portalData.session_token} />
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     try {
-                      generatePortalStatementPdf(portalData.client, portalData.contracts || [], {
+                      // await: a biblioteca de PDF é carregada sob demanda agora.
+                      await generatePortalStatementPdf(portalData.client, portalData.contracts || [], {
                         name: portalData.branding?.company_name || portalData.owner?.name || "CredMais",
                         pix_key: portalData.owner?.pix_key,
                       });

@@ -94,43 +94,38 @@ const CobrarAgoraModal = ({ open, onClose, title = "Cobrar agora", installments 
     const now = new Date().toISOString();
 
     try {
-      // 1) mark installments paid (bulk)
-      const updates = list.map((i) =>
-        supabase.from("contract_installments")
-          .update({ status: "paid", paid_at: now, paid_amount: Number(i.amount) })
-          .eq("id", i.id)
+      // Baixa pelo RPC atômico. Antes esta tela fazia duas escritas separadas:
+      // marcava a parcela paga e inseria a transação de caixa na mão — mas NUNCA
+      // lançava o lucro, e a transação ficava sem `installment_id`, então o
+      // estorno não tinha como removê-la. O RPC faz parcela + lucro + caixa +
+      // conclusão do contrato de uma vez, tudo amarrado à parcela.
+      const results = await Promise.all(
+        list.map((i) =>
+          supabase.rpc("pay_installment", {
+            _installment_id: i.id,
+            _paid_total: Number(i.amount),
+            _mark_paid: true,
+            _method: methodLabel,
+          })
+        )
       );
-      const results = await Promise.all(updates);
       const failed = results.filter((r) => r.error);
       if (failed.length) throw failed[0].error;
-
-      // 2) insert transactions (income) with method in description
-      const txRows = list.map((i) => ({
-        user_id: user.id,
-        client_id: i.client_id,
-        contract_id: i.contract_id || null,
-        amount: Number(i.amount),
-        type: "income",
-        category: "Recebimento",
-        description: `Parcela ${i.installment_number} · ${i.clients?.name || "Cliente"} · ${methodLabel}`,
-        date: now,
-      }));
-      await supabase.from("transactions").insert(txRows);
 
       toast.success(`${list.length} cobrança${list.length !== 1 ? "s" : ""} recebida${list.length !== 1 ? "s" : ""} via ${methodLabel}`, {
         description: `Total R$ ${fmtBRL(total)}`,
         action: {
           label: "Desfazer",
           onClick: async () => {
+            // Estorno pelo RPC: reabre a parcela E remove o lucro e o caixa que
+            // ela gerou. Antes só voltava o status, deixando dinheiro no razão
+            // sem parcela paga correspondente.
             await Promise.all(
-              list.map((i) =>
-                supabase.from("contract_installments")
-                  .update({ status: "pending", paid_at: null, paid_amount: null })
-                  .eq("id", i.id)
-              )
+              list.map((i) => supabase.rpc("reverse_installment_payment", { _installment_id: i.id }))
             );
             qc.invalidateQueries({ queryKey: ["hoje"] });
             qc.invalidateQueries({ queryKey: ["cobrancas"] });
+            qc.invalidateQueries({ queryKey: ["dashboard-data"] });
             toast.success("Desfeito");
           },
         },

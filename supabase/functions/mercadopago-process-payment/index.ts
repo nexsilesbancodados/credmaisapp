@@ -1,6 +1,7 @@
 // Checkout Transparente — processa pagamento gerado pelo Payment Brick do Mercado Pago
 // Docs: https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/payment-brick/introduction
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { guard as rateLimitGuard } from "../_shared/rate_limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,6 +35,12 @@ function json(body: unknown, status = 200) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+
+  // Endpoint é público por necessidade (o checkout acontece antes de existir conta),
+  // então o freio é por IP: uma pessoa comprando faz 1-2 tentativas. Acima disso é
+  // abuso — cada chamada cria uma cobrança de verdade na conta do Mercado Pago.
+  const rl = await rateLimitGuard(req, "mp-pay", 6, 0.05, corsHeaders);
+  if (rl) return rl;
 
   const token = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
   if (!token) return json({ error: "MERCADOPAGO_ACCESS_TOKEN não configurado" }, 500);

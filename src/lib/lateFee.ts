@@ -12,6 +12,42 @@ export interface LateFeeInput {
   late_fee_percent?: number | string | null;
   daily_interest_percent?: number | string | null;
   paid_at?: string | null;
+  /**
+   * Teto de juros de atraso, em % sobre o valor da parcela.
+   * Vem de `contracts.max_interest_cap_percent`. Ex.: 100 = os juros nunca
+   * passam do valor da própria parcela.
+   *
+   * Este campo era preenchido no cadastro do empréstimo, gravado no banco e
+   * NUNCA lido — o operador definia um limite que não limitava nada. Com juros
+   * de 4% ao dia compostos, isso importa: em 60 dias a parcela decupla.
+   */
+  max_interest_cap_percent?: number | string | null;
+  /**
+   * Algumas telas trazem a parcela com o contrato aninhado
+   * (`select("*, contracts(...)")`). Aceitar as duas formas evita ter que
+   * lembrar de achatar o objeto em cada lugar — e é justamente esse tipo de
+   * "lembrar em todo lugar" que fez o teto nunca ser aplicado.
+   */
+  contracts?: {
+    daily_interest_percent?: number | string | null;
+    max_interest_cap_percent?: number | string | null;
+  } | null;
+}
+
+/** Lê um campo do contrato, esteja ele achatado na parcela ou aninhado. */
+function doContrato(inst: LateFeeInput, campo: "daily_interest_percent" | "max_interest_cap_percent") {
+  const direto = (inst as any)?.[campo];
+  if (direto != null && direto !== "") return direto;
+  return inst?.contracts?.[campo] ?? null;
+}
+
+/** Teto em valor absoluto (R$), ou null quando o contrato não define teto. */
+export function interestCapOf(inst: LateFeeInput): number | null {
+  const pct = Number(doContrato(inst, "max_interest_cap_percent"));
+  if (!Number.isFinite(pct) || pct <= 0) return null;
+  const base = Number(inst?.amount || 0);
+  if (!base) return null;
+  return Math.round(base * (pct / 100) * 100) / 100;
 }
 
 /** Dias inteiros de atraso (0 se ainda não venceu). */
@@ -26,7 +62,7 @@ export function daysLateOf(inst: LateFeeInput, now: Date = new Date()): number {
 
 /** Taxa diária efetiva do contrato (fallback 4% a.d.). */
 export function dailyRateOf(inst: LateFeeInput): number {
-  const pct = Number(inst?.daily_interest_percent || 0);
+  const pct = Number(doContrato(inst, "daily_interest_percent") || 0);
   return pct > 0 ? pct : DEFAULT_DAILY_LATE_RATE;
 }
 
@@ -46,7 +82,10 @@ export function computeLateFee(inst: LateFeeInput, now: Date = new Date()): numb
 
   const rate = dailyRateOf(inst) / 100;
   const total = Math.round((base * (Math.pow(1 + rate, days) - 1)) * 100) / 100;
-  return total;
+
+  // Respeita o teto do contrato, quando houver.
+  const teto = interestCapOf(inst);
+  return teto !== null ? Math.min(total, teto) : total;
 }
 
 export function totalDue(inst: LateFeeInput, now?: Date): number {

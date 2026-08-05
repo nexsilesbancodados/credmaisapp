@@ -100,7 +100,9 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
         name: clientData?.name || "Cliente",
         cpf_cnpj: clientData?.cpf_cnpj || "000.000.000-00"
       };
-      generatePortalReceiptPdf(client, installment, ownerProfile);
+      // await: a biblioteca de PDF agora é baixada sob demanda, então o aviso de
+      // sucesso (e o `finally` que desliga o spinner) precisa esperar de verdade.
+      await generatePortalReceiptPdf(client, installment, ownerProfile);
       toast({ title: "Recibo gerado!", description: "O download do PDF foi iniciado." });
     } catch (err) {
       toast({ title: "Erro", description: "Não foi possível gerar o recibo agora.", variant: "destructive" });

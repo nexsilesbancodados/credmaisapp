@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -230,7 +231,7 @@ const Cobradores = () => {
   const fichaTokens = fichaCollector ? tokens.filter((t: any) => t.collector_id === fichaCollector) : [];
   const fichaClientIds = fichaAssignments.map((a: any) => a.client_id);
   const fichaInstallments = allInstallments.filter((i: any) => fichaClientIds.includes(i.client_id));
-  const fichaPending = fichaInstallments.filter((i: any) => i.status === "pending");
+  const fichaPending = fichaInstallments.filter((i: any) => isEmAberto(i));
   const fichaOverdue = fichaPending.filter((i: any) => new Date(i.due_date) < now);
   const fichaPaid = fichaInstallments.filter((i: any) => i.status === "paid");
   const fichaTotalPending = fichaPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
@@ -386,7 +387,7 @@ const Cobradores = () => {
             // Stats for this collector
             const cClientIds = cAssignments.map((a: any) => a.client_id);
             const cInstallments = allInstallments.filter((i: any) => cClientIds.includes(i.client_id));
-            const cPending = cInstallments.filter((i: any) => i.status === "pending");
+            const cPending = cInstallments.filter((i: any) => isEmAberto(i));
             const cOverdue = cPending.filter((i: any) => new Date(i.due_date) < now);
 
             return (
@@ -664,7 +665,7 @@ const Cobradores = () => {
                     <div className="space-y-3">
                       {fichaAssignments.map((a: any) => {
                         const clientInst = fichaInstallments.filter((i: any) => i.client_id === a.client_id);
-                        const clientPending = clientInst.filter((i: any) => i.status === "pending");
+                        const clientPending = clientInst.filter((i: any) => isEmAberto(i));
                         const clientOverdue = clientPending.filter((i: any) => new Date(i.due_date) < now);
                         const clientTotal = clientPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
 
@@ -787,7 +788,7 @@ const Cobradores = () => {
                 .map((cl: any) => {
                   // Find pending installments for this client
                   const clientPendingInst = allInstallments.filter((i: any) =>
-                    i.client_id === cl.id && i.status === "pending"
+                    i.client_id === cl.id && isEmAberto(i)
                   );
                   const clientOverdueInst = clientPendingInst.filter((i: any) => new Date(i.due_date) < now);
                   const totalPending = clientPendingInst.reduce((s: number, i: any) => s + Number(i.amount), 0);

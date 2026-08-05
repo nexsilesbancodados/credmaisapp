@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { formatBR } from "@/lib/dateUtils";
+import { renderMessage } from "@/lib/messageTemplate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -25,6 +27,8 @@ const CobradorExterno = () => {
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [collectorData, setCollectorData] = useState<any>(null);
+  /** Payload completo da RPC: cobrador, credor, marca e clientes com parcelas. */
+  const [portal, setPortal] = useState<any>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [collectorId, setCollectorId] = useState<string | null>(null);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -50,46 +54,23 @@ const CobradorExterno = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { data: assignments = [] } = useQuery({
-    queryKey: ["ext-assignments", collectorId, userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("collector_assignments")
-        .select("*, clients(id, name, phone, whatsapp, cpf_cnpj, email, status, address)")
-        .eq("collector_id", collectorId!)
-        .eq("user_id", userId!);
-      return data || [];
-    },
-    enabled: !!collectorId && !!userId,
-  });
+  // Tudo vem do payload da RPC: clientes atribuídos, parcelas de cada um e os
+  // dados do credor. As consultas diretas que existiam aqui liam VAZIO, porque
+  // esta tela não tem sessão — a RLS dessas tabelas só atende `authenticated`.
+  const assignments = useMemo(
+    () => (portal?.clients ?? []).map((c: any) => ({ client_id: c.id, clients: c })),
+    [portal],
+  );
 
-  const { data: installments = [] } = useQuery({
-    queryKey: ["ext-installments", assignments.map((a: any) => a.client_id).join(",")],
-    queryFn: async () => {
-      const clientIds = assignments.map((a: any) => a.client_id);
-      if (clientIds.length === 0) return [];
-      const { data } = await supabase
-        .from("contract_installments")
-        .select("*, contracts(capital, interest_rate, frequency, num_installments)")
-        .in("client_id", clientIds)
-        .order("due_date");
-      return data || [];
-    },
-    enabled: assignments.length > 0,
-  });
+  const installments = useMemo(
+    () =>
+      (portal?.clients ?? []).flatMap((c: any) =>
+        (c.installments ?? []).map((i: any) => ({ ...i, client_id: c.id, clients: c })),
+      ),
+    [portal],
+  );
 
-  const { data: ownerProfile } = useQuery({
-    queryKey: ["ext-owner-profile", userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("name, pix_key, pix_key_type, billing_message")
-        .eq("id", userId!)
-        .single();
-      return data;
-    },
-    enabled: !!userId,
-  });
+  const ownerProfile = portal?.owner ?? null;
 
   // Realtime: refetch installments on changes
   useEffect(() => {
@@ -116,23 +97,24 @@ const CobradorExterno = () => {
 
   const loginWithToken = async (tk: string, silent = false) => {
     setLoading(true);
-    const { data: tokenData } = await supabase
-      .from("collector_tokens")
-      .select("*, collectors(id, name, phone, email, city, state, created_at, is_active)")
-      .eq("token", tk)
-      .eq("is_active", true)
-      .maybeSingle();
+    // Esta página roda SEM login. Ler `collector_tokens` direto não funcionava:
+    // a RLS só atende `authenticated`, então o visitante anônimo recebia vazio e
+    // todo acesso caía em "Token inválido" — o portal nunca abriu para ninguém.
+    // Agora usa a função SECURITY DEFINER, mesmo padrão do portal do cliente.
+    const { data, error } = await supabase.rpc("collector_login_by_token", { _token: tk });
 
-    if (!tokenData) {
+    if (error || !data) {
       if (!silent) toast({ title: "Acesso negado", description: "Token inválido ou desativado.", variant: "destructive" });
       localStorage.removeItem(TOKEN_KEY);
       setLoading(false);
       return;
     }
 
-    setCollectorData(tokenData.collectors);
-    setCollectorId(tokenData.collector_id);
-    setUserId(tokenData.user_id);
+    const payload = data as any;
+    setPortal(payload);
+    setCollectorData(payload.collector);
+    setCollectorId(payload.collector?.id ?? null);
+    setUserId(payload.owner_id ?? null);
     localStorage.setItem(TOKEN_KEY, tk);
     setLoading(false);
   };
@@ -184,16 +166,17 @@ const CobradorExterno = () => {
         receipt_url = up.signed_url as string;
       }
 
-      const { error } = await supabase
-        .from("contract_installments")
-        .update({
-          status: "paid",
-          paid_amount: amount,
-          paid_at: new Date().toISOString(),
-          payment_method: payMethod,
-          ...(receipt_url ? { receipt_url } : {}),
-        })
-        .eq("id", payInstallment.id);
+      // A escrita direta não passava pela RLS (0 linhas afetadas) e ainda assim
+      // exibia sucesso. A RPC valida o token, exige que o cliente esteja
+      // atribuído a este cobrador e faz a contabilidade completa: parcela,
+      // lucro, caixa, conclusão do contrato e registro de quem recebeu.
+      const { error } = await supabase.rpc("collector_register_payment", {
+        _token: token,
+        _installment_id: payInstallment.id,
+        _paid_total: amount,
+        _method: payMethod,
+        _receipt_url: receipt_url ?? null,
+      });
 
       if (error) throw error;
       toast({ title: "✓ Pagamento registrado!", description: `${payMethod.toUpperCase()} • R$ ${amount.toFixed(2)}` });
@@ -255,7 +238,7 @@ const CobradorExterno = () => {
     );
   }
 
-  const allPending = installments.filter((i: any) => i.status === "pending");
+  const allPending = installments.filter((i: any) => isEmAberto(i));
   const allOverdue = allPending.filter((i: any) => new Date(i.due_date) < now);
   const allPaid = installments.filter((i: any) => i.status === "paid");
   const totalPending = allPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
@@ -432,9 +415,9 @@ const CobradorExterno = () => {
               const clientAll = installments.filter((i: any) => i.client_id === a.client_id);
               let clientFiltered: any[] = [];
               if (tab === "pendentes") {
-                clientFiltered = clientAll.filter((i: any) => i.status === "pending");
+                clientFiltered = clientAll.filter((i: any) => isEmAberto(i));
               } else if (tab === "atrasadas") {
-                clientFiltered = clientAll.filter((i: any) => i.status === "pending" && new Date(i.due_date) < now);
+                clientFiltered = clientAll.filter((i: any) => isEmAtraso(i, now));
               } else {
                 clientFiltered = clientAll.filter((i: any) => i.status === "paid");
               }
@@ -442,7 +425,7 @@ const CobradorExterno = () => {
               if (clientFiltered.length === 0) return null;
 
               const isExpanded = expandedClient === a.client_id;
-              const clientTotalPending = clientAll.filter((i: any) => i.status === "pending");
+              const clientTotalPending = clientAll.filter((i: any) => isEmAberto(i));
               const clientTotalOverdue = clientTotalPending.filter((i: any) => new Date(i.due_date) < now);
               const clientPendingAmount = clientTotalPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
 
@@ -491,7 +474,15 @@ const CobradorExterno = () => {
                         {a.clients?.whatsapp && (
                           <a
                             href={`https://wa.me/55${a.clients.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
-                              (ownerProfile?.billing_message || "").replace("[Nome do Cliente]", a.clients?.name || "")
+                              // Antes só [Nome do Cliente] era trocado: a mensagem
+                              // chegava ao devedor com "[Nome da Empresa]" e
+                              // "[Valor da Parcela]" literais no WhatsApp.
+                              renderMessage(ownerProfile?.billing_message || "", {
+                                nome: a.clients?.name || "",
+                                empresa: ownerProfile?.name || "",
+                                pix: ownerProfile?.pix_key || "",
+                                portal: `${window.location.origin}/portal-cliente`,
+                              })
                             )}`}
                             target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1.5 text-xs text-success hover:underline">
@@ -507,7 +498,7 @@ const CobradorExterno = () => {
 
                       <div className="divide-y divide-border/30">
                         {clientFiltered.map((inst: any) => {
-                          const isOverdue = inst.status === "pending" && new Date(inst.due_date) < now;
+                          const isOverdue = isEmAtraso(inst, now);
                           const daysLate = isOverdue ? Math.floor((now.getTime() - new Date(inst.due_date).getTime()) / 86400000) : 0;
                           const isPaid = inst.status === "paid";
 
@@ -582,8 +573,8 @@ const CobradorExterno = () => {
             {filteredAssignments.every((a: any) => {
               const clientAll = installments.filter((i: any) => i.client_id === a.client_id);
               let filtered: any[];
-              if (tab === "pendentes") filtered = clientAll.filter((i: any) => i.status === "pending");
-              else if (tab === "atrasadas") filtered = clientAll.filter((i: any) => i.status === "pending" && new Date(i.due_date) < now);
+              if (tab === "pendentes") filtered = clientAll.filter((i: any) => isEmAberto(i));
+              else if (tab === "atrasadas") filtered = clientAll.filter((i: any) => isEmAtraso(i, now));
               else filtered = clientAll.filter((i: any) => i.status === "paid");
               return filtered.length === 0;
             }) && (

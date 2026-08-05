@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, MessageSquare, Check } from "lucide-react";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 
 interface Props {
   installments: any[];
@@ -78,8 +79,10 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
             if (!d) return <div key={idx} className="h-20 rounded-lg bg-muted/10" />;
             const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             const items = byDay.get(key) || [];
-            const overdueCount = items.filter((i) => i.status === "overdue").length;
-            const pendingCount = items.filter((i) => i.status === "pending").length;
+            // Vencidas e em aberto pela regra do painel: contar por status
+            // específico deixava parcela fora dos dois números do dia.
+            const overdueCount = items.filter((i) => isEmAtraso(i as any, today)).length;
+            const pendingCount = items.filter((i) => isEmAberto(i as any) && !isEmAtraso(i as any, today)).length;
             const paidCount = items.filter((i) => i.status === "paid").length;
             const total = items.reduce((acc, i) => acc + Number(i.amount), 0);
             const isToday = key === todayKey;

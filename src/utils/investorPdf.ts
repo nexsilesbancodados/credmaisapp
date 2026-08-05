@@ -1,15 +1,15 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { loadPdfLib } from "@/utils/pdfLib";
 
 const brl = (n: number) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dt = (s?: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : "-");
 
-export function generateInvestorStatementPdf(payload: {
+export async function generateInvestorStatementPdf(payload: {
   investor: { name: string; cpf_cnpj: string | null; email: string | null };
   loans: Array<any>;
   owner: { name?: string; pix_key?: string };
   branding: { company_name?: string; portal_title?: string };
 }) {
+  const { jsPDF, autoTable } = await loadPdfLib();
   const doc = new jsPDF();
   const w = doc.internal.pageSize.getWidth();
   const company = payload.branding?.company_name || payload.branding?.portal_title || "CredMais";

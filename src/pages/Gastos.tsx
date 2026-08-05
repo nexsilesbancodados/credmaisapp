@@ -103,9 +103,13 @@ const Gastos = () => {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("expenses").delete().eq("id", id);
+    // Confere o erro: antes avisava "Gasto excluído" mesmo quando a exclusão
+    // falhava, e o valor continuava descontando do saldo da carteira.
+    const { error } = await supabase.from("expenses").delete().eq("id", id);
     setDeleteConfirm(null);
+    if (error) { toast({ ...friendlyError(error, "Não foi possível excluir o gasto."), variant: "destructive" }); return; }
     qc.invalidateQueries({ queryKey: ["gastos-data"] });
+    qc.invalidateQueries({ queryKey: ["carteira-expenses"] });
     toast({ title: "Gasto excluído" });
   };
 

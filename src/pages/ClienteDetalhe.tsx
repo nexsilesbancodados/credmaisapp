@@ -170,7 +170,7 @@ const ClienteDetalhe = () => {
   const { data: installments = [] } = useQuery({
     queryKey: ["client-installments", id],
     queryFn: async () => {
-      const { data } = await supabase.from("contract_installments").select("*, contracts(capital, frequency)").eq("client_id", id!).order("due_date");
+      const { data } = await supabase.from("contract_installments").select("*, contracts(capital, frequency, daily_interest_percent, max_interest_cap_percent)").eq("client_id", id!).order("due_date");
       const now = new Date();
       return (data || []).map((i: any) => i.status === "pending" && new Date(i.due_date) < now ? { ...i, status: "overdue" } : i);
     },

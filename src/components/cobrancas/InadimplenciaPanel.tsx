@@ -22,6 +22,7 @@ interface Installment {
   late_fee: number | null;
   late_fee_percent?: number | null;
   daily_interest_percent?: number | null;
+  max_interest_cap_percent?: number | null;
 }
 
 interface Client {
@@ -75,16 +76,17 @@ const InadimplenciaPanel = () => {
       cmap = Object.fromEntries(cs.map((c: any) => [c.id, c]));
     }
 
-    let feeMap: Record<string, { late_fee_percent: number; daily_interest_percent: number }> = {};
+    let feeMap: Record<string, { late_fee_percent: number; daily_interest_percent: number; max_interest_cap_percent: number | null }> = {};
     if (contractIds.length) {
       const contracts = await fetchAll((f, t) => supabase
         .from("contracts")
-        .select("id, late_fee_percent, daily_interest_percent")
+        .select("id, late_fee_percent, daily_interest_percent, max_interest_cap_percent")
         .in("id", contractIds)
         .range(f, t));
       feeMap = Object.fromEntries(contracts.map((c: any) => [c.id, {
         late_fee_percent: Number(c.late_fee_percent) || 0,
         daily_interest_percent: Number(c.daily_interest_percent) || 0,
+        max_interest_cap_percent: c.max_interest_cap_percent == null ? null : Number(c.max_interest_cap_percent),
       }]));
     }
 
@@ -92,6 +94,8 @@ const InadimplenciaPanel = () => {
       ...i,
       late_fee_percent: feeMap[i.contract_id]?.late_fee_percent ?? 0,
       daily_interest_percent: feeMap[i.contract_id]?.daily_interest_percent ?? 0,
+      // Sem o teto do contrato aqui, computeLateFee acumula sem limite.
+      max_interest_cap_percent: feeMap[i.contract_id]?.max_interest_cap_percent ?? null,
     }));
 
     setInstallments(enriched);

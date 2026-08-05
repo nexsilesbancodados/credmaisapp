@@ -59,7 +59,6 @@ const HistoricoFinanceiro = lazy(() => import("./pages/HistoricoFinanceiro"));
 const Configuracoes = lazy(() => import("./pages/Configuracoes"));
 const Cobradores = lazy(() => import("./pages/Cobradores"));
 const QRCodePage = lazy(() => import("./pages/QRCodePage"));
-const AgenteIA = lazy(() => import("./pages/AgenteIA"));
 const CobradorExterno = lazy(() => import("./pages/CobradorExterno"));
 const Auditoria = lazy(() => import("./pages/Auditoria"));
 const Privacidade = lazy(() => import("./pages/Privacidade"));
@@ -70,7 +69,6 @@ const Suporte = lazy(() => import("./pages/Suporte"));
 const Notificacoes = lazy(() => import("./pages/Notificacoes"));
 const Chat = lazy(() => import("./pages/Chat"));
 
-const WhatsAppConfig = lazy(() => import("./pages/WhatsAppConfig"));
 const TvMode = lazy(() => import("./pages/TvMode"));
 const BuscarClientes = lazy(() => import("./pages/BuscarClientes"));
 const Hoje = lazy(() => import("./pages/Hoje"));

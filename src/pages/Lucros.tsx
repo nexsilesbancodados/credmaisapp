@@ -102,9 +102,28 @@ const Lucros = () => {
     }
   };
 
+  /**
+   * Lucro com `installment_id` nasceu de um pagamento registrado — ele é a
+   * contrapartida contábil daquela parcela. Apagar na mão desamarra o razão: a
+   * parcela continua paga e o juros dela some do resultado. O caminho certo é
+   * estornar o pagamento, que remove parcela, lucro e caixa juntos.
+   */
+  const ehDePagamento = (p: any) => !!p?.installment_id;
+
   const handleDelete = async (id: string) => {
-    await supabase.from("profits").delete().eq("id", id);
+    const alvo = (profits as any[]).find((p) => p.id === id);
+    if (ehDePagamento(alvo)) {
+      setDeleteConfirm(null);
+      toast({
+        title: "Este lucro veio de um pagamento",
+        description: "Para removê-lo, estorne o pagamento da parcela em Cobranças ou no cliente — assim o caixa e a parcela voltam junto.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const { error } = await supabase.from("profits").delete().eq("id", id);
     setDeleteConfirm(null);
+    if (error) { toast({ ...friendlyError(error, "Não foi possível excluir."), variant: "destructive" }); return; }
     setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
     qc.invalidateQueries({ queryKey: ["lucros-data"] });
     toast({ title: "Lucro excluído" });
@@ -112,12 +131,31 @@ const Lucros = () => {
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    const ids = Array.from(selected);
-    await supabase.from("profits").delete().in("id", ids);
+    const todos = Array.from(selected);
+    const vinculados = todos.filter((id) => ehDePagamento((profits as any[]).find((p) => p.id === id)));
+    const ids = todos.filter((id) => !vinculados.includes(id));
+
+    if (ids.length === 0) {
+      setBulkDeleteOpen(false);
+      toast({
+        title: "Nada foi excluído",
+        description: `${vinculados.length} lançamento(s) vieram de pagamentos. Estorne a parcela para removê-los.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase.from("profits").delete().in("id", ids);
     setSelected(new Set());
     setBulkDeleteOpen(false);
+    if (error) { toast({ ...friendlyError(error, "Não foi possível excluir."), variant: "destructive" }); return; }
     qc.invalidateQueries({ queryKey: ["lucros-data"] });
-    toast({ title: `${ids.length} lucro(s) excluído(s)` });
+    toast({
+      title: `${ids.length} lucro(s) excluído(s)`,
+      description: vinculados.length
+        ? `${vinculados.length} foram mantidos por virem de pagamentos.`
+        : undefined,
+    });
   };
 
   const filtered = useMemo(() => {

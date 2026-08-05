@@ -592,7 +592,29 @@ const NovoCliente = () => {
       }));
       const { error: instErr } = await supabase.from("contract_installments").insert(installments);
 
-      if (instErr) throw instErr;
+      if (instErr) {
+        // São três escritas separadas (cliente, contrato, parcelas). Falhando
+        // aqui, sobrava um CONTRATO SEM PARCELAS: ele contava como capital na
+        // rua no painel, mas não havia nada para cobrar nem para receber.
+        // Desfazemos o que esta operação criou, na ordem inversa. Se a limpeza
+        // também falhar, o aviso diz exatamente o que ficou pendente.
+        const { error: rollbackContrato } = await supabase.from("contracts").delete().eq("id", contract.id);
+        let rollbackCliente = null;
+        if (!existingClientId) {
+          const r = await supabase.from("clients").delete().eq("id", clientId);
+          rollbackCliente = r.error;
+        }
+        if (rollbackContrato || rollbackCliente) {
+          toast({
+            title: "Erro ao gerar as parcelas",
+            description: "O contrato ficou incompleto e não consegui removê-lo. Abra o cliente e exclua o contrato sem parcelas antes de tentar de novo.",
+            variant: "destructive",
+          });
+          setSaving(false);
+          return;
+        }
+        throw instErr;
+      }
 
       setCreatedContractId(contract.id);
       try { localStorage.removeItem(DRAFT_KEY); } catch {}

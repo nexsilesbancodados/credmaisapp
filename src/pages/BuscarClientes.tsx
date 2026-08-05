@@ -53,6 +53,8 @@ const BuscarClientes = () => {
         const { data, count, error } = await supabase
           .from("clients")
           .select("id, name, email, phone, cpf_cnpj, status, avatar_url", { count: "exact" })
+          // Escopo explícito por dono, além da RLS (ver Anotacoes.tsx).
+          .eq("user_id", user!.id)
           .order("name", { ascending: true })
           .range(from, to);
         if (error) throw new Error(error.message);

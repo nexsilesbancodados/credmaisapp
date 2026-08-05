@@ -53,7 +53,7 @@ serve(async (req) => {
     const contractIds = [...new Set(overdueInstallments.map((i) => i.contract_id))];
     const { data: contracts } = await supabase
       .from("contracts")
-      .select("id, user_id, loan_mode, late_fee_percent, daily_interest_percent")
+      .select("id, user_id, loan_mode, late_fee_percent, daily_interest_percent, max_interest_cap_percent")
       .in("id", contractIds);
 
     const contractMap = new Map<string, { user_id: string; loan_mode: string | null; late_fee_percent: number; daily_interest_percent: number }>();
@@ -105,9 +105,20 @@ serve(async (req) => {
         : (defaults.daily_interest > 0 ? defaults.daily_interest : DEFAULT_DAILY_LATE_RATE);
       const lateFeePct = 0;
 
-      const totalLateFee = Math.round(
+      let totalLateFee = Math.round(
         baseAmount * (Math.pow(1 + dailyPct / 100, daysOverdue) - 1) * 100,
       ) / 100;
+
+      // Teto de juros definido no contrato (% sobre o valor da parcela).
+      // O campo existia no cadastro do empréstimo desde sempre, era gravado no
+      // banco e nunca lido por ninguém: o operador definia um limite que não
+      // limitava nada. Com 4% ao dia composto, sem teto a dívida não para de
+      // crescer — em 60 dias os juros passam de 9x a parcela.
+      const capPct = Number(config.max_interest_cap_percent);
+      if (Number.isFinite(capPct) && capPct > 0) {
+        const teto = Math.round(baseAmount * (capPct / 100) * 100) / 100;
+        totalLateFee = Math.min(totalLateFee, teto);
+      }
 
       const patch: Record<string, unknown> = {};
       const currentFee = Number(inst.late_fee) || 0;

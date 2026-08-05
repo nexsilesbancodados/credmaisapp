@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useState, useEffect } from "react";
 import ExportCenter from "@/components/relatorios/ExportCenter";
 import { FileText, Download, Calendar, TrendingUp, ArrowDownRight, Wallet, Users, Receipt, CheckCircle, AlertTriangle, Clock, BarChart3, FileDown, Sparkles, Loader2, Lightbulb, ShieldCheck, Activity } from "lucide-react";
@@ -61,7 +62,7 @@ const Relatorios = () => {
       totalProfit, totalExpense, totalReceived, totalOverdue,
       paidCount: paidInstallments.length,
       overdueCount: overdueInstallments.length,
-      pendingCount: installmentData.filter((i: any) => i.status === "pending" && new Date(i.due_date) >= new Date()).length,
+      pendingCount: installmentData.filter((i: any) => isEmAberto(i) && new Date(i.due_date) >= new Date()).length,
       activeClients: clientData.filter((c: any) => c.status === "Ativo").length,
       balance: totalProfit - totalExpense,
     });

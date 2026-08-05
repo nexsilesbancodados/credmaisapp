@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { instalarCapturaDeErros } from "@/lib/reportError";
+
+// Captura erros que escapam do React (listeners, promessas soltas) antes de montar.
+instalarCapturaDeErros();
 
 createRoot(document.getElementById("root")!).render(<App />);
 

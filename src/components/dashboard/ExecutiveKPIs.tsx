@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Clock, Target, Repeat, Calendar, LineChart } from "lucide-react";
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 
 interface Props {
   contracts: any[];
@@ -13,8 +14,10 @@ const ExecutiveKPIs = ({ contracts, installments }: Props) => {
   const kpis = useMemo(() => {
     const now = new Date();
     const paid = installments.filter((i) => i.status === "paid" && i.paid_at);
-    const overdue = installments.filter((i) => i.status === "overdue");
-    const pending = installments.filter((i) => i.status === "pending");
+    // Atraso e "em aberto" pelas mesmas regras do painel: um filtro por status
+    // específico deixava de fora as parcelas que o check-overdue já marcou.
+    const overdue = installments.filter((i) => isEmAtraso(i as any, now));
+    const pending = installments.filter((i) => isEmAberto(i as any));
 
     // DSO — média de dias entre vencimento e pagamento (últimos 90d)
     const paid90 = paid.filter((i) => {

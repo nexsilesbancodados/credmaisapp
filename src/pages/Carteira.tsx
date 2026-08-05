@@ -50,7 +50,10 @@ const Carteira = () => {
     [
       ["carteira-profits", user?.id || ""],
       ["carteira-expenses", user?.id || ""],
-      ["carteira-installments", user?.id || ""],
+      // Precisa bater EXATAMENTE com o queryKey da consulta abaixo. Estava
+      // "carteira-installments" enquanto a query usava outro nome — o realtime
+      // nunca atualizava a carteira quando um pagamento era registrado.
+      ["carteira-installments-recebidas", user?.id || ""],
       ["carteira-capital", user?.id || ""],
       ["carteira-withdrawals", user?.id || ""],
     ],
@@ -69,17 +72,23 @@ const Carteira = () => {
   });
 
   const { data: installments = [], isLoading: loadingInst } = useQuery({
-    queryKey: ["carteira-installments-active", user?.id],
-    queryFn: async () => {
-      const activeContracts = await fetchAll((f, t) =>
-        supabase.from("contracts").select("id").eq("user_id", user!.id).in("status", ["active", "overdue"]).range(f, t),
-      );
-      const ids = activeContracts.map((c: any) => c.id);
-      if (ids.length === 0) return [];
-      return fetchAll((f, t) =>
-        supabase.from("contract_installments").select("*").eq("user_id", user!.id).eq("status", "paid").in("contract_id", ids).order("paid_at", { ascending: false }).range(f, t),
-      );
-    },
+    queryKey: ["carteira-installments-recebidas", user?.id],
+    queryFn: async () =>
+      // TODAS as parcelas recebidas, não só as de contrato ativo.
+      //
+      // A consulta anterior limitava a contratos "active"/"overdue" — o dinheiro
+      // que entrou por contratos já quitados sumia da carteira. Em 2026-08-05
+      // eram R$ 121.756,96 de recebimento invisível, mais da metade do total.
+      // Contrato encerrado sai do "capital na rua" (isso é do painel), mas o
+      // dinheiro que ele trouxe continua no caixa.
+      fetchAll((f, t) =>
+        supabase.from("contract_installments")
+          .select("id, amount, paid_amount, paid_at, contract_id, client_id")
+          .eq("user_id", user!.id)
+          .eq("status", "paid")
+          .order("paid_at", { ascending: false })
+          .range(f, t),
+      ),
     enabled: !!user,
   });
 
@@ -143,12 +152,19 @@ const Carteira = () => {
   };
 
   // === Totais globais (saldo real) ===
+  //
+  // O lucro NÃO é uma entrada separada: ele já está dentro da parcela recebida.
+  // Uma parcela de R$ 250 com R$ 220 de juros gera uma linha em `profits` de
+  // R$ 220 — somar as duas contava R$ 470 de entrada para R$ 250 que entraram.
+  // Na base de 2026-08-05 isso inflava o saldo em R$ 24.159,34.
+  //
+  // O lucro continua visível como composição: quanto do que entrou era juros.
   const totalCapital = capital.reduce((a: number, c: any) => a + Number(c.amount), 0);
   const totalWithdrawals = withdrawals.reduce((a: number, w: any) => a + Number(w.amount), 0);
   const totalLucros = profits.reduce((a: number, p: any) => a + Number(p.amount), 0);
   const totalParcelas = installments.reduce((a: number, i: any) => a + Number(i.paid_amount || i.amount), 0);
   const totalGastos = expenses.reduce((a: number, e: any) => a + Number(e.amount), 0);
-  const totalEntradas = totalCapital + totalLucros + totalParcelas;
+  const totalEntradas = totalCapital + totalParcelas;
   const totalSaidas = totalGastos + totalWithdrawals;
   const saldo = totalEntradas - totalSaidas;
 
@@ -172,9 +188,10 @@ const Carteira = () => {
     }).reduce((a, r) => a + Number(r[key] ?? r.amount), 0);
 
   const stats = useMemo(() => {
-    const inCur = sumIn(capital, "amount", days, null) + sumIn(profits, "amount", days, null) + sumIn(installments.map((i: any) => ({ ...i, date: i.paid_at })), "amount", days, null);
+    // Sem o lucro na soma: ele já vem embutido na parcela (ver totais acima).
+    const inCur = sumIn(capital, "amount", days, null) + sumIn(installments.map((i: any) => ({ ...i, date: i.paid_at })), "amount", days, null);
     const outCur = sumIn(expenses, "amount", days, null) + sumIn(withdrawals, "amount", days, null);
-    const inPrev = prevDays ? sumIn(capital, "amount", prevDays, days) + sumIn(profits, "amount", prevDays, days) + sumIn(installments.map((i: any) => ({ ...i, date: i.paid_at })), "amount", prevDays, days) : 0;
+    const inPrev = prevDays ? sumIn(capital, "amount", prevDays, days) + sumIn(installments.map((i: any) => ({ ...i, date: i.paid_at })), "amount", prevDays, days) : 0;
     const outPrev = prevDays ? sumIn(expenses, "amount", prevDays, days) + sumIn(withdrawals, "amount", prevDays, days) : 0;
     const inDelta = inPrev > 0 ? ((inCur - inPrev) / inPrev) * 100 : null;
     const outDelta = outPrev > 0 ? ((outCur - outPrev) / outPrev) * 100 : null;
@@ -188,8 +205,9 @@ const Carteira = () => {
     const all = [
       ...capital.map((c: any) => ({ type: "in" as const, desc: c.description, amount: Number(c.amount), date: c.date, source: "Aporte", removable: true, id: c.id })),
       ...withdrawals.map((w: any) => ({ type: "out" as const, desc: w.description, amount: Number(w.amount), date: w.date, source: "Retirada de capital", removable: true, id: w.id })),
-      ...profits.map((p: any) => ({ type: "in" as const, desc: p.description, amount: Number(p.amount), date: p.date, source: "Lucro", removable: false, id: p.id })),
-      ...installments.map((i: any) => ({ type: "in" as const, desc: "Parcela recebida", amount: Number(i.amount), date: i.paid_at, source: "Parcela", removable: false, id: i.id })),
+      // O lucro NÃO entra na linha do tempo como movimento próprio: ele já está
+      // dentro da parcela recebida logo abaixo. Aparecia duas vezes.
+      ...installments.map((i: any) => ({ type: "in" as const, desc: "Parcela recebida", amount: Number(i.paid_amount || i.amount), date: i.paid_at, source: "Parcela", removable: false, id: i.id })),
       ...expenses.map((e: any) => ({ type: "out" as const, desc: e.description, amount: Number(e.amount), date: e.date, source: e.category || "Gasto", removable: false, id: e.id })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

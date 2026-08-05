@@ -41,13 +41,23 @@ serve(async (req) => {
       .lt("created_at", cutoff90)
       .select("id");
 
-    if (e1 || e2) console.error(e1 || e2);
+    // Erros de front-end com mais de 30 dias.
+    // Incluído desde o início para não repetir o que aconteceu com o backup, que
+    // rodou meses sem retenção e acumulou 100 MB.
+    const { data: erros, error: e3 } = await supabase
+      .from("client_errors")
+      .delete()
+      .lt("criado_em", cutoff)
+      .select("id");
+
+    if (e1 || e2 || e3) console.error(e1 || e2 || e3);
 
     return new Response(
       JSON.stringify({
-        message: `Limpeza: ${notifs?.length || 0} notificações, ${logs?.length || 0} logs`,
+        message: `Limpeza: ${notifs?.length || 0} notificações, ${logs?.length || 0} logs, ${erros?.length || 0} erros`,
         notifications_deleted: notifs?.length || 0,
         logs_deleted: logs?.length || 0,
+        client_errors_deleted: erros?.length || 0,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

@@ -344,6 +344,39 @@ export type Database = {
           },
         ]
       }
+      client_errors: {
+        Row: {
+          contexto: Json
+          criado_em: string
+          id: string
+          mensagem: string
+          navegador: string | null
+          pilha: string | null
+          rota: string
+          user_id: string | null
+        }
+        Insert: {
+          contexto?: Json
+          criado_em?: string
+          id?: string
+          mensagem: string
+          navegador?: string | null
+          pilha?: string | null
+          rota?: string
+          user_id?: string | null
+        }
+        Update: {
+          contexto?: Json
+          criado_em?: string
+          id?: string
+          mensagem?: string
+          navegador?: string | null
+          pilha?: string | null
+          rota?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       client_notifications: {
         Row: {
           client_id: string
@@ -919,7 +952,7 @@ export type Database = {
         }
         Relationships: []
       }
-      installments: {
+      installments_legado_20260805: {
         Row: {
           amount: number
           client_id: string
@@ -2546,6 +2579,17 @@ export type Database = {
       can_access_chat_topic: {
         Args: { _topic: string; _user_id: string }
         Returns: boolean
+      }
+      collector_login_by_token: { Args: { _token: string }; Returns: Json }
+      collector_register_payment: {
+        Args: {
+          _installment_id: string
+          _method?: string
+          _paid_total: number
+          _receipt_url?: string
+          _token: string
+        }
+        Returns: Json
       }
       delete_client_cascade: {
         Args: { _client_id: string }

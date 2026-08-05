@@ -31,7 +31,11 @@ serve(async (req) => {
     const { data: overdue, error: overdueErr } = await supabase
       .from("contract_installments")
       .select("id, user_id, client_id, amount, due_date, status, clients(name)")
-      .eq("status", "pending")
+      // Era `.eq("status","pending")`, mas o auto-late-fees roda às 03:00 e marca
+      // as vencidas como "overdue" — quando este job rodava às 07:00 já não
+      // sobrava quase nada para avisar. O alerta diário de inadimplência para o
+      // credor praticamente nunca disparava.
+      .not("status", "in", '("paid","cancelled")')
       .lt("due_date", todayStr);
     if (overdueErr) throw overdueErr;
 

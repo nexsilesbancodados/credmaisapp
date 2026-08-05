@@ -1,3 +1,4 @@
+import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
@@ -670,10 +671,10 @@ const AgenteIA = () => {
     if (!dashData) return null;
     const { contracts, installments, clients } = dashData;
     const now = new Date(); now.setHours(0,0,0,0);
-    const overdueInstallments = installments.filter((i: any) => i.status === "pending" && (parseLocalDate(i.due_date) ?? new Date(i.due_date)) < now);
+    const overdueInstallments = installments.filter((i: any) => isEmAtraso(i, now));
     const activeContracts = contracts.filter((c: any) => c.status === "active");
     const todayStr = now.toISOString().split("T")[0];
-    const dueToday = installments.filter((i: any) => i.status === "pending" && i.due_date?.startsWith(todayStr));
+    const dueToday = installments.filter((i: any) => isEmAberto(i) && i.due_date?.startsWith(todayStr));
     return {
       totalClients: clients.length,
       activeClients: clients.filter((c: any) => c.status === "Ativo").length,
@@ -759,9 +760,9 @@ const AgenteIA = () => {
   };
 
   const now = new Date(); now.setHours(0,0,0,0);
-  const overdue = dashData?.installments.filter((i: any) => i.status === "pending" && (parseLocalDate(i.due_date) ?? new Date(i.due_date)) < now).length || 0;
+  const overdue = dashData?.installments.filter((i: any) => isEmAtraso(i, now)).length || 0;
   const overdueAmount = dashData?.installments
-    .filter((i: any) => i.status === "pending" && (parseLocalDate(i.due_date) ?? new Date(i.due_date)) < now)
+    .filter((i: any) => isEmAtraso(i, now))
     .reduce((s: number, i: any) => s + Number(i.amount), 0) || 0;
   const capitalOnStreet = dashData?.contracts
     .filter((c: any) => c.status === "active")

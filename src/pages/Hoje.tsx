@@ -167,13 +167,24 @@ const Hoje = () => {
 
   const markPaid = async (id: string, amount: number) => {
     setSavingId(id);
-    const { error } = await supabase.from("contract_installments")
-      .update({ status: "paid", paid_at: new Date().toISOString(), paid_amount: amount })
-      .eq("id", id);
+    // RPC atômico, o mesmo usado em Cobranças e no Detalhe do Cliente: numa
+    // transação só ele baixa a parcela, lança o lucro (juros reais do contrato),
+    // lança o caixa e conclui o contrato se foi a última.
+    //
+    // Esta tela gravava direto com .update() — o pagamento entrava na parcela e
+    // NUNCA aparecia em Lucros nem no caixa. Em 2026-08-05 havia 88 pagamentos
+    // recentes (R$ 16.164,28) fora do razão por causa deste caminho e dos outros
+    // que também não usavam o RPC.
+    const { error } = await supabase.rpc("pay_installment", {
+      _installment_id: id,
+      _paid_total: amount,
+      _mark_paid: true,
+    });
     setSavingId(null);
     if (error) { toast.error("Erro ao registrar pagamento"); return; }
     toast.success("Pagamento registrado");
     qc.invalidateQueries({ queryKey: ["hoje"] });
+    qc.invalidateQueries({ queryKey: ["dashboard-data"] });
   };
 
   const toggleTodo = async (id: string, current: boolean) => {

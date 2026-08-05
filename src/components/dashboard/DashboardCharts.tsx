@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import { formatBR } from "@/lib/dateUtils";
 import { TrendingUp, PieChart as PieIcon, BarChart3 } from "lucide-react";
+import { isEmAtraso } from "@/lib/dashboardMetrics";
 
 type Props = {
   contracts: any[];
@@ -86,7 +87,10 @@ export default function DashboardCharts({ contracts, installments, profits }: Pr
           }
         }
       }
-      if (i.status === "pending" && new Date(i.due_date) < now) {
+      // Mesma regra do painel: em atraso é "não paga e já venceu". Filtrar por
+      // status === "pending" deixava de fora tudo que o check-overdue já marcou,
+      // e o gráfico mostrava uma fração da inadimplência real.
+      if (isEmAtraso(i as any, now)) {
         const k = keyOf(i.due_date);
         const b = buckets.get(k);
         if (b) b.overdue += Number(i.amount || 0);

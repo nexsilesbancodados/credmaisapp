@@ -6,18 +6,15 @@ import {
   LayoutDashboard, Activity, Terminal, Lock, Globe, Settings2, CreditCard
 } from "lucide-react";
 import SupportInbox from "@/components/admin/SupportInbox";
+import GrantAccessDialog from "@/components/admin/GrantAccessDialog";
+import PlatformSettingsPanel from "@/components/admin/PlatformSettingsPanel";
+import ClientErrorsPanel from "@/components/admin/ClientErrorsPanel";
+import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { friendlyError } from "@/lib/friendlyError";
-import {
-  fetchPlatformSettings,
-  PLATFORM_SETTINGS_DEFAULTS,
-  PLATFORM_SETTINGS_KEY,
-  type PlatformSettings,
-} from "@/hooks/usePlatformSettings";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
@@ -32,6 +29,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import { formatBR } from "@/lib/dateUtils";
+import { PLANS, normalizeTier } from "@/lib/plans";
 
 type UserRow = {
   id: string;
@@ -84,6 +82,7 @@ const Admin = () => {
   } | null>(null);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
 
   const fetchUsers = async () => {
     const { data } = await supabase
@@ -138,9 +137,25 @@ const Admin = () => {
     const admins = users.filter((u) => u.is_admin).length;
     const monthly = users.filter((u) => u.subscription_type === "monthly").length;
     const yearly = users.filter((u) => u.subscription_type === "yearly").length;
+    const lifetime = users.filter((u) => u.subscription_type === "lifetime").length;
     const expired = users.filter((u) => isExpired(u) && !u.is_admin).length;
     const active = total - blocked - expired;
-    const mrr = (monthly * 49.90) + (yearly * 499.0 / 12); // Cálculo estimado de faturamento mensal
+
+    // Receita recorrente pelo preço REAL do plano de cada assinante.
+    // A conta anterior usava `monthly * 49,90 + yearly * 499/12` — preços de uma
+    // tabela que não existe mais (hoje é 199 e 299) — e olhava para
+    // `subscription_type`, que diz a periodicidade, não o plano. O plano está em
+    // `plan_tier`. Com a base atual isso mostrava R$ 149,70 no lugar de R$ 897.
+    //
+    // Só entra quem paga de forma recorrente e está em dia: vitalício não gera
+    // receita mensal, e expirado não gera receita nenhuma.
+    const mrr = users.reduce((soma, u) => {
+      if (u.is_admin || isExpired(u)) return soma;
+      if (u.subscription_type !== "monthly" && u.subscription_type !== "yearly") return soma;
+      const mensalidade = PLANS[normalizeTier(u.plan_tier)].price;
+      // Plano anual entra rateado no mês, para comparar com o mensal.
+      return soma + (u.subscription_type === "yearly" ? (mensalidade * 12 * 0.8) / 12 : mensalidade);
+    }, 0);
     const churn = total > 0 ? (expired / total) * 100 : 0;
     const newThisMonth = users.filter((u) => {
       const d = new Date(u.created_at);
@@ -149,7 +164,7 @@ const Admin = () => {
     }).length;
     const totalLoaned = users.reduce((s, u) => s + Number(u.loan_balance || 0), 0);
     const totalProfit = users.reduce((s, u) => s + Number(u.profit_balance || 0), 0);
-    return { total, blocked, admins, monthly, yearly, expired, active, newThisMonth, totalLoaned, totalProfit, mrr, churn };
+    return { total, blocked, admins, monthly, yearly, lifetime, expired, active, newThisMonth, totalLoaned, totalProfit, mrr, churn };
   }, [users]);
 
   // ============ FILTERED ============
@@ -301,6 +316,12 @@ const Admin = () => {
 
   return (
     <div className="space-y-6">
+      <GrantAccessDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onDone={fetchUsers}
+      />
+
       {/* Header */}
       <div className="page-hero animate-fade-in">
         <div className="page-hero-content flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -316,6 +337,9 @@ const Admin = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setCreateOpen(true)} className="btn-ghost">
+              <UserCheck size={14} /> Liberar acesso
+            </button>
             <a href="/admin/bot-audit" className="btn-ghost">
               <Activity size={14} /> Bot Audit
             </a>
@@ -390,7 +414,13 @@ const Admin = () => {
           <div className="space-y-3">
             <PlanBar label="Mensal" value={stats.monthly} total={stats.total} color="bg-blue-500" />
             <PlanBar label="Anual" value={stats.yearly} total={stats.total} color="bg-emerald-500" />
-            <PlanBar label="Sem plano" value={stats.total - stats.monthly - stats.yearly} total={stats.total} color="bg-muted-foreground/40" />
+            <PlanBar label="Vitalício" value={stats.lifetime} total={stats.total} color="bg-amber-500" />
+            <PlanBar
+              label="Sem plano"
+              value={stats.total - stats.monthly - stats.yearly - stats.lifetime}
+              total={stats.total}
+              color="bg-muted-foreground/40"
+            />
           </div>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -398,7 +428,7 @@ const Admin = () => {
             <TrendingUp size={14} /> SAÚDE DA BASE & FINANCEIRO
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <MiniStat label="Faturamento Est." value={`R$ ${stats.mrr.toFixed(2)}`} />
+            <MiniStat label="Receita mensal" value={`R$ ${stats.mrr.toFixed(2)}`} />
             <MiniStat label="Taxa Churn" value={`${stats.churn.toFixed(1)}%`} />
             <MiniStat label="Capital Total" value={`R$ ${(stats.totalLoaned / 1000).toFixed(1)}k`} />
             <MiniStat label="Lucro Total" value={`R$ ${(stats.totalProfit / 1000).toFixed(1)}k`} />
@@ -872,6 +902,8 @@ const AdminLogs = () => {
   }, []);
 
   return (
+    <div className="space-y-4">
+    <ClientErrorsPanel />
     <div className="rounded-2xl border border-border bg-card overflow-hidden animate-fade-in">
        <div className="overflow-x-auto">
          <table className="w-full text-xs text-left">
@@ -914,163 +946,10 @@ const AdminLogs = () => {
          </table>
        </div>
     </div>
-  );
-};
-
-/**
- * Configuração da PLATAFORMA — vale para todos os assinantes de uma vez.
- * Grava na tabela `platform_settings` (linha única, escrita restrita a admin
- * por RLS). Não confundir com /configuracoes, que é do assinante.
- *
- * A versão anterior gravava em `settings` filtrando por user_id (ou seja, na
- * linha do próprio admin, não na plataforma) e só persistia 1 dos 5 campos —
- * os outros 4 mostravam "salvo" sem salvar nada.
- */
-const PlatformSettingsPanel = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<PlatformSettings>(PLATFORM_SETTINGS_DEFAULTS);
-
-  const { data, isLoading } = useQuery({
-    queryKey: PLATFORM_SETTINGS_KEY,
-    queryFn: fetchPlatformSettings,
-  });
-
-  useEffect(() => {
-    if (data) setForm(data);
-  }, [data]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    // upsert na linha única: o trigger do banco força id=true e carimba quem alterou.
-    const { error } = await supabase
-      .from("platform_settings")
-      .upsert({ id: true, ...form }, { onConflict: "id" });
-    setSaving(false);
-
-    if (error) {
-      toast({ ...friendlyError(error, "Não foi possível salvar a configuração da plataforma."), variant: "destructive" });
-      return;
-    }
-    queryClient.invalidateQueries({ queryKey: PLATFORM_SETTINGS_KEY });
-    toast({ title: "✓ Configuração da plataforma salva", description: "Vale para todos os assinantes." });
-  };
-
-  const fieldCls = "w-full bg-input border border-border rounded-lg px-3 py-2 text-sm";
-
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground animate-pulse">Carregando configuração da plataforma...</p>;
-  }
-
-  return (
-    <div className="max-w-2xl space-y-6 animate-fade-in">
-      <div className="rounded-2xl border border-border bg-card p-6 space-y-6">
-        <div className="flex items-center gap-3 border-b border-border pb-4">
-          <Globe className="text-primary" size={20} />
-          <div>
-            <h3 className="font-bold">Configuração da Plataforma</h3>
-            <p className="text-xs text-muted-foreground">
-              Afeta todos os assinantes. Configurações de cada empresa ficam em Configurações.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-accent/20">
-            <div>
-              <p className="text-sm font-semibold">Modo Manutenção</p>
-              <p className="text-xs text-muted-foreground">
-                Tranca o app para todos os assinantes. Você continua entrando para poder desligar.
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={form.maintenance_mode}
-              onChange={(e) => setForm({ ...form, maintenance_mode: e.target.checked })}
-              className="w-5 h-5 accent-primary shrink-0"
-            />
-          </div>
-
-          {form.maintenance_mode && (
-            <div className="space-y-1.5 p-3 rounded-xl bg-warning/5 border border-warning/20">
-              <p className="text-sm font-semibold">Aviso mostrado na manutenção</p>
-              <textarea
-                rows={2}
-                value={form.maintenance_message ?? ""}
-                onChange={(e) => setForm({ ...form, maintenance_message: e.target.value })}
-                placeholder="Estamos fazendo uma manutenção rápida. Volte em alguns minutos."
-                className={`${fieldCls} resize-none`}
-              />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-accent/20">
-            <div>
-              <p className="text-sm font-semibold">Novos Cadastros</p>
-              <p className="text-xs text-muted-foreground">
-                Desligado, a aba de criar conta some da tela de login.
-              </p>
-            </div>
-            <input
-              type="checkbox"
-              checked={form.allow_new_registrations}
-              onChange={(e) => setForm({ ...form, allow_new_registrations: e.target.checked })}
-              className="w-5 h-5 accent-primary shrink-0"
-            />
-          </div>
-
-          <div className="space-y-1.5 p-3 rounded-xl bg-primary/10 border border-primary/20">
-            <p className="text-sm font-semibold flex items-center gap-2">
-              <CreditCard size={14} className="text-primary" /> Link de checkout do cadastro
-            </p>
-            <input
-              type="text"
-              value={form.checkout_url ?? ""}
-              onChange={(e) => setForm({ ...form, checkout_url: e.target.value })}
-              placeholder="https://mpago.la/... ou link de assinatura do Mercado Pago"
-              className={fieldCls}
-            />
-            <p className="text-[10px] text-muted-foreground italic">
-              É para cá que o botão "Criar conta" manda quem ainda não assinou. Webhook do
-              Mercado Pago em <code>/functions/v1/mercadopago-webhook</code>.
-            </p>
-          </div>
-
-          <div className="space-y-1.5 p-3 rounded-xl bg-accent/20">
-            <p className="text-sm font-semibold">Dias de trial padrão</p>
-            <input
-              type="number"
-              min={0}
-              max={365}
-              value={form.default_trial_days}
-              onChange={(e) => setForm({ ...form, default_trial_days: Math.max(0, Math.min(365, parseInt(e.target.value) || 0)) })}
-              className={fieldCls}
-            />
-            <p className="text-[10px] text-muted-foreground italic">
-              Usado quando você libera um acesso de teste sem informar o prazo.
-            </p>
-          </div>
-
-          <div className="space-y-1.5 p-3 rounded-xl bg-accent/20">
-            <p className="text-sm font-semibold">Comunicado global</p>
-            <textarea
-              rows={3}
-              value={form.global_announcement ?? ""}
-              onChange={(e) => setForm({ ...form, global_announcement: e.target.value })}
-              placeholder="Aparece como faixa no topo do painel de todos os assinantes. Deixe vazio para não mostrar nada."
-              className={`${fieldCls} resize-none`}
-            />
-          </div>
-        </div>
-
-        <Button onClick={handleSave} disabled={saving} className="w-full rounded-xl py-6">
-          {saving ? "Salvando..." : "Salvar configuração da plataforma"}
-        </Button>
-      </div>
     </div>
   );
 };
+
 
 const toneMap = {
   primary: "from-primary/20 to-primary/5 text-primary",

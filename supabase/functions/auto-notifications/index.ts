@@ -39,7 +39,9 @@ serve(async (req) => {
     const { data: dueToday } = await supabase
       .from("contract_installments")
       .select("id, amount, client_id, user_id, installment_number")
-      .eq("status", "pending")
+      // Em aberto, não só "pending": a parcela pode já estar marcada como
+      // "overdue" se a virada do dia rodar antes deste job.
+      .not("status", "in", '("paid","cancelled")')
       .gte("due_date", todayStart)
       .lte("due_date", todayEnd);
 
@@ -88,7 +90,10 @@ serve(async (req) => {
     const { data: overdue } = await supabase
       .from("contract_installments")
       .select("id, amount, client_id, user_id, due_date")
-      .eq("status", "pending")
+      // Mesmo motivo do check-overdue: o auto-late-fees das 03:00 marca as
+      // vencidas como "overdue" antes deste job rodar às 06:00, então o aviso
+      // interno de inadimplência quase nunca era gerado.
+      .not("status", "in", '("paid","cancelled")')
       .lt("due_date", todayStart);
 
     if (overdue && overdue.length > 0) {
