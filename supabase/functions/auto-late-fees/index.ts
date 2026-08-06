@@ -56,13 +56,27 @@ serve(async (req) => {
       .select("id, user_id, loan_mode, late_fee_percent, daily_interest_percent, max_interest_cap_percent")
       .in("id", contractIds);
 
-    const contractMap = new Map<string, { user_id: string; loan_mode: string | null; late_fee_percent: number; daily_interest_percent: number }>();
+    // `max_interest_cap_percent` vinha na consulta acima e era JOGADO FORA aqui:
+    // o mapa não carregava o campo, então lá embaixo `config.max_interest_cap_percent`
+    // era sempre `undefined`, `Number(undefined)` virava NaN e o `isFinite` derrubava
+    // a checagem. O teto continuava sem limitar nada, mesmo depois de alguém já ter
+    // escrito o código que o aplica — a correção parou no meio do caminho.
+    const contractMap = new Map<string, {
+      user_id: string;
+      loan_mode: string | null;
+      late_fee_percent: number;
+      daily_interest_percent: number;
+      max_interest_cap_percent: number | null;
+    }>();
     for (const c of contracts || []) {
       contractMap.set(c.id, {
         user_id: c.user_id,
         loan_mode: c.loan_mode,
         late_fee_percent: Number(c.late_fee_percent) || 0,
         daily_interest_percent: Number(c.daily_interest_percent) || 0,
+        max_interest_cap_percent: c.max_interest_cap_percent === null || c.max_interest_cap_percent === undefined
+          ? null
+          : Number(c.max_interest_cap_percent),
       });
     }
 

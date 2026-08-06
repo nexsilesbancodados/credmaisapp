@@ -33,7 +33,10 @@ Deno.serve(async (req) => {
 
     const inbound = await req.formData();
     const file = inbound.get("file");
-    if (!(file instanceof File) && !(file instanceof Blob)) {
+    // `File` não existe como tipo no Deno aqui, e o `instanceof File` derrubava o
+    // type check do arquivo inteiro. Um `File` é um `Blob`, então testar Blob
+    // cobre os dois casos e vale em tempo de execução do mesmo jeito.
+    if (!(file instanceof Blob)) {
       return new Response(JSON.stringify({ error: "arquivo ausente" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const blob = file as Blob;

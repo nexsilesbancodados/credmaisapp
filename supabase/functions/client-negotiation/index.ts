@@ -155,7 +155,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "erro" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
