@@ -62,6 +62,7 @@ const QRCodePage = lazy(() => import("./pages/QRCodePage"));
 const CobradorExterno = lazy(() => import("./pages/CobradorExterno"));
 const Auditoria = lazy(() => import("./pages/Auditoria"));
 const Privacidade = lazy(() => import("./pages/Privacidade"));
+const Termos = lazy(() => import("./pages/Termos"));
 
 const ClienteDetalhe = lazy(() => import("./pages/ClienteDetalhe"));
 const ContractRedirect = lazy(() => import("./pages/ContractRedirect"));
@@ -156,6 +157,7 @@ const App = () => (
                   <Route path="/portal/*" element={<PortalCliente />} />
                   <Route path="/investidor/:token" element={<PortalInvestidor />} />
                   <Route path="/privacidade" element={<Privacidade />} />
+                  <Route path="/termos" element={<Termos />} />
                   <Route path="/cobrador-externo" element={<CobradorExterno />} />
                   <Route path="/tv" element={<ProtectedRoute><TvMode /></ProtectedRoute>} />
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

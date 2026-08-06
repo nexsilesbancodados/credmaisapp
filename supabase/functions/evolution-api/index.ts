@@ -17,7 +17,16 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization")!;
+    // Sem o header, o `!` mentia e o `.replace` estourava: a resposta virava um
+    // 500 com "Cannot read properties of null", que não diz nada a quem chamou e
+    // ainda parece falha do servidor. Falta de credencial é 401.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
@@ -208,7 +217,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "erro" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
