@@ -1,12 +1,17 @@
 /**
  * Roda o type check do Deno em todas as funções de servidor.
  *
- * Existe porque o type check delas estava quebrado e ninguém via. Enquanto ele
- * falha, não serve para pegar erro nenhum — e foi assim que passou despercebido
- * o `auto-late-fees` descartando `max_interest_cap_percent` do mapa de
- * configuração: o TypeScript apontava exatamente essa linha, no meio de outros
- * seis arquivos que também falhavam por motivos banais. O teto de juros que o
+ * Existe porque o type check delas estava quebrado em 7 arquivos e ninguém via.
+ * Enquanto ele falha, não serve para pegar erro nenhum — e foi assim que passou
+ * despercebido o `auto-late-fees` descartando `max_interest_cap_percent` do mapa
+ * de configuração: o TypeScript apontava exatamente essa linha, no meio de seis
+ * outros arquivos que falhavam por motivos banais. O teto de juros que o
  * operador definia não limitava nada.
+ *
+ * Cada função importa dependências remotas (esm.sh, deno.land). Num runner de
+ * cache frio, 41 downloads seguidos às vezes esbarram em instabilidade da rede —
+ * e teste que falha à toa é pior que teste nenhum, porque ensina a ignorar o CI.
+ * Por isso cada arquivo tem uma segunda tentativa antes de virar falha.
  */
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -19,22 +24,34 @@ const alvos = readdirSync(raiz, { withFileTypes: true })
   .filter((p) => existsSync(p));
 
 // `deno` nem sempre está no PATH (no Windows deste projeto ele vem pelo npx).
-// Tenta o binário direto e cai para o npx — sem isso o script "falhava" em todos
-// os arquivos por não achar o comando, que é pior que não checar nada: parece
-// erro de tipo em 41 funções e ninguém olha.
+// Sem esta detecção o script "falhava" em todos os arquivos por não achar o
+// comando — o que parece erro de tipo em 41 funções e ninguém olha.
 const temDeno = spawnSync("deno", ["--version"], { encoding: "utf8", shell: true }).status === 0;
-const [cmd, prefixo] = temDeno ? ["deno", []] : ["npx", ["deno"]];
+const executar = (arquivo) =>
+  temDeno
+    ? spawnSync("deno", ["check", arquivo], { encoding: "utf8" })
+    : spawnSync("npx", ["deno", "check", arquivo], { encoding: "utf8", shell: true });
+
+const ehErroDeTipo = (saida) => /\bTS\d{4}\b/.test(saida);
 
 const falhas = [];
 for (const arquivo of alvos) {
-  const r = spawnSync(cmd, [...prefixo, "check", arquivo], { encoding: "utf8", shell: true });
+  let r = executar(arquivo);
+  let saida = `${r.stderr || ""}${r.stdout || ""}`;
+
+  // Falhou sem apontar erro de tipo? Provavelmente foi download. Tenta de novo.
+  if (r.status !== 0 && !ehErroDeTipo(saida)) {
+    r = executar(arquivo);
+    saida = `${r.stderr || ""}${r.stdout || ""}`;
+  }
+
   if (r.status !== 0) {
-    const detalhe = `${r.stderr || ""}${r.stdout || ""}`
+    const detalhe = saida
       .split("\n")
-      .filter((l) => /TS\d+|error:/.test(l) && !/^error: Type checking failed/.test(l))
-      .slice(0, 2)
+      .filter((l) => l.trim() && !/^\s*(Download|Check)\b/.test(l.replace(/\[[0-9;]*m/g, "")))
+      .slice(0, 6)
       .join("\n      ");
-    falhas.push(`  ${arquivo}\n      ${detalhe}`);
+    falhas.push(`  ${arquivo}\n      ${detalhe || "(sem saída — verifique a conexão do runner)"}`);
   }
 }
 
