@@ -55,31 +55,16 @@ const PortalSection = ({ ctx }: SectionProps) => {
               </p>
             </div>
 
-            {/* Rigor do acesso — decisão de cada assinante */}
-            <div className="space-y-3 p-4 rounded-2xl border border-border bg-accent/5">
+            {/* Acesso do portal: somente CPF */}
+            <div className="space-y-2 p-4 rounded-2xl border border-border bg-accent/5">
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Shield size={12} /> Segurança do acesso
               </p>
-              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/10">
-                <button
-                  onClick={() => setForm({ ...form, portal_require_birth_date: !form.portal_require_birth_date })}
-                  className={`relative w-10 h-6 rounded-full transition-colors duration-300 shrink-0 ${form.portal_require_birth_date ? "bg-primary" : "bg-muted"}`}
-                  aria-pressed={form.portal_require_birth_date}
-                >
-                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${form.portal_require_birth_date ? "left-[18px]" : "left-0.5"}`} />
-                </button>
-                <div>
-                  <span className="text-xs font-medium text-foreground">Pedir também a data de nascimento</span>
-                  <p className="text-[10px] text-muted-foreground">Só ligue depois de cadastrar a data de nascimento dos clientes — quem estiver sem data não vai conseguir entrar.</p>
-                </div>
-              </div>
-              {!form.portal_require_birth_date && (
-                <p className="text-[10px] text-warning leading-relaxed flex items-start gap-1.5">
-                  <AlertTriangle size={11} className="mt-0.5 shrink-0" />
-                  Com o interruptor desligado, basta o CPF. CPF no Brasil não é segredo: quem souber o número de um cliente vê a dívida, os contratos, os valores e a sua chave PIX.
-                </p>
-              )}
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                O acesso ao portal é feito apenas com o CPF do cliente — sem senha e sem data de nascimento.
+              </p>
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4 p-4 rounded-2xl border border-border bg-accent/5">
