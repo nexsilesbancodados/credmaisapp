@@ -131,7 +131,17 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
 
         </div>
 
+        {mode === "interest_only" && (
+          <div className="p-3 rounded-xl bg-warning/10 border border-warning/20">
+            <p className="text-xs text-warning-foreground leading-relaxed">
+              <strong>Pagamento de Juros:</strong> Esta opção quita apenas o rendimento/juros acumulados. 
+              O saldo principal de <strong>R$ {fmt(restAfter)}</strong> continuará pendente para o próximo período.
+            </p>
+          </div>
+        )}
+
         {mode === "partial" && (
+
           <div>
             <label className="text-xs text-muted-foreground font-medium">Valor recebido</label>
             <div className="mt-1 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30">
