@@ -11,6 +11,7 @@ type Props = {
   receiptFile: File | null;
   setReceiptFile: (f: File | null) => void;
   uploading: boolean;
+  interestOnly?: number;
   onClose: () => void;
   onSubmit: () => void;
 };
@@ -46,6 +47,19 @@ export default function PagamentoModal(p: Props) {
           <button onClick={() => p.setAmount(String(p.inst.amount))} className="flex-1 px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:bg-accent">Total</button>
           <button onClick={() => p.setAmount(String(Number(p.inst.amount) / 2))} className="flex-1 px-3 py-2 rounded-lg border border-border text-xs text-muted-foreground hover:bg-accent">Metade</button>
         </div>
+        {!!p.interestOnly && p.interestOnly > 0 && (
+          <div className="space-y-1.5">
+            <button
+              onClick={() => p.setAmount(String(p.interestOnly!.toFixed(2)))}
+              className="w-full px-3 py-2.5 rounded-lg border border-warning/40 bg-warning/10 text-xs font-semibold text-warning hover:bg-warning/20 transition-colors"
+            >
+              Pagar só juros — R$ {fmt(p.interestOnly)}
+            </button>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Quita apenas os juros do período. O capital continua devido para o próximo vencimento.
+            </p>
+          </div>
+        )}
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Forma de pagamento</label>
           <div className="grid grid-cols-4 gap-1.5">
