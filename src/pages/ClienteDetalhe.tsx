@@ -12,6 +12,7 @@ import EditParcelaModal from "@/components/cliente-detalhe/modals/EditParcelaMod
 import PagamentoModal from "@/components/cliente-detalhe/modals/PagamentoModal";
 import RenegociarModal, { type RenegotiationPayload } from "@/components/cliente-detalhe/modals/RenegociarModal";
 import { LOAN_MODES, fmt, FREQ, INPUT } from "@/components/cliente-detalhe/constants";
+import { interestOnlyAmount } from "@/lib/interestOnly";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1405,17 +1406,7 @@ const ClienteDetalhe = () => {
 
       {partialPayModal && (() => {
         const c: any = (contracts as any[]).find((ct: any) => ct.id === partialPayModal.contract_id);
-        let interestOnly = 0;
-        if (c) {
-          const n = Number(c.num_installments || 0);
-          const totalInterest = Number(c.total_interest || 0) || Math.max(0, Number(c.total_amount || 0) - Number(c.capital || 0));
-          if ((c.loan_mode || "installments") === "percentage" || n <= 0) {
-            interestOnly = Math.round(Number(partialPayModal.amount || 0) * 100) / 100;
-          } else {
-            interestOnly = Math.round((totalInterest / n) * 100) / 100;
-          }
-          interestOnly = Math.min(interestOnly, Number(partialPayModal.amount || 0));
-        }
+        const interestOnly = interestOnlyAmount(partialPayModal, c);
         return (
           <PagamentoModal
             inst={partialPayModal}

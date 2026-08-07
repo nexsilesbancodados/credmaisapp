@@ -149,7 +149,7 @@ const Cobrancas = () => {
 
       const data = await fetchAll((f, t) => supabase
         .from("contract_installments")
-        .select("*, contracts(capital, frequency, interest_rate, num_installments, daily_interest_percent, max_interest_cap_percent)")
+        .select("*, contracts(capital, frequency, interest_rate, num_installments, total_amount, total_interest, loan_mode, daily_interest_percent, max_interest_cap_percent)")
         .eq("user_id", user!.id)
         .order("due_date", { ascending: true })
         .range(f, t));

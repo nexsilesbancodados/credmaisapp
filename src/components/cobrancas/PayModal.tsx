@@ -3,6 +3,7 @@ import { ModalPortal } from "@/components/ui/modal-portal";
 import { CheckCircle, CalendarDays, AlertTriangle } from "lucide-react";
 import { formatBR } from "@/lib/dateUtils";
 import type { LateFeeBreakdown } from "@/lib/lateFee";
+import { interestOnlyAmount } from "@/lib/interestOnly";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -25,14 +26,9 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
     return isNaN(n) ? 0 : n;
   }, [raw]);
 
-  // O usuário solicitou a opção "pagar só os juros".
-  // Em empréstimos de juros simples (mensal fixo), o rendimento da parcela é a diferença entre o valor da parcela e a amortização do capital.
-  const installmentInterest = Math.max(0, (inst.amount || 0) - (inst.contracts?.capital / (inst.contracts?.num_installments || 1) || 0));
-  
-  // Se for o primeiro pagamento de juros do mês, somamos os juros do contrato + juros de atraso.
-  // Se já houver um pagamento parcial, o totalInterestOnly deve ser ajustado ou o usuário deve poder escolher.
-  // Para simplificar conforme solicitado: o valor "Só juros" é o rendimento calculado do período.
-  const totalInterestOnly = Math.round(((fee.juros > 0 ? fee.juros : 0) + installmentInterest) * 100) / 100;
+  // "Pagar só juros": quita apenas o rendimento do período (juros do contrato
+  // + juros de atraso), mantendo o capital principal pendente.
+  const totalInterestOnly = interestOnlyAmount(inst, inst.contracts, fee.juros > 0 ? fee.juros : 0);
 
   const finalValue = 
     mode === "full" ? remaining : 

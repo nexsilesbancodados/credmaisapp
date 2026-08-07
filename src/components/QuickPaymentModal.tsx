@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Search, X, CheckCircle2, Loader2, Receipt, AlertCircle, Clock, SplitSquareHorizontal, CheckSquare, Square, Banknote } from "lucide-react";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
+import { interestOnlyAmount } from "@/lib/interestOnly";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -50,7 +51,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("contract_installments")
-        .select("id, amount, paid_amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, cpf_cnpj), contracts:contract_id(capital)")
+        .select("id, amount, paid_amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, cpf_cnpj), contracts:contract_id(capital, total_amount, total_interest, num_installments, loan_mode)")
         // `.eq("status","pending")` escondia as parcelas atrasadas: quando vencem,
         // o check-overdue muda o status para "overdue". Ou seja, o atalho de
         // pagamento rápido não mostrava justamente quem estava devendo — hoje são
@@ -408,6 +409,19 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
                       />
                     </div>
                     <span className="text-[10px] text-muted-foreground">de R$ {fmtBRL(Number(inst.amount))}</span>
+                    {(() => {
+                      const io = interestOnlyAmount(inst, inst.contracts);
+                      if (!io) return null;
+                      return (
+                        <button
+                          onClick={() => setPartialValue(io.toFixed(2))}
+                          title="Preenche apenas os juros do período; o capital continua devido"
+                          className="px-2 py-1.5 rounded-md border border-warning/40 bg-warning/10 text-warning text-[11px] font-bold hover:bg-warning/20"
+                        >
+                          Só juros R$ {fmtBRL(io)}
+                        </button>
+                      );
+                    })()}
                     <button onClick={() => handlePartial(inst)} disabled={saving === inst.id}
                       className="ml-auto px-3 py-1.5 rounded-md bg-success text-success-foreground text-[11px] font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-1">
                       {saving === inst.id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
