@@ -29,8 +29,10 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
   // Em empréstimos de juros simples (mensal fixo), o rendimento da parcela é a diferença entre o valor da parcela e a amortização do capital.
   const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
   
-  // Se houver juros de atraso, somamos ao rendimento do período.
-  const totalInterestOnly = (fee.juros > 0 ? fee.juros : 0) + installmentInterest;
+  // Se for o primeiro pagamento de juros do mês, somamos os juros do contrato + juros de atraso.
+  // Se já houver um pagamento parcial, o totalInterestOnly deve ser ajustado ou o usuário deve poder escolher.
+  // Para simplificar conforme solicitado: o valor "Só juros" é o rendimento calculado do período.
+  const totalInterestOnly = Math.round(((fee.juros > 0 ? fee.juros : 0) + installmentInterest) * 100) / 100;
 
   const finalValue = 
     mode === "full" ? remaining : 
