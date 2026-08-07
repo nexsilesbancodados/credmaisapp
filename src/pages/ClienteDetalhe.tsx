@@ -1406,6 +1406,7 @@ const ClienteDetalhe = () => {
       {partialPayModal && (() => {
         const c: any = (contracts as any[]).find((ct: any) => ct.id === partialPayModal.contract_id);
         const interestOnly = interestOnlyAmount(partialPayModal, c);
+        return (
           <PagamentoModal
             inst={partialPayModal}
             amount={partialAmount}
