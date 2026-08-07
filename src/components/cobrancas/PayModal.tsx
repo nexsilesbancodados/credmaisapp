@@ -17,7 +17,7 @@ interface Props {
 }
 
 const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onConfirm }: Props) => {
-  const [mode, setMode] = useState<"full" | "partial">("full");
+  const [mode, setMode] = useState<"full" | "partial" | "interest_only">("full");
   const [raw, setRaw] = useState<string>(remaining.toFixed(2).replace(".", ","));
 
   const value = useMemo(() => {
@@ -25,8 +25,21 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
     return isNaN(n) ? 0 : n;
   }, [raw]);
 
-  const finalValue = mode === "full" ? remaining : value;
-  const isPartial = mode === "partial" && value > 0 && value + 0.005 < remaining;
+  // O usuário solicitou a opção "pagar só os juros".
+  // Em empréstimos de juros simples (mensal fixo), o rendimento da parcela é a diferença entre o valor da parcela e a amortização do capital.
+  const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
+  
+  // Se houver juros de atraso, somamos ao rendimento do período.
+  const totalInterestOnly = (fee.juros > 0 ? fee.juros : 0) + installmentInterest;
+
+  const finalValue = 
+    mode === "full" ? remaining : 
+    mode === "interest_only" ? totalInterestOnly : 
+    value;
+
+  const isPartial = (mode === "partial" || mode === "interest_only") && finalValue > 0 && finalValue + 0.005 < remaining;
+
+
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
 
   return (
@@ -97,7 +110,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         </div>
 
         {/* Modo */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <button
             onClick={() => { setMode("full"); setRaw(remaining.toFixed(2).replace(".", ",")); }}
             className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
@@ -114,9 +127,28 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
           >
             Pagamento parcial
           </button>
+          <button
+            onClick={() => setMode("interest_only")}
+            className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              mode === "interest_only" ? "bg-warning text-warning-foreground" : "border border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            Pagar só juros
+          </button>
+
         </div>
 
+        {mode === "interest_only" && (
+          <div className="p-3 rounded-xl bg-warning/10 border border-warning/20">
+            <p className="text-xs text-warning-foreground leading-relaxed">
+              <strong>Pagamento de Juros:</strong> Esta opção quita apenas o rendimento/juros acumulados. 
+              O saldo principal de <strong>R$ {fmt(restAfter)}</strong> continuará pendente para o próximo período.
+            </p>
+          </div>
+        )}
+
         {mode === "partial" && (
+
           <div>
             <label className="text-xs text-muted-foreground font-medium">Valor recebido</label>
             <div className="mt-1 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 focus-within:ring-2 focus-within:ring-primary/30">
