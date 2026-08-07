@@ -123,22 +123,37 @@ async function callAnthropicDirect(params: CallAnthropicParams, apiKey: string):
   return data.content?.[0]?.text || "";
 }
 
-/** Chama a IA. Retorna o texto da resposta. */
+/**
+ * Chama a IA. Ordem de tentativa: DeepSeek → Lovable AI Gateway → Anthropic.
+ * A ordem existe porque o gateway e a Anthropic podem estar sem crédito; a
+ * primeira chave que responder resolve a chamada.
+ */
 export async function callAnthropic(params: CallAnthropicParams): Promise<string> {
+  const deepseekKey = Deno.env.get("DEEPSEEK_API_KEY");
   const lovableKey = Deno.env.get("LOVABLE_API_KEY");
   const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
 
-  if (lovableKey) {
-    try {
-      return await callGateway(params, lovableKey);
-    } catch (err) {
-      if (!anthropicKey) throw err;
-      console.error("Gateway falhou, tentando Anthropic:", err);
-    }
+  const provedores: Array<[string, () => Promise<string>]> = [];
+  if (deepseekKey) provedores.push(["DeepSeek", () => callDeepSeek(params, deepseekKey)]);
+  if (lovableKey) provedores.push(["Lovable AI Gateway", () => callGateway(params, lovableKey)]);
+  if (anthropicKey) provedores.push(["Anthropic", () => callAnthropicDirect(params, anthropicKey)]);
+
+  if (provedores.length === 0) {
+    throw new Error("Nenhuma chave de IA configurada (DEEPSEEK_API_KEY, LOVABLE_API_KEY ou ANTHROPIC_API_KEY)");
   }
 
-  if (anthropicKey) return await callAnthropicDirect(params, anthropicKey);
-  throw new Error("Nenhuma chave de IA configurada (LOVABLE_API_KEY ou ANTHROPIC_API_KEY)");
+  let ultimoErro: unknown;
+  for (const [nome, exec] of provedores) {
+    try {
+      return await exec();
+    } catch (err) {
+      ultimoErro = err;
+      console.error(`${nome} falhou:`, err);
+    }
+  }
+  throw ultimoErro instanceof Error ? ultimoErro : new Error("Falha em todos os provedores de IA");
+}
+
 }
 
 /** Chama a IA esperando uma resposta JSON. Faz parse automático. */
