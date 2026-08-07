@@ -25,13 +25,20 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
     return isNaN(n) ? 0 : n;
   }, [raw]);
 
-  const interestValue = fee.juros; // Juros diários acumulados + Multa fixa (opcional: o usuário pediu "só os juros", interpretado como a rentabilidade do período)
-  // No caso de empréstimo mensal fixo (Ex: 1000 -> 1100), o "juro" é a diferença.
-  // Vamos calcular o valor que representa apenas o lucro/rendimento daquela parcela.
+  // O usuário solicitou a opção "pagar só os juros".
+  // Em empréstimos de juros simples (mensal fixo), o rendimento da parcela é a diferença entre o valor da parcela e a amortização do capital.
   const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
+  
+  // Se houver juros de atraso, somamos ao rendimento do período.
+  const totalInterestOnly = (fee.juros > 0 ? fee.juros : 0) + installmentInterest;
 
-  const finalValue = mode === "full" ? remaining : mode === "interest_only" ? (fee.juros > 0 ? fee.juros : installmentInterest) : value;
+  const finalValue = 
+    mode === "full" ? remaining : 
+    mode === "interest_only" ? totalInterestOnly : 
+    value;
+
   const isPartial = (mode === "partial" || mode === "interest_only") && finalValue > 0 && finalValue + 0.005 < remaining;
+
 
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
 
@@ -103,7 +110,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         </div>
 
         {/* Modo */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <button
             onClick={() => { setMode("full"); setRaw(remaining.toFixed(2).replace(".", ",")); }}
             className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
