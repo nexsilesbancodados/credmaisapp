@@ -531,24 +531,8 @@ const PortalCliente = () => {
                     )}
                   </div>
 
-                  {/* Opcional de propósito. Este portal atende vários credores,
-                      e cada um decide se exige a data (Configurações → Portal).
-                      Como a página não sabe de qual credor é o CPF antes do
-                      envio, o campo fica visível para todos e quem não precisa
-                      simplesmente deixa em branco. */}
-                  <div className="space-y-2">
-                    <label className="ml-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
-                      <CalendarDays size={11} /> Data de nascimento
-                      <span className="font-semibold normal-case tracking-normal text-white/35">— só se o seu credor pedir</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => setBirthDate(e.target.value)}
-                      max={new Date().toISOString().slice(0, 10)}
-                      className="portal-input w-full rounded-2xl px-5 py-4 text-center font-mono text-lg tracking-wider"
-                    />
-                  </div>
+
+
 
                   <button
                     type="submit"
