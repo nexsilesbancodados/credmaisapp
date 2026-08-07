@@ -364,7 +364,7 @@ const Configuracoes = () => {
   // Tudo que as seções consomem. As seções não sabem de Supabase nem de rota —
   // recebem dados e ações prontas, o que as torna testáveis isoladamente.
   const ctx: SettingsCtx = {
-    form, setForm, inputCls, settings,
+    form: form as any, setForm: setForm as any, inputCls, settings,
     templates,
     newTemplate, setNewTemplate,
     onAddTemplate: handleAddTemplate,
