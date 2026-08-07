@@ -1,49 +1,32 @@
-import EmpresaSection from "./sections/EmpresaSection";
-import PixSection from "./sections/PixSection";
-import PadroesSection from "./sections/PadroesSection";
-import NotificacoesSection from "./sections/NotificacoesSection";
-import MarcaSection from "./sections/MarcaSection";
-import ModulosSection from "./sections/ModulosSection";
-import PortalSection from "./sections/PortalSection";
-import ContratoSection from "./sections/ContratoSection";
-import BotSection from "./sections/BotSection";
-import TemplatesSection from "./sections/TemplatesSection";
-import MensagemSection from "./sections/MensagemSection";
-import WhatsAppSection from "./sections/WhatsAppSection";
-import WebhooksSection from "./sections/WebhooksSection";
-import PwaSection from "./sections/PwaSection";
+import React, { Suspense } from "react";
 import type { SettingsCtx } from "./types";
+import { Loader2 } from "lucide-react";
 
-/**
- * Uma aba, um componente. O id aqui é o mesmo usado no menu lateral da página —
- * se os dois deixarem de bater, a aba some da tela em vez de quebrar, então o
- * teste de fumaça percorre esta tabela para garantir que todas renderizam.
- */
-export const SECTIONS = {
-  empresa: EmpresaSection,
-  pix: PixSection,
-  padroes: PadroesSection,
-  notificacoes: NotificacoesSection,
-  marca: MarcaSection,
-  modulos: ModulosSection,
-  portal: PortalSection,
-  contrato: ContratoSection,
-  bot: BotSection,
-  templates: TemplatesSection,
-  mensagem: MensagemSection,
-  whatsapp: WhatsAppSection,
-  webhooks: WebhooksSection,
-  pwa: PwaSection,
-} as const;
+const EssencialConfig = React.lazy(() => import("./EssencialConfig"));
+const AparenciaConfig = React.lazy(() => import("./AparenciaConfig"));
 
-export type SectionId = keyof typeof SECTIONS;
+interface SectionRendererProps {
+  tab: string;
+  ctx: SettingsCtx;
+}
 
-export const SECTION_IDS = Object.keys(SECTIONS) as SectionId[];
-
-const SectionRenderer = ({ tab, ctx }: { tab: string; ctx: SettingsCtx }) => {
-  const Section = SECTIONS[tab as SectionId];
-  if (!Section) return null;
-  return <Section ctx={ctx} />;
+const SectionRenderer = ({ tab, ctx }: SectionRendererProps) => {
+  return (
+    <Suspense fallback={
+      <div className="h-[400px] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin opacity-20" />
+      </div>
+    }>
+      {tab === "marca" && <EssencialConfig ctx={ctx} />}
+      {tab === "aparencia" && <AparenciaConfig ctx={ctx} />}
+      {/* Adicionar mais seções aqui conforme a modularização avança */}
+      {!["marca", "aparencia"].includes(tab) && (
+        <div className="p-12 text-center bg-muted/20 rounded-2xl border border-dashed border-border/50">
+          <p className="text-sm text-muted-foreground">Seção "{tab}" em desenvolvimento.</p>
+        </div>
+      )}
+    </Suspense>
+  );
 };
 
 export default SectionRenderer;
