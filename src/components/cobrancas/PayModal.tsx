@@ -17,7 +17,7 @@ interface Props {
 }
 
 const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onConfirm }: Props) => {
-  const [mode, setMode] = useState<"full" | "partial">("full");
+  const [mode, setMode] = useState<"full" | "partial" | "interest_only">("full");
   const [raw, setRaw] = useState<string>(remaining.toFixed(2).replace(".", ","));
 
   const value = useMemo(() => {
@@ -25,8 +25,14 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
     return isNaN(n) ? 0 : n;
   }, [raw]);
 
-  const finalValue = mode === "full" ? remaining : value;
-  const isPartial = mode === "partial" && value > 0 && value + 0.005 < remaining;
+  const interestValue = fee.juros + (fee.lateFeeValue || 0); // Juros diários acumulados + Multa fixa (opcional: o usuário pediu "só os juros", interpretado como a rentabilidade do período)
+  // No caso de empréstimo mensal fixo (Ex: 1000 -> 1100), o "juro" é a diferença.
+  // Vamos calcular o valor que representa apenas o lucro/rendimento daquela parcela.
+  const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
+
+  const finalValue = mode === "full" ? remaining : mode === "interest_only" ? (fee.juros > 0 ? fee.juros : installmentInterest) : value;
+  const isPartial = (mode === "partial" || mode === "interest_only") && finalValue > 0 && finalValue + 0.005 < remaining;
+
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
 
   return (
@@ -114,6 +120,15 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
           >
             Pagamento parcial
           </button>
+          <button
+            onClick={() => setMode("interest_only")}
+            className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              mode === "interest_only" ? "bg-warning text-warning-foreground" : "border border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            Pagar só juros
+          </button>
+
         </div>
 
         {mode === "partial" && (
