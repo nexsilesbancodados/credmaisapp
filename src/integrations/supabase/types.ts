@@ -1538,7 +1538,22 @@ export type Database = {
           status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profits_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profits_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "contract_installments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_limit_hits: {
         Row: {
@@ -1636,21 +1651,21 @@ export type Database = {
           bot_tone: string | null
           bot_use_ai: boolean | null
           bot_work_days: Json | null
-          company_cnpj: string | null
           company_address: string | null
-          company_phone: string | null
+          company_cnpj: string | null
           company_logo_url: string | null
           company_name: string | null
+          company_phone: string | null
           created_at: string
           custom_contract_template: string | null
           default_daily_interest: number | null
           default_frequency: string | null
-          default_num_installments: number | null
-          default_payment_method: string | null
-          default_max_interest_cap: number | null
-          default_term_months: number | null
           default_interest_rate: number | null
           default_late_fee: number | null
+          default_max_interest_cap: number | null
+          default_num_installments: number | null
+          default_payment_method: string | null
+          default_term_months: number | null
           favicon_url: string | null
           font_family: string | null
           footer_text: string | null
@@ -1664,6 +1679,7 @@ export type Database = {
           portal_contact_phone: string | null
           portal_logo_url: string | null
           portal_primary_color: string | null
+          portal_require_birth_date: boolean
           portal_subtitle: string | null
           portal_title: string | null
           portal_welcome_message: string | null
@@ -1703,21 +1719,21 @@ export type Database = {
           bot_tone?: string | null
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
-          company_cnpj?: string | null
           company_address?: string | null
-          company_phone?: string | null
+          company_cnpj?: string | null
           company_logo_url?: string | null
           company_name?: string | null
+          company_phone?: string | null
           created_at?: string
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
-          default_num_installments?: number | null
-          default_payment_method?: string | null
-          default_max_interest_cap?: number | null
-          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
+          default_max_interest_cap?: number | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_term_months?: number | null
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
@@ -1731,6 +1747,7 @@ export type Database = {
           portal_contact_phone?: string | null
           portal_logo_url?: string | null
           portal_primary_color?: string | null
+          portal_require_birth_date?: boolean
           portal_subtitle?: string | null
           portal_title?: string | null
           portal_welcome_message?: string | null
@@ -1770,21 +1787,21 @@ export type Database = {
           bot_tone?: string | null
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
-          company_cnpj?: string | null
           company_address?: string | null
-          company_phone?: string | null
+          company_cnpj?: string | null
           company_logo_url?: string | null
           company_name?: string | null
+          company_phone?: string | null
           created_at?: string
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
-          default_num_installments?: number | null
-          default_payment_method?: string | null
-          default_max_interest_cap?: number | null
-          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
+          default_max_interest_cap?: number | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_term_months?: number | null
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
@@ -1798,6 +1815,7 @@ export type Database = {
           portal_contact_phone?: string | null
           portal_logo_url?: string | null
           portal_primary_color?: string | null
+          portal_require_birth_date?: boolean
           portal_subtitle?: string | null
           portal_title?: string | null
           portal_welcome_message?: string | null
@@ -2110,6 +2128,13 @@ export type Database = {
             columns: ["contract_id"]
             isOneToOne: false
             referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_installment_id_fkey"
+            columns: ["installment_id"]
+            isOneToOne: false
+            referencedRelation: "contract_installments"
             referencedColumns: ["id"]
           },
         ]
@@ -2437,21 +2462,21 @@ export type Database = {
           bot_tone: string | null
           bot_use_ai: boolean | null
           bot_work_days: Json | null
-          company_cnpj: string | null
           company_address: string | null
-          company_phone: string | null
+          company_cnpj: string | null
           company_logo_url: string | null
           company_name: string | null
+          company_phone: string | null
           created_at: string | null
           custom_contract_template: string | null
           default_daily_interest: number | null
           default_frequency: string | null
-          default_num_installments: number | null
-          default_payment_method: string | null
-          default_max_interest_cap: number | null
-          default_term_months: number | null
           default_interest_rate: number | null
           default_late_fee: number | null
+          default_max_interest_cap: number | null
+          default_num_installments: number | null
+          default_payment_method: string | null
+          default_term_months: number | null
           favicon_url: string | null
           font_family: string | null
           footer_text: string | null
@@ -2464,6 +2489,7 @@ export type Database = {
           portal_contact_phone: string | null
           portal_logo_url: string | null
           portal_primary_color: string | null
+          portal_require_birth_date: boolean | null
           portal_subtitle: string | null
           portal_title: string | null
           portal_welcome_message: string | null
@@ -2503,21 +2529,21 @@ export type Database = {
           bot_tone?: string | null
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
-          company_cnpj?: string | null
           company_address?: string | null
-          company_phone?: string | null
+          company_cnpj?: string | null
           company_logo_url?: string | null
           company_name?: string | null
+          company_phone?: string | null
           created_at?: string | null
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
-          default_num_installments?: number | null
-          default_payment_method?: string | null
-          default_max_interest_cap?: number | null
-          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
+          default_max_interest_cap?: number | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_term_months?: number | null
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
@@ -2530,6 +2556,7 @@ export type Database = {
           portal_contact_phone?: string | null
           portal_logo_url?: string | null
           portal_primary_color?: string | null
+          portal_require_birth_date?: boolean | null
           portal_subtitle?: string | null
           portal_title?: string | null
           portal_welcome_message?: string | null
@@ -2569,21 +2596,21 @@ export type Database = {
           bot_tone?: string | null
           bot_use_ai?: boolean | null
           bot_work_days?: Json | null
-          company_cnpj?: string | null
           company_address?: string | null
-          company_phone?: string | null
+          company_cnpj?: string | null
           company_logo_url?: string | null
           company_name?: string | null
+          company_phone?: string | null
           created_at?: string | null
           custom_contract_template?: string | null
           default_daily_interest?: number | null
           default_frequency?: string | null
-          default_num_installments?: number | null
-          default_payment_method?: string | null
-          default_max_interest_cap?: number | null
-          default_term_months?: number | null
           default_interest_rate?: number | null
           default_late_fee?: number | null
+          default_max_interest_cap?: number | null
+          default_num_installments?: number | null
+          default_payment_method?: string | null
+          default_term_months?: number | null
           favicon_url?: string | null
           font_family?: string | null
           footer_text?: string | null
@@ -2596,6 +2623,7 @@ export type Database = {
           portal_contact_phone?: string | null
           portal_logo_url?: string | null
           portal_primary_color?: string | null
+          portal_require_birth_date?: boolean | null
           portal_subtitle?: string | null
           portal_title?: string | null
           portal_welcome_message?: string | null
@@ -2679,7 +2707,7 @@ export type Database = {
         Returns: Json
       }
       portal_client_login: {
-        Args: { _birth_date: string; _cpf: string }
+        Args: { _birth_date?: string; _cpf: string }
         Returns: Json
       }
       portal_client_mark_notifications_read: {
@@ -2733,6 +2761,16 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      system_register_payment: {
+        Args: {
+          _installment_id: string
+          _method?: string
+          _origem?: string
+          _paid_total: number
+          _receipt_url?: string
+        }
+        Returns: Json
+      }
       try_consume_rate_limit: {
         Args: { _capacity: number; _key: string; _refill_per_sec: number }
         Returns: Json

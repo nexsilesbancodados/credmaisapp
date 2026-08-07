@@ -233,7 +233,7 @@ const Configuracoes = () => {
       favicon_url: form.favicon_url || null,
       primary_color: form.primary_color,
       accent_color: form.accent_color,
-      theme_mode: form.theme_mode,
+      theme_mode: form.theme_mode as any,
       sidebar_style: form.sidebar_style,
       login_title: form.login_title || null,
       login_subtitle: form.login_subtitle || null,
@@ -364,7 +364,7 @@ const Configuracoes = () => {
   // Tudo que as seções consomem. As seções não sabem de Supabase nem de rota —
   // recebem dados e ações prontas, o que as torna testáveis isoladamente.
   const ctx: SettingsCtx = {
-    form, setForm, inputCls, settings,
+    form: form as any, setForm: setForm as any, inputCls, settings,
     templates,
     newTemplate, setNewTemplate,
     onAddTemplate: handleAddTemplate,
