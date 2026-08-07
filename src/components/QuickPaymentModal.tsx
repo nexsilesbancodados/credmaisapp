@@ -50,7 +50,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase.from("contract_installments")
-        .select("id, amount, paid_amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, cpf_cnpj), contracts:contract_id(capital)")
+        .select("id, amount, paid_amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, cpf_cnpj), contracts:contract_id(capital, total_amount, total_interest, num_installments, loan_mode)")
         // `.eq("status","pending")` escondia as parcelas atrasadas: quando vencem,
         // o check-overdue muda o status para "overdue". Ou seja, o atalho de
         // pagamento rápido não mostrava justamente quem estava devendo — hoje são
