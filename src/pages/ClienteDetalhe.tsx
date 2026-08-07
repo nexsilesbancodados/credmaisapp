@@ -12,6 +12,7 @@ import EditParcelaModal from "@/components/cliente-detalhe/modals/EditParcelaMod
 import PagamentoModal from "@/components/cliente-detalhe/modals/PagamentoModal";
 import RenegociarModal, { type RenegotiationPayload } from "@/components/cliente-detalhe/modals/RenegociarModal";
 import { LOAN_MODES, fmt, FREQ, INPUT } from "@/components/cliente-detalhe/constants";
+import { interestOnlyAmount } from "@/lib/interestOnly";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
