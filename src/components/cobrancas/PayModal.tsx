@@ -27,7 +27,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
 
   // O usuário solicitou a opção "pagar só os juros".
   // Em empréstimos de juros simples (mensal fixo), o rendimento da parcela é a diferença entre o valor da parcela e a amortização do capital.
-  const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
+  const installmentInterest = Math.max(0, (inst.amount || 0) - (inst.contracts?.capital / (inst.contracts?.num_installments || 1) || 0));
   
   // Se for o primeiro pagamento de juros do mês, somamos os juros do contrato + juros de atraso.
   // Se já houver um pagamento parcial, o totalInterestOnly deve ser ajustado ou o usuário deve poder escolher.
@@ -124,8 +124,8 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
           
           <button
             onClick={() => setMode("interest_only")}
-            className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              mode === "interest_only" ? "bg-warning text-warning-foreground" : "border border-border text-muted-foreground hover:bg-accent"
+            className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm ${
+              mode === "interest_only" ? "bg-amber-500 text-white border-amber-600" : "border border-border text-muted-foreground hover:bg-accent"
             }`}
           >
             Pagar só juros
