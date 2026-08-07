@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Search, X, CheckCircle2, Loader2, Receipt, AlertCircle, Clock, SplitSquareHorizontal, CheckSquare, Square, Banknote } from "lucide-react";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
+import { interestOnlyAmount } from "@/lib/interestOnly";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -408,6 +409,19 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
                       />
                     </div>
                     <span className="text-[10px] text-muted-foreground">de R$ {fmtBRL(Number(inst.amount))}</span>
+                    {(() => {
+                      const io = interestOnlyAmount(inst, inst.contracts);
+                      if (!io) return null;
+                      return (
+                        <button
+                          onClick={() => setPartialValue(io.toFixed(2))}
+                          title="Preenche apenas os juros do período; o capital continua devido"
+                          className="px-2 py-1.5 rounded-md border border-warning/40 bg-warning/10 text-warning text-[11px] font-bold hover:bg-warning/20"
+                        >
+                          Só juros R$ {fmtBRL(io)}
+                        </button>
+                      );
+                    })()}
                     <button onClick={() => handlePartial(inst)} disabled={saving === inst.id}
                       className="ml-auto px-3 py-1.5 rounded-md bg-success text-success-foreground text-[11px] font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-1">
                       {saving === inst.id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
