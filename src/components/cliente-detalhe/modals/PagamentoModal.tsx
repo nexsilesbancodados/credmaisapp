@@ -11,6 +11,7 @@ type Props = {
   receiptFile: File | null;
   setReceiptFile: (f: File | null) => void;
   uploading: boolean;
+  interestOnly?: number;
   onClose: () => void;
   onSubmit: () => void;
 };
