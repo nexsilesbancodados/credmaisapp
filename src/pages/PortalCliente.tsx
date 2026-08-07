@@ -333,11 +333,9 @@ const PortalCliente = () => {
     }
     setCpfError(null);
     setBirthError(null);
-    // A data vai como o cliente digitou — em branco, se ele não digitou. Quem
-    // exige é o credor dele, pela configuração do portal; a função no banco
-    // recusa do mesmo jeito que recusaria um CPF desconhecido, para não
-    // confirmar a ninguém que aquele CPF é cliente da casa.
-    await doLogin(cleanCpf, birthDate, false);
+    // Login do portal é somente por CPF — nenhuma data é exigida.
+    await doLogin(cleanCpf, "", false);
+
   };
 
   const handleLogout = async () => {
