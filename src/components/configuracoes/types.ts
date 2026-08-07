@@ -86,7 +86,9 @@ export interface SettingsCtx {
   onAddPresetTemplate: (preset: any) => Promise<void>;
   newTemplate: { name: string; content: string; trigger_days: string };
   setNewTemplate: React.Dispatch<React.SetStateAction<{ name: string; content: string; trigger_days: string }>>;
+  notify: (title: string) => void;
 }
+
 
 export interface SectionProps {
   ctx: SettingsCtx;
