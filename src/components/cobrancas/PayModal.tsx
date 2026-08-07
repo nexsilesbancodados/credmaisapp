@@ -29,8 +29,10 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
   // Em empréstimos de juros simples (mensal fixo), o rendimento da parcela é a diferença entre o valor da parcela e a amortização do capital.
   const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
   
-  // Se houver juros de atraso, somamos ao rendimento do período.
-  const totalInterestOnly = (fee.juros > 0 ? fee.juros : 0) + installmentInterest;
+  // Se for o primeiro pagamento de juros do mês, somamos os juros do contrato + juros de atraso.
+  // Se já houver um pagamento parcial, o totalInterestOnly deve ser ajustado ou o usuário deve poder escolher.
+  // Para simplificar conforme solicitado: o valor "Só juros" é o rendimento calculado do período.
+  const totalInterestOnly = Math.round(((fee.juros > 0 ? fee.juros : 0) + installmentInterest) * 100) / 100;
 
   const finalValue = 
     mode === "full" ? remaining : 
@@ -110,32 +112,33 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         </div>
 
         {/* Modo */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => { setMode("full"); setRaw(remaining.toFixed(2).replace(".", ",")); }}
-            className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               mode === "full" ? "bg-success text-success-foreground" : "border border-border text-muted-foreground hover:bg-accent"
             }`}
           >
             Quitar total
           </button>
-          <button
-            onClick={() => setMode("partial")}
-            className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-              mode === "partial" ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            Pagamento parcial
-          </button>
+          
           <button
             onClick={() => setMode("interest_only")}
-            className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
               mode === "interest_only" ? "bg-warning text-warning-foreground" : "border border-border text-muted-foreground hover:bg-accent"
             }`}
           >
             Pagar só juros
           </button>
 
+          <button
+            onClick={() => setMode("partial")}
+            className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              mode === "partial" ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            Parcial / Outro
+          </button>
         </div>
 
         {mode === "interest_only" && (
