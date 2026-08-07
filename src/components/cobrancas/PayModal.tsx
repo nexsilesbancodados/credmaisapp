@@ -25,7 +25,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
     return isNaN(n) ? 0 : n;
   }, [raw]);
 
-  const interestValue = fee.juros + (fee.lateFeeValue || 0); // Juros diários acumulados + Multa fixa (opcional: o usuário pediu "só os juros", interpretado como a rentabilidade do período)
+  const interestValue = fee.juros; // Juros diários acumulados + Multa fixa (opcional: o usuário pediu "só os juros", interpretado como a rentabilidade do período)
   // No caso de empréstimo mensal fixo (Ex: 1000 -> 1100), o "juro" é a diferença.
   // Vamos calcular o valor que representa apenas o lucro/rendimento daquela parcela.
   const installmentInterest = Math.max(0, inst.amount - (inst.contracts?.capital / inst.contracts?.num_installments || 0));
