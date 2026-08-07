@@ -100,7 +100,7 @@ const MarcaSection = ({ ctx }: SectionProps) => {
                 ].map(mode => (
                   <button
                     key={mode.value}
-                    onClick={() => setForm({ ...form, theme_mode: mode.value })}
+                    onClick={() => setForm({ ...form, theme_mode: mode.value as any })}
                     className={`p-3 rounded-xl border text-center transition-all ${
                       form.theme_mode === mode.value
                         ? "border-primary/40 bg-primary/10 shadow-sm"
