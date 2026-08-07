@@ -67,6 +67,36 @@ async function callGateway(params: CallAnthropicParams, apiKey: string): Promise
   return data?.choices?.[0]?.message?.content || "";
 }
 
+/** DeepSeek (OpenAI-compatible). */
+async function callDeepSeek(params: CallAnthropicParams, apiKey: string): Promise<string> {
+  const resp = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      max_tokens: params.maxTokens || 1024,
+      temperature: params.temperature ?? 0.7,
+      messages: [
+        { role: "system", content: params.system },
+        ...params.messages.map((m) => ({ role: m.role, content: toText(m.content) })),
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`DeepSeek ${resp.status}: ${errText}`);
+  }
+
+  const data = await resp.json();
+  return data?.choices?.[0]?.message?.content || "";
+}
+
+
+
 async function callAnthropicDirect(params: CallAnthropicParams, apiKey: string): Promise<string> {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
