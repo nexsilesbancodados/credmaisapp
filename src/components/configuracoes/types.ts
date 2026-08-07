@@ -1,5 +1,7 @@
 import { ModuleKey } from "@/contexts/WhiteLabelContext";
 
+export type ThemeMode = "dark" | "light" | "system";
+
 export interface SettingsForm {
   company_name: string;
   company_cnpj: string;
@@ -9,7 +11,7 @@ export interface SettingsForm {
   favicon_url: string;
   primary_color: string;
   accent_color: string;
-  theme_mode: "dark" | "light" | "system";
+  theme_mode: ThemeMode;
   sidebar_style: string;
   login_title: string;
   login_subtitle: string;
@@ -84,4 +86,8 @@ export interface SettingsCtx {
   onAddPresetTemplate: (preset: any) => Promise<void>;
   newTemplate: { name: string; content: string; trigger_days: string };
   setNewTemplate: React.Dispatch<React.SetStateAction<{ name: string; content: string; trigger_days: string }>>;
+}
+
+export interface SectionProps {
+  ctx: SettingsCtx;
 }
