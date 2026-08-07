@@ -154,7 +154,7 @@ export async function callAnthropic(params: CallAnthropicParams): Promise<string
   throw ultimoErro instanceof Error ? ultimoErro : new Error("Falha em todos os provedores de IA");
 }
 
-}
+
 
 /** Chama a IA esperando uma resposta JSON. Faz parse automático. */
 export async function callAnthropicJSON<T = any>(params: CallAnthropicParams): Promise<T> {
