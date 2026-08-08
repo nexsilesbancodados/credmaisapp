@@ -258,17 +258,33 @@ const Cobrancas = () => {
     return prev;
   };
 
-  const handleMarkPaid = async (id: string, paidValue?: number) => {
+  const handleMarkPaid = async (id: string, paidValue?: number, waiveFee?: boolean) => {
     const inst = installments.find((i: any) => i.id === id);
     if (!inst) return;
-    const { withFees } = computeLateFeeBreakdown(inst);
-    const totalDue = Math.round(withFees * 100) / 100;
+    const { withFees, base } = computeLateFeeBreakdown(inst);
+    // "Sem multa": os juros de atraso são perdoados — cobra-se só o valor original.
+    if (waiveFee) {
+      const { error } = await supabase
+        .from("contract_installments")
+        .update({ late_fee: 0 })
+        .eq("id", id);
+      if (error) {
+        toast({ title: "Erro ao perdoar a multa", description: error.message, variant: "destructive" });
+        return;
+      }
+      inst.late_fee = 0;
+      inst.late_fee_percent = 0;
+      inst.daily_interest_percent = 0;
+      if (inst.contracts) inst.contracts = { ...inst.contracts, daily_interest_percent: 0 };
+    }
+    const totalDue = Math.round((waiveFee ? base : withFees) * 100) / 100;
     const alreadyPaid = Number(inst.paid_amount || 0);
     const remaining = Math.max(0, Math.round((totalDue - alreadyPaid) * 100) / 100);
     const value = Math.max(0, Number(paidValue ?? remaining));
     if (value <= 0) { toast({ title: "Informe um valor válido", variant: "destructive" }); return; }
 
     const isFull = value + 0.005 >= remaining;
+
     setConfirmPayId(null);
 
     if (isFull) {
@@ -1413,7 +1429,7 @@ const Cobrancas = () => {
           remaining={remaining}
           daysLate={daysLate}
           onCancel={() => setConfirmPayId(null)}
-          onConfirm={(value) => handleMarkPaid(confirmPayId, value)}
+          onConfirm={(value, waiveFee) => handleMarkPaid(confirmPayId, value, waiveFee)}
         />;
       })()}
 

@@ -14,11 +14,11 @@ interface Props {
   remaining: number;
   daysLate: number;
   onCancel: () => void;
-  onConfirm: (value: number) => void;
+  onConfirm: (value: number, waiveFee?: boolean) => void;
 }
 
 const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onConfirm }: Props) => {
-  const [mode, setMode] = useState<"full" | "partial" | "interest_only">("full");
+  const [mode, setMode] = useState<"full" | "partial" | "interest_only" | "no_fee">("full");
   const [raw, setRaw] = useState<string>(remaining.toFixed(2).replace(".", ","));
 
   const value = useMemo(() => {
@@ -27,18 +27,23 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
   }, [raw]);
 
   // "Pagar só juros": quita apenas o rendimento do período (juros do contrato
-  // + juros de atraso), mantendo o capital principal pendente.
+  // + juros/multa de atraso, quando informados), mantendo o capital pendente.
   const totalInterestOnly = interestOnlyAmount(inst, inst.contracts, fee.juros > 0 ? fee.juros : 0);
 
-  const finalValue = 
-    mode === "full" ? remaining : 
-    mode === "interest_only" ? totalInterestOnly : 
+  // "Sem multa": perdoa os juros/multa de atraso e quita apenas o valor original.
+  const remainingNoFee = Math.max(0, Math.round((fee.base - alreadyPaid) * 100) / 100);
+
+  const finalValue =
+    mode === "full" ? remaining :
+    mode === "no_fee" ? remainingNoFee :
+    mode === "interest_only" ? totalInterestOnly :
     value;
 
   const isPartial = (mode === "partial" || mode === "interest_only") && finalValue > 0 && finalValue + 0.005 < remaining;
 
 
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
+
 
   return (
     <ModalPortal>
@@ -135,6 +140,17 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
           >
             Parcial / Outro
           </button>
+
+          {fee.total > 0 && (
+            <button
+              onClick={() => setMode("no_fee")}
+              className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                mode === "no_fee" ? "bg-success text-success-foreground" : "border border-border text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              Quitar sem multa
+            </button>
+          )}
         </div>
 
         {mode === "interest_only" && (
@@ -145,6 +161,16 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
             </p>
           </div>
         )}
+
+        {mode === "no_fee" && (
+          <div className="p-3 rounded-xl bg-success/10 border border-success/20">
+            <p className="text-xs text-foreground leading-relaxed">
+              <strong>Sem multa:</strong> os juros de atraso de <strong>R$ {fmt(fee.total)}</strong> serão perdoados
+              e a parcela será quitada pelo valor original de <strong>R$ {fmt(remainingNoFee)}</strong>.
+            </p>
+          </div>
+        )}
+
 
         {mode === "partial" && (
 
@@ -175,7 +201,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         <div className="flex gap-2">
           <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-2xl border border-border text-sm text-muted-foreground hover:bg-accent transition-colors">Cancelar</button>
           <button
-            onClick={() => onConfirm(finalValue)}
+            onClick={() => onConfirm(finalValue, mode === "no_fee")}
             disabled={finalValue <= 0}
             className="flex-1 px-4 py-3.5 rounded-xl text-sm font-bold bg-success text-success-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
           >
