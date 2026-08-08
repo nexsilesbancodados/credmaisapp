@@ -166,6 +166,19 @@ export default function Investidores() {
 
   const overdueCount = enriched.filter(({ s }) => s.overdueCount > 0).length;
 
+  // Perfil aberto via ?perfil=<id> — precisa existir para o modal renderizar
+  const expandedProfile = useMemo(() => {
+    if (!expandedId) return null;
+    const inv = investors.find((i) => i.id === expandedId);
+    if (!inv) return null;
+    return {
+      inv,
+      s: perInvestor(inv.id),
+      loans: loans.filter((l) => l.investor_id === inv.id),
+    };
+  }, [expandedId, investors, loans]);
+
+
   return (
     <>
       <div className="space-y-6 p-4 md:p-6">
