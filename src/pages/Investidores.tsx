@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Landmark, Plus, RefreshCw, Wallet, TrendingUp,
   CheckCircle2, ExternalLink, Trash2, Copy, DollarSign,
-  Search, ArrowUpDown, CalendarDays, AlertTriangle, Users,
+  Search, ArrowUpDown, CalendarDays, AlertTriangle, Users, Pencil,
 } from "lucide-react";
 
 
@@ -59,6 +59,7 @@ export default function Investidores() {
   const [newOpen, setNewOpen] = useState(false);
   const [newLoanOpen, setNewLoanOpen] = useState(false);
   const [payOpen, setPayOpen] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "paid">("all");
   const [sortBy, setSortBy] = useState<"total" | "name" | "prox">("total");
@@ -117,6 +118,15 @@ export default function Investidores() {
     const url = `${window.location.origin}/investidor/${token}`;
     navigator.clipboard.writeText(url);
     toast({ title: "Link copiado!", description: url });
+  };
+
+  /** Dar baixa: abre o pagamento do empréstimo aberto mais próximo do vencimento. */
+  const darBaixa = (investorId: string) => {
+    const aberto = loans
+      .filter((l) => l.investor_id === investorId && l.status !== "paid")
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+    if (!aberto) { toast({ title: "Nenhum empréstimo em aberto", variant: "destructive" }); return; }
+    setPayOpen(aberto.id);
   };
 
   const regenerateToken = async (id: string) => {
@@ -391,6 +401,20 @@ export default function Investidores() {
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
                       <button
+                        onClick={() => darBaixa(inv.id)}
+                        disabled={s.count === 0}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/85 px-3 py-2.5 text-xs font-bold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] focus-ring disabled:opacity-40"
+                      >
+                        <DollarSign size={13} /> Dar baixa
+                      </button>
+                      <button
+                        onClick={() => setEditId(inv.id)}
+                        title="Editar perfil do investidor"
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
                         onClick={() => copyPortal(inv.access_token)}
                         title="Copiar link do portal"
                         className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
@@ -462,6 +486,12 @@ export default function Investidores() {
                 <Button size="sm" onClick={() => { setSelectedId(expandedProfile.inv.id); setNewLoanOpen(true); }} className="gap-1.5">
                   <Plus size={14} /> Novo empréstimo
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditId(expandedProfile.inv.id)} className="gap-1.5">
+                  <Pencil size={14} /> Editar perfil
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => darBaixa(expandedProfile.inv.id)} className="gap-1.5">
+                  <DollarSign size={14} /> Dar baixa
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => copyPortal(expandedProfile.inv.access_token)} className="gap-1.5">
                   <Copy size={14} /> Copiar link do portal
                 </Button>
@@ -530,6 +560,14 @@ export default function Investidores() {
       )}
 
       <NewInvestorDialog open={newOpen} onOpenChange={setNewOpen} onCreated={(id) => { setSelectedId(id); void load(); }} />
+
+      {editId && investors.find((i) => i.id === editId) && (
+        <EditInvestorDialog
+          investor={investors.find((i) => i.id === editId)!}
+          onClose={() => setEditId(null)}
+          onSaved={() => { setEditId(null); void load(); }}
+        />
+      )}
 
       {selected && (
         <NewLoanDialog
@@ -730,6 +768,66 @@ function PayLoanDialog({ loanId, loan, onClose, onPaid }: { loanId: string; loan
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button onClick={submit} disabled={loading}>{loading ? "Salvando…" : "Confirmar"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Edição do cadastro do investidor (dados de contato, Pix e observações). */
+function EditInvestorDialog({ investor, onClose, onSaved }: { investor: Investor; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    name: investor.name || "",
+    cpf_cnpj: investor.cpf_cnpj || "",
+    email: investor.email || "",
+    whatsapp: investor.whatsapp || "",
+    phone: investor.phone || "",
+    pix_key: investor.pix_key || "",
+    notes: investor.notes || "",
+    status: investor.status || "active",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!form.name.trim()) { toast({ title: "Nome obrigatório", variant: "destructive" }); return; }
+    setLoading(true);
+    const { error } = await supabase.from("investors" as never)
+      .update({ ...form, updated_at: new Date().toISOString() } as never)
+      .eq("id", investor.id);
+    setLoading(false);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Perfil atualizado!" });
+    onSaved();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+        <DialogHeader><DialogTitle>Editar perfil — {investor.name}</DialogTitle></DialogHeader>
+        <div className="grid gap-3">
+          <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
+            <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+            <div><Label>Telefone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          </div>
+          <div><Label>Chave PIX</Label><Input value={form.pix_key} onChange={(e) => setForm({ ...form, pix_key: e.target.value })} /></div>
+          <div>
+            <Label>Situação</Label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+              <option value="active">Ativo</option>
+              <option value="inactive">Inativo</option>
+            </select>
+          </div>
+          <div><Label>Observações</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={submit} disabled={loading}>{loading ? "Salvando…" : "Salvar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
