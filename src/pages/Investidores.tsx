@@ -60,6 +60,8 @@ export default function Investidores() {
   const [newLoanOpen, setNewLoanOpen] = useState(false);
   const [payOpen, setPayOpen] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [editLoanId, setEditLoanId] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "paid">("all");
   const [sortBy, setSortBy] = useState<"total" | "name" | "prox">("total");
