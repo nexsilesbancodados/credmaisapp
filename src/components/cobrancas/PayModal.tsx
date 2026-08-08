@@ -140,6 +140,17 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
           >
             Parcial / Outro
           </button>
+
+          {fee.total > 0 && (
+            <button
+              onClick={() => setMode("no_fee")}
+              className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                mode === "no_fee" ? "bg-success text-success-foreground" : "border border-border text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              Quitar sem multa
+            </button>
+          )}
         </div>
 
         {mode === "interest_only" && (
@@ -150,6 +161,16 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
             </p>
           </div>
         )}
+
+        {mode === "no_fee" && (
+          <div className="p-3 rounded-xl bg-success/10 border border-success/20">
+            <p className="text-xs text-foreground leading-relaxed">
+              <strong>Sem multa:</strong> os juros de atraso de <strong>R$ {fmt(fee.total)}</strong> serão perdoados
+              e a parcela será quitada pelo valor original de <strong>R$ {fmt(remainingNoFee)}</strong>.
+            </p>
+          </div>
+        )}
+
 
         {mode === "partial" && (
 
