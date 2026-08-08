@@ -425,7 +425,105 @@ export default function Investidores() {
       </div>
 
 
+      {expandedProfile && (
+        <Dialog open onOpenChange={(o) => !o && setExpandedId(null)}>
+          <DialogContent className="max-h-[90dvh] max-w-2xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Landmark className="h-5 w-5 text-primary" /> {expandedProfile.inv.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                {expandedProfile.inv.cpf_cnpj && <p>Documento: <span className="text-foreground tabular-nums">{expandedProfile.inv.cpf_cnpj}</span></p>}
+                {expandedProfile.inv.email && <p>E-mail: <span className="text-foreground">{expandedProfile.inv.email}</span></p>}
+                {(expandedProfile.inv.whatsapp || expandedProfile.inv.phone) && (
+                  <p>Contato: <span className="text-foreground tabular-nums">{expandedProfile.inv.whatsapp || expandedProfile.inv.phone}</span></p>
+                )}
+                {expandedProfile.inv.pix_key && <p>Pix: <span className="text-foreground break-all">{expandedProfile.inv.pix_key}</span></p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <KpiCard icon={Wallet} label="Capital" value={brl(expandedProfile.s.capital)} tone="primary" />
+                <KpiCard icon={TrendingUp} label="Saldo" value={brl(expandedProfile.s.saldo)} tone="amber" />
+                <KpiCard icon={CheckCircle2} label="Pago" value={brl(expandedProfile.s.paid)} tone="emerald" />
+                <KpiCard icon={CalendarDays} label="Próx. venc." value={expandedProfile.s.prox ? fmtDate(expandedProfile.s.prox) : "—"} tone="violet" />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={() => { setSelectedId(expandedProfile.inv.id); setNewLoanOpen(true); }} className="gap-1.5">
+                  <Plus size={14} /> Novo empréstimo
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => copyPortal(expandedProfile.inv.access_token)} className="gap-1.5">
+                  <Copy size={14} /> Copiar link do portal
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(`/investidor/${expandedProfile.inv.access_token}`, "_blank")} className="gap-1.5">
+                  <ExternalLink size={14} /> Abrir portal
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => regenerateToken(expandedProfile.inv.id)} className="gap-1.5">
+                  <RefreshCw size={14} /> Novo link
+                </Button>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Empréstimos ({expandedProfile.loans.length})
+                </p>
+                {expandedProfile.loans.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border/60 py-8 text-center text-sm text-muted-foreground">
+                    Nenhum empréstimo registrado para este investidor.
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {expandedProfile.loans.map((l) => {
+                      const saldoLoan = Number(l.total_due) - Number(l.paid_amount);
+                      return (
+                        <li key={l.id} className="rounded-xl border border-border/60 bg-background/40 p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="font-mono text-lg font-bold text-foreground">{brl(Number(l.total_due))}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                Capital {brl(Number(l.principal))} • Juros {l.interest_rate}% • Vence {fmtDate(l.due_date)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={l.status === "paid" ? "secondary" : "outline"}>
+                                {l.status === "paid" ? "Quitado" : `Saldo ${brl(saldoLoan)}`}
+                              </Badge>
+                              {l.status !== "paid" && (
+                                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setPayOpen(l.id)}>
+                                  <DollarSign size={13} /> Pagar
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              {expandedProfile.inv.notes && (
+                <p className="rounded-xl border border-border/60 bg-background/40 p-3 text-xs text-muted-foreground">
+                  {expandedProfile.inv.notes}
+                </p>
+              )}
+
+              <div className="flex justify-end border-t border-border/50 pt-3">
+                <Button size="sm" variant="ghost" className="gap-1.5 text-destructive hover:text-destructive"
+                  onClick={() => { const id = expandedProfile.inv.id; setExpandedId(null); void deleteInvestor(id); }}>
+                  <Trash2 size={14} /> Excluir investidor
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       <NewInvestorDialog open={newOpen} onOpenChange={setNewOpen} onCreated={(id) => { setSelectedId(id); void load(); }} />
+
       {selected && (
         <NewLoanDialog
           open={newLoanOpen}
