@@ -146,6 +146,47 @@ export default function Investidores() {
     void load();
   };
 
+  /** Remove um empréstimo do investidor e os pagamentos vinculados. */
+  const deleteLoan = async (loanId: string) => {
+    if (!confirm("Excluir este empréstimo e os pagamentos registrados nele?")) return;
+    await supabase.from("investor_payments" as never).delete().eq("loan_id", loanId);
+    const { error } = await supabase.from("investor_loans" as never).delete().eq("id", loanId);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Empréstimo excluído" });
+    void load();
+  };
+
+  /** Desfaz (estorna) o último pagamento registrado no empréstimo. */
+  const undoLastPayment = async (loanId: string) => {
+    const { data: pays, error: payErr } = await supabase
+      .from("investor_payments" as never)
+      .select("id, amount")
+      .eq("loan_id", loanId)
+      .order("paid_at", { ascending: false })
+      .limit(1);
+    if (payErr) { toast({ title: "Erro", description: payErr.message, variant: "destructive" }); return; }
+    const last = (pays as any[])?.[0];
+    const loan = loans.find((l) => l.id === loanId);
+    if (!loan) return;
+    if (!last && Number(loan.paid_amount) <= 0) {
+      toast({ title: "Nenhum pagamento para desfazer", variant: "destructive" });
+      return;
+    }
+    const valor = last ? Number(last.amount) : Number(loan.paid_amount);
+    if (!confirm(`Desfazer o pagamento de ${brl(valor)}?`)) return;
+    if (last) await supabase.from("investor_payments" as never).delete().eq("id", last.id);
+    const novoPago = Math.max(0, Number(loan.paid_amount) - valor);
+    const { error } = await supabase.from("investor_loans" as never).update({
+      paid_amount: novoPago,
+      status: "active",
+      paid_at: null,
+    } as never).eq("id", loanId);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Pagamento desfeito", description: `Saldo devedor atualizado.` });
+    void load();
+  };
+
+
 
   // Enriched list: filter + sort + search
   const enriched = useMemo(() => {
