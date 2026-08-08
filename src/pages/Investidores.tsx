@@ -773,3 +773,63 @@ function PayLoanDialog({ loanId, loan, onClose, onPaid }: { loanId: string; loan
     </Dialog>
   );
 }
+
+/** Edição do cadastro do investidor (dados de contato, Pix e observações). */
+function EditInvestorDialog({ investor, onClose, onSaved }: { investor: Investor; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    name: investor.name || "",
+    cpf_cnpj: investor.cpf_cnpj || "",
+    email: investor.email || "",
+    whatsapp: investor.whatsapp || "",
+    phone: investor.phone || "",
+    pix_key: investor.pix_key || "",
+    notes: investor.notes || "",
+    status: investor.status || "active",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!form.name.trim()) { toast({ title: "Nome obrigatório", variant: "destructive" }); return; }
+    setLoading(true);
+    const { error } = await supabase.from("investors" as never)
+      .update({ ...form, updated_at: new Date().toISOString() } as never)
+      .eq("id", investor.id);
+    setLoading(false);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Perfil atualizado!" });
+    onSaved();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+        <DialogHeader><DialogTitle>Editar perfil — {investor.name}</DialogTitle></DialogHeader>
+        <div className="grid gap-3">
+          <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
+            <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+            <div><Label>Telefone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+          </div>
+          <div><Label>Chave PIX</Label><Input value={form.pix_key} onChange={(e) => setForm({ ...form, pix_key: e.target.value })} /></div>
+          <div>
+            <Label>Situação</Label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+              <option value="active">Ativo</option>
+              <option value="inactive">Inativo</option>
+            </select>
+          </div>
+          <div><Label>Observações</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={submit} disabled={loading}>{loading ? "Salvando…" : "Salvar"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
