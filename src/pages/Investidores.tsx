@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Landmark, Plus, RefreshCw, Wallet, TrendingUp,
   CheckCircle2, ExternalLink, Trash2, Copy, DollarSign,
-  Search, ArrowUpDown, CalendarDays, AlertTriangle, Users, Pencil,
+  Search, ArrowUpDown, CalendarDays, AlertTriangle, Users, Pencil, Undo2,
 } from "lucide-react";
 
 
