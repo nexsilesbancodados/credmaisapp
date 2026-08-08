@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -357,7 +357,7 @@ export default function Investidores() {
                     {/* Head — avatar + identity */}
                     <div className="flex items-start gap-3">
                       <button
-                        onClick={() => setExpandedId(inv.id)}
+                        onClick={() => openProfile(inv.id)}
                         className={`relative shrink-0 h-12 w-12 rounded-full ring-2 ${ringCls} flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-105 focus-ring`}
                         title="Abrir perfil"
                       >
@@ -365,7 +365,7 @@ export default function Investidores() {
                         <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${dot}`} />
                       </button>
                       <button
-                        onClick={() => setExpandedId(inv.id)}
+                        onClick={() => openProfile(inv.id)}
                         className="min-w-0 flex-1 text-left focus-ring rounded-lg"
                       >
                         <p className="truncate text-[15px] font-bold text-foreground tracking-tight" title={inv.name}>{inv.name}</p>
