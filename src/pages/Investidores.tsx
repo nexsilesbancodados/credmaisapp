@@ -401,6 +401,20 @@ export default function Investidores() {
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
                       <button
+                        onClick={() => darBaixa(inv.id)}
+                        disabled={s.count === 0}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/85 px-3 py-2.5 text-xs font-bold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] focus-ring disabled:opacity-40"
+                      >
+                        <DollarSign size={13} /> Dar baixa
+                      </button>
+                      <button
+                        onClick={() => setEditId(inv.id)}
+                        title="Editar perfil do investidor"
+                        className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
                         onClick={() => copyPortal(inv.access_token)}
                         title="Copiar link do portal"
                         className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
