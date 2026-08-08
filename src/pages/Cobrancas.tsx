@@ -265,7 +265,7 @@ const Cobrancas = () => {
     // "Sem multa": os juros de atraso são perdoados — cobra-se só o valor original.
     if (waiveFee) {
       const { error } = await supabase
-        .from("installments")
+        .from("contract_installments")
         .update({ late_fee: 0, late_fee_percent: 0, daily_interest_percent: 0 })
         .eq("id", id);
       if (error) {
