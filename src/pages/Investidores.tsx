@@ -898,3 +898,96 @@ function EditInvestorDialog({ investor, onClose, onSaved }: { investor: Investor
     </Dialog>
   );
 }
+
+/** Edição dos valores do empréstimo do investidor (capital, juros, total, vencimento e situação). */
+function EditLoanDialog({ loan, onClose, onSaved }: { loan: Loan; onClose: () => void; onSaved: () => void }) {
+  const [principal, setPrincipal] = useState(String(Number(loan.principal)));
+  const [rate, setRate] = useState(String(Number(loan.interest_rate)));
+  const [totalDue, setTotalDue] = useState(String(Number(loan.total_due)));
+  const [paid, setPaid] = useState(String(Number(loan.paid_amount)));
+  const [dueDate, setDueDate] = useState(loan.due_date || "");
+  const [freq, setFreq] = useState(loan.frequency || "bullet");
+  const [status, setStatus] = useState(loan.status || "active");
+  const [notes, setNotes] = useState(loan.notes || "");
+  const [loading, setLoading] = useState(false);
+
+  const num = (v: string) => parseFloat(String(v).replace(",", ".")) || 0;
+
+  /** Recalcula o total com base em capital + juros. */
+  const recalcTotal = () => setTotalDue((num(principal) * (1 + num(rate) / 100)).toFixed(2));
+
+  const submit = async () => {
+    if (num(principal) <= 0) { toast({ title: "Capital inválido", variant: "destructive" }); return; }
+    if (num(totalDue) <= 0) { toast({ title: "Total a pagar inválido", variant: "destructive" }); return; }
+    if (!dueDate) { toast({ title: "Informe o vencimento", variant: "destructive" }); return; }
+    setLoading(true);
+    const { error } = await supabase.from("investor_loans" as never).update({
+      principal: num(principal),
+      interest_rate: num(rate),
+      total_due: num(totalDue),
+      paid_amount: Math.max(0, num(paid)),
+      due_date: dueDate,
+      frequency: freq,
+      status,
+      paid_at: status === "paid" ? (loan.paid_at || new Date().toISOString()) : null,
+      notes,
+      updated_at: new Date().toISOString(),
+    } as never).eq("id", loan.id);
+    setLoading(false);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Empréstimo atualizado!" });
+    onSaved();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+        <DialogHeader><DialogTitle>Editar empréstimo</DialogTitle></DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Capital (R$) *</Label><Input inputMode="decimal" value={principal} onChange={(e) => setPrincipal(e.target.value)} /></div>
+            <div><Label>Juros (%)</Label><Input inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Total a pagar (R$) *</Label><Input inputMode="decimal" value={totalDue} onChange={(e) => setTotalDue(e.target.value)} /></div>
+            <div><Label>Já pago (R$)</Label><Input inputMode="decimal" value={paid} onChange={(e) => setPaid(e.target.value)} /></div>
+          </div>
+          <Button type="button" size="sm" variant="outline" className="justify-self-start gap-1.5" onClick={recalcTotal}>
+            <RefreshCw size={13} /> Recalcular total pelo juros
+          </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Vencimento *</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
+            <div>
+              <Label>Modalidade</Label>
+              <select value={freq} onChange={(e) => setFreq(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                <option value="bullet">Pagamento único</option>
+                <option value="monthly">Juros mensais</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <Label>Situação</Label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+              <option value="active">Em aberto</option>
+              <option value="paid">Quitado</option>
+            </select>
+          </div>
+          <div>
+            <Label>Observações</Label>
+            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-center">
+            <p className="text-xs uppercase text-muted-foreground">Saldo devedor</p>
+            <p className="mt-1 font-mono text-2xl font-bold text-primary">
+              {brl(Math.max(0, num(totalDue) - num(paid)))}
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={submit} disabled={loading}>{loading ? "Salvando…" : "Salvar"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
