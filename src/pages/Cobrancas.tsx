@@ -266,7 +266,7 @@ const Cobrancas = () => {
     if (waiveFee) {
       const { error } = await supabase
         .from("contract_installments")
-        .update({ late_fee: 0, late_fee_percent: 0, daily_interest_percent: 0 })
+        .update({ late_fee: 0 })
         .eq("id", id);
       if (error) {
         toast({ title: "Erro ao perdoar a multa", description: error.message, variant: "destructive" });
