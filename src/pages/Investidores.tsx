@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,13 +23,13 @@ import {
 const brl = (n: number) => (n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const fmtDate = (d?: string | null) => (d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "-");
 
-type Investor = {
+export type Investor = {
   id: string; name: string; cpf_cnpj: string | null; email: string | null;
   phone: string | null; whatsapp: string | null; pix_key: string | null;
   pix_key_type: string | null; notes: string | null; access_token: string;
   status: string; created_at: string;
 };
-type Loan = {
+export type Loan = {
   id: string; investor_id: string; principal: number; interest_rate: number;
   total_due: number; paid_amount: number; start_date: string; due_date: string;
   frequency: string; status: string; payment_method: string | null;
@@ -38,6 +38,10 @@ type Loan = {
 
 export default function Investidores() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  /** Abre o perfil completo do investidor em página própria (igual ao perfil do cliente). */
+  const openProfile = (id: string) => navigate(`/investidores/${id}`);
+
 
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -357,7 +361,7 @@ export default function Investidores() {
                     {/* Head — avatar + identity */}
                     <div className="flex items-start gap-3">
                       <button
-                        onClick={() => setExpandedId(inv.id)}
+                        onClick={() => openProfile(inv.id)}
                         className={`relative shrink-0 h-12 w-12 rounded-full ring-2 ${ringCls} flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-105 focus-ring`}
                         title="Abrir perfil"
                       >
@@ -365,7 +369,7 @@ export default function Investidores() {
                         <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${dot}`} />
                       </button>
                       <button
-                        onClick={() => setExpandedId(inv.id)}
+                        onClick={() => openProfile(inv.id)}
                         className="min-w-0 flex-1 text-left focus-ring rounded-lg"
                       >
                         <p className="truncate text-[15px] font-bold text-foreground tracking-tight" title={inv.name}>{inv.name}</p>
@@ -654,7 +658,7 @@ export default function Investidores() {
   );
 }
 
-function KpiCard({ icon: Icon, label, value, tone, hint }: { icon: any; label: string; value: string; tone: string; hint?: string }) {
+export function KpiCard({ icon: Icon, label, value, tone, hint }: { icon: any; label: string; value: string; tone: string; hint?: string }) {
   const tones: Record<string, string> = {
     primary: "from-primary/20 to-primary/5 text-primary",
     emerald: "from-emerald-500/20 to-emerald-500/5 text-emerald-300",
@@ -715,7 +719,7 @@ function NewInvestorDialog({ open, onOpenChange, onCreated }: { open: boolean; o
   );
 }
 
-function NewLoanDialog({ open, onOpenChange, investor, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; investor: Investor; onCreated: () => void }) {
+export function NewLoanDialog({ open, onOpenChange, investor, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; investor: Investor; onCreated: () => void }) {
   const { user } = useAuth();
   const [principal, setPrincipal] = useState("");
   const [rate, setRate] = useState("20");
@@ -782,7 +786,7 @@ function NewLoanDialog({ open, onOpenChange, investor, onCreated }: { open: bool
   );
 }
 
-function PayLoanDialog({ loanId, loan, onClose, onPaid }: { loanId: string; loan: Loan; onClose: () => void; onPaid: () => void }) {
+export function PayLoanDialog({ loanId, loan, onClose, onPaid }: { loanId: string; loan: Loan; onClose: () => void; onPaid: () => void }) {
   const { user } = useAuth();
   const saldo = Number(loan.total_due) - Number(loan.paid_amount);
   const [amount, setAmount] = useState(String(saldo.toFixed(2)));
@@ -840,7 +844,7 @@ function PayLoanDialog({ loanId, loan, onClose, onPaid }: { loanId: string; loan
 }
 
 /** Edição do cadastro do investidor (dados de contato, Pix e observações). */
-function EditInvestorDialog({ investor, onClose, onSaved }: { investor: Investor; onClose: () => void; onSaved: () => void }) {
+export function EditInvestorDialog({ investor, onClose, onSaved }: { investor: Investor; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({
     name: investor.name || "",
     cpf_cnpj: investor.cpf_cnpj || "",
@@ -900,7 +904,7 @@ function EditInvestorDialog({ investor, onClose, onSaved }: { investor: Investor
 }
 
 /** Edição dos valores do empréstimo do investidor (capital, juros, total, vencimento e situação). */
-function EditLoanDialog({ loan, onClose, onSaved }: { loan: Loan; onClose: () => void; onSaved: () => void }) {
+export function EditLoanDialog({ loan, onClose, onSaved }: { loan: Loan; onClose: () => void; onSaved: () => void }) {
   const [principal, setPrincipal] = useState(String(Number(loan.principal)));
   const [rate, setRate] = useState(String(Number(loan.interest_rate)));
   const [totalDue, setTotalDue] = useState(String(Number(loan.total_due)));

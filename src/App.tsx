@@ -38,6 +38,8 @@ const Clientes = lazy(() => import("./pages/Clientes"));
 const Cobrancas = lazy(() => import("./pages/Cobrancas"));
 const Carteira = lazy(() => import("./pages/Carteira"));
 const Investidores = lazy(() => import("./pages/Investidores"));
+const InvestidorDetalhe = lazy(() => import("./pages/InvestidorDetalhe"));
+
 
 const PortalInvestidor = lazy(() => import("./pages/PortalInvestidor"));
 const Lucros = lazy(() => import("./pages/Lucros"));
@@ -172,6 +174,8 @@ const App = () => (
                     <Route path="/cobrancas" element={<ErrorBoundary><Cobrancas /></ErrorBoundary>} />
                     <Route path="/carteira" element={<ErrorBoundary><Carteira /></ErrorBoundary>} />
                     <Route path="/investidores" element={<ErrorBoundary><Investidores /></ErrorBoundary>} />
+                    <Route path="/investidores/:id" element={<ErrorBoundary><InvestidorDetalhe /></ErrorBoundary>} />
+
                     
                     <Route path="/lucros" element={<ErrorBoundary><Lucros /></ErrorBoundary>} />
                     <Route path="/gastos" element={<ErrorBoundary><Gastos /></ErrorBoundary>} />
