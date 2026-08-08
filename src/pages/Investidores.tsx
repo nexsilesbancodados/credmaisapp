@@ -486,6 +486,12 @@ export default function Investidores() {
                 <Button size="sm" onClick={() => { setSelectedId(expandedProfile.inv.id); setNewLoanOpen(true); }} className="gap-1.5">
                   <Plus size={14} /> Novo empréstimo
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditId(expandedProfile.inv.id)} className="gap-1.5">
+                  <Pencil size={14} /> Editar perfil
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => darBaixa(expandedProfile.inv.id)} className="gap-1.5">
+                  <DollarSign size={14} /> Dar baixa
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => copyPortal(expandedProfile.inv.access_token)} className="gap-1.5">
                   <Copy size={14} /> Copiar link do portal
                 </Button>
