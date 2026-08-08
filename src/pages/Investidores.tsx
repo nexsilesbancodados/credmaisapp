@@ -567,7 +567,7 @@ export default function Investidores() {
                                 Capital {brl(Number(l.principal))} • Juros {l.interest_rate}% • Vence {fmtDate(l.due_date)}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <Badge variant={l.status === "paid" ? "secondary" : "outline"}>
                                 {l.status === "paid" ? "Quitado" : `Saldo ${brl(saldoLoan)}`}
                               </Badge>
@@ -576,7 +576,21 @@ export default function Investidores() {
                                   <DollarSign size={13} /> Pagar
                                 </Button>
                               )}
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Editar valores do empréstimo"
+                                onClick={() => setEditLoanId(l.id)}>
+                                <Pencil size={13} />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Desfazer último pagamento"
+                                disabled={Number(l.paid_amount) <= 0}
+                                onClick={() => void undoLastPayment(l.id)}>
+                                <Undo2 size={13} />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                title="Excluir empréstimo" onClick={() => void deleteLoan(l.id)}>
+                                <Trash2 size={13} />
+                              </Button>
                             </div>
+
                           </div>
                         </li>
                       );
