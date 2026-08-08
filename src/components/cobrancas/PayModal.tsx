@@ -14,11 +14,11 @@ interface Props {
   remaining: number;
   daysLate: number;
   onCancel: () => void;
-  onConfirm: (value: number) => void;
+  onConfirm: (value: number, waiveFee?: boolean) => void;
 }
 
 const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onConfirm }: Props) => {
-  const [mode, setMode] = useState<"full" | "partial" | "interest_only">("full");
+  const [mode, setMode] = useState<"full" | "partial" | "interest_only" | "no_fee">("full");
   const [raw, setRaw] = useState<string>(remaining.toFixed(2).replace(".", ","));
 
   const value = useMemo(() => {
@@ -27,18 +27,23 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
   }, [raw]);
 
   // "Pagar só juros": quita apenas o rendimento do período (juros do contrato
-  // + juros de atraso), mantendo o capital principal pendente.
+  // + juros/multa de atraso, quando informados), mantendo o capital pendente.
   const totalInterestOnly = interestOnlyAmount(inst, inst.contracts, fee.juros > 0 ? fee.juros : 0);
 
-  const finalValue = 
-    mode === "full" ? remaining : 
-    mode === "interest_only" ? totalInterestOnly : 
+  // "Sem multa": perdoa os juros/multa de atraso e quita apenas o valor original.
+  const remainingNoFee = Math.max(0, Math.round((fee.base - alreadyPaid) * 100) / 100);
+
+  const finalValue =
+    mode === "full" ? remaining :
+    mode === "no_fee" ? remainingNoFee :
+    mode === "interest_only" ? totalInterestOnly :
     value;
 
   const isPartial = (mode === "partial" || mode === "interest_only") && finalValue > 0 && finalValue + 0.005 < remaining;
 
 
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
+
 
   return (
     <ModalPortal>
