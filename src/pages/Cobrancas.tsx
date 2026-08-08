@@ -1429,7 +1429,7 @@ const Cobrancas = () => {
           remaining={remaining}
           daysLate={daysLate}
           onCancel={() => setConfirmPayId(null)}
-          onConfirm={(value) => handleMarkPaid(confirmPayId, value)}
+          onConfirm={(value, waiveFee) => handleMarkPaid(confirmPayId, value, waiveFee)}
         />;
       })()}
 
