@@ -201,7 +201,7 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         <div className="flex gap-2">
           <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-2xl border border-border text-sm text-muted-foreground hover:bg-accent transition-colors">Cancelar</button>
           <button
-            onClick={() => onConfirm(finalValue)}
+            onClick={() => onConfirm(finalValue, mode === "no_fee")}
             disabled={finalValue <= 0}
             className="flex-1 px-4 py-3.5 rounded-xl text-sm font-bold bg-success text-success-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
           >
