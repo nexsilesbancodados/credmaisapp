@@ -561,6 +561,14 @@ export default function Investidores() {
 
       <NewInvestorDialog open={newOpen} onOpenChange={setNewOpen} onCreated={(id) => { setSelectedId(id); void load(); }} />
 
+      {editId && investors.find((i) => i.id === editId) && (
+        <EditInvestorDialog
+          investor={investors.find((i) => i.id === editId)!}
+          onClose={() => setEditId(null)}
+          onSaved={() => { setEditId(null); void load(); }}
+        />
+      )}
+
       {selected && (
         <NewLoanDialog
           open={newLoanOpen}
