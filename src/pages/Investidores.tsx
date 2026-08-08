@@ -120,6 +120,15 @@ export default function Investidores() {
     toast({ title: "Link copiado!", description: url });
   };
 
+  /** Dar baixa: abre o pagamento do empréstimo aberto mais próximo do vencimento. */
+  const darBaixa = (investorId: string) => {
+    const aberto = loans
+      .filter((l) => l.investor_id === investorId && l.status !== "paid")
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+    if (!aberto) { toast({ title: "Nenhum empréstimo em aberto", variant: "destructive" }); return; }
+    setPayOpen(aberto.id);
+  };
+
   const regenerateToken = async (id: string) => {
     const { data, error } = await supabase.rpc("investor_regenerate_token" as never, { _investor_id: id } as never);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
