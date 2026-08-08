@@ -391,12 +391,6 @@ export default function Investidores() {
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => setExpandedId(inv.id)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/85 px-3 py-2.5 text-xs font-bold text-primary-foreground transition-all hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] focus-ring"
-                      >
-                        <ExternalLink size={13} /> Abrir perfil
-                      </button>
-                      <button
                         onClick={() => copyPortal(inv.access_token)}
                         title="Copiar link do portal"
                         className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
