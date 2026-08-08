@@ -634,7 +634,7 @@ export default function Investidores() {
           onCreated={() => void load()}
         />
       )}
-      {payOpen && (
+      {payOpen && loans.some((l) => l.id === payOpen) && (
         <PayLoanDialog
           loanId={payOpen}
           loan={loans.find((l) => l.id === payOpen)!}
@@ -642,6 +642,14 @@ export default function Investidores() {
           onPaid={() => { setPayOpen(null); void load(); }}
         />
       )}
+      {editLoanId && loans.some((l) => l.id === editLoanId) && (
+        <EditLoanDialog
+          loan={loans.find((l) => l.id === editLoanId)!}
+          onClose={() => setEditLoanId(null)}
+          onSaved={() => { setEditLoanId(null); void load(); }}
+        />
+      )}
+
     </>
   );
 }
