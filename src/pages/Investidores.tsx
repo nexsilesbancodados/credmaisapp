@@ -38,6 +38,10 @@ export type Loan = {
 
 export default function Investidores() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  /** Abre o perfil completo do investidor em página própria (igual ao perfil do cliente). */
+  const openProfile = (id: string) => navigate(`/investidores/${id}`);
+
 
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
