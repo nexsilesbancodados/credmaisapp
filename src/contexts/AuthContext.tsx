@@ -1,12 +1,15 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { isSuperAdminEmail } from "@/lib/admin";
+
+export type AuthProfile = Database["public"]["Tables"]["profiles"]["Row"];
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: any | null;
+  profile: AuthProfile | null;
   /**
    * Admin da PLATAFORMA (dono do app) — quem enxerga /admin e as configurações
    * globais. Fonte única de verdade: a função `is_admin()` do banco, que checa
@@ -34,7 +37,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 

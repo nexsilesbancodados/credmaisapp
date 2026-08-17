@@ -47,6 +47,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [access, setAccess] = useState<AccessState>("checking");
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const { settings: platform } = usePlatformSettings();
+  const trialEndsAt = profile?.trial_ends_at ?? null;
+  const subscriptionExpiresAt = profile?.subscription_expires_at ?? null;
+  const userEmail = user?.email ?? null;
 
   useEffect(() => {
     if (loading || !user?.id) return;
@@ -57,11 +60,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    const trialOk =
-      profile?.trial_ends_at && new Date(profile.trial_ends_at).getTime() > Date.now();
-    const profileSubOk =
-      (profile as any)?.subscription_expires_at &&
-      new Date((profile as any).subscription_expires_at).getTime() > Date.now();
+    const trialOk = Boolean(
+      trialEndsAt && new Date(trialEndsAt).getTime() > Date.now(),
+    );
+    const profileSubOk = Boolean(
+      subscriptionExpiresAt && new Date(subscriptionExpiresAt).getTime() > Date.now(),
+    );
 
     // Profile data is authoritative. Do not let an old denied cache keep a newly
     // activated customer locked out after Mercado Pago confirms the subscription.
@@ -109,7 +113,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       const { data: sub } = await supabase
         .from("subscriptions")
         .select("status")
-        .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+        .or(`user_id.eq.${user.id},email.eq.${userEmail ?? ""}`)
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -130,7 +134,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     })();
 
     return () => { cancelled = true; };
-  }, [user?.id, isPlatformAdmin, profile?.trial_ends_at, (profile as any)?.subscription_expires_at, loading]);
+  }, [user?.id, userEmail, isPlatformAdmin, trialEndsAt, subscriptionExpiresAt, loading]);
 
   // Se o navegador tem sessão do portal do cliente, jamais permite o app do credor.
   if (hasPortalSession()) {
