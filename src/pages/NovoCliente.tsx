@@ -790,7 +790,8 @@ const NovoCliente = () => {
                 if (step > 2) setStep(step - 1);
                 else navigate(`/clientes/${existingClientId}`);
               } else {
-                step > 1 ? setStep(step - 1) : navigate("/clientes");
+                if (step > 1) setStep(step - 1);
+                else navigate("/clientes");
               }
             }}
             className="p-2.5 rounded-xl hover:bg-card/60 text-muted-foreground transition-colors"
@@ -1776,7 +1777,8 @@ const NovoCliente = () => {
               if (step > 2) setStep(step - 1);
               else navigate(`/clientes/${existingClientId}`);
             } else {
-              step > 1 ? setStep(step - 1) : navigate("/clientes");
+              if (step > 1) setStep(step - 1);
+              else navigate("/clientes");
             }
           }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"

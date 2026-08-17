@@ -50,7 +50,7 @@ export default function DailyBriefing() {
 
   useEffect(() => {
     if (user) fetchBriefing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [user?.id]);
 
   if (!data && !loading && !error) return null;

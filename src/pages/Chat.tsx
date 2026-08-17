@@ -196,7 +196,7 @@ const Chat = () => {
     setLastMsgByDm(lastDmMap);
   };
 
-  useEffect(() => { computeUnread(); /* eslint-disable-next-line */ }, [memberships, dmThreads, user]);
+  useEffect(() => { computeUnread(); }, [memberships, dmThreads, user]);
 
   // Recompute unread when any new message arrives globally
   useEffect(() => {
@@ -206,7 +206,7 @@ const Chat = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, () => computeUnread())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    // eslint-disable-next-line
+
   }, [user, memberships, dmThreads]);
 
   // ============ MESSAGES + REACTIONS for current scope ============
@@ -267,7 +267,7 @@ const Chat = () => {
       .subscribe();
     msgChannelRef.current = ch;
     return () => { msgChannelRef.current = null; supabase.removeChannel(ch); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [scope, memberships]);
 
   const markScopeAsRead = async () => {

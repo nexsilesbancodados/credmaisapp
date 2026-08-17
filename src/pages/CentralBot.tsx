@@ -233,7 +233,7 @@ const CentralBot = () => {
       next.set("tab", tab);
       setParams(next, { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [tab]);
 
   return (

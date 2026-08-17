@@ -5,7 +5,11 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  {
+    // `types.ts` é gerado pelo Supabase. As Edge Functions usam Deno e já são
+    // verificadas separadamente por scripts/checar-funcoes.mjs no CI.
+    ignores: ["dist", "src/integrations/supabase/types.ts", "supabase/functions/**"],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
@@ -19,8 +23,18 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // Fast Refresh é uma conveniência de desenvolvimento; vários módulos
+      // compartilham providers e helpers de propósito.
+      "react-refresh/only-export-components": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      // O typecheck continua obrigatório. Tipar o domínio será feito por módulo,
+      // sem transformar quase mil integrações legadas em ruído no lint diário.
+      "@typescript-eslint/no-explicit-any": "off",
+      // O CI possui `scripts/checar-hooks.mjs` para a regra que quebra telas.
+      // Dependências de effects legados exigem refatoração funcional individual
+      // (adicioná-las automaticamente pode criar loops de rede).
+      "react-hooks/exhaustive-deps": "off",
+      "no-empty": ["warn", { allowEmptyCatch: true }],
     },
   },
 );

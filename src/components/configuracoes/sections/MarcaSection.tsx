@@ -319,7 +319,7 @@ const MarcaSection = ({ ctx }: SectionProps) => {
               </p>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Texto do Rodapé</label>
-                <input value={form.footer_text} onChange={(e) => setForm({ ...form, footer_text: e.target.value })} placeholder="© 2025 CREDMAIS APP · TODOS OS DIREITOS RESERVADOS" className={inputCls} />
+                <input value={form.footer_text} onChange={(e) => setForm({ ...form, footer_text: e.target.value })} placeholder={`© ${new Date().getFullYear()} CREDMAIS APP · TODOS OS DIREITOS RESERVADOS`} className={inputCls} />
                 <p className="text-[10px] text-muted-foreground mt-1">Aparece no login e no portal do cliente</p>
               </div>
             </div>

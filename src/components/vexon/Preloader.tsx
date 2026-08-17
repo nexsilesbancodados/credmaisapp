@@ -75,7 +75,7 @@ export const Preloader = ({ onComplete }: { onComplete: () => void }) => {
       return { width, height };
     };
 
-    let dims = resizeCanvas() || { width: window.innerWidth, height: window.innerHeight };
+    const dims = resizeCanvas() || { width: window.innerWidth, height: window.innerHeight };
     let w = dims.width;
     let h = dims.height;
 

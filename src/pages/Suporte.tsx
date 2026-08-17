@@ -119,7 +119,7 @@ const Suporte = () => {
       .on("postgres_changes" as any, { event: "*", schema: "public", table: "support_tickets", filter: `user_id=eq.${user.id}` }, () => fetchTickets())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [user]);
 
   useEffect(() => {

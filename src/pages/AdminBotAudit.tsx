@@ -85,7 +85,7 @@ export default function AdminBotAudit() {
 
   useEffect(() => {
     if (user) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [user?.id]);
 
   const kpis = useMemo(() => {

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import SectionRenderer from "@/components/configuracoes/SectionRenderer";
@@ -457,7 +457,7 @@ const Configuracoes = () => {
   useEffect(() => {
     const allIds = visibleGroups.flatMap(g => g.items.map(i => i.id));
     if (allIds.length && !allIds.includes(tab)) setTab(allIds[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [search]);
 
   const configSteps = [

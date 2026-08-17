@@ -188,7 +188,7 @@ export default function WhatsAppInbox() {
         (p) => setMessages(prev => prev.map(m => m.id === (p.new as Message).id ? p.new as Message : m)))
       .subscribe();
 
-    
+
     return () => { mounted = false; supabase.removeChannel(ch); };
   }, [selectedId, user]);
 
@@ -230,7 +230,7 @@ export default function WhatsAppInbox() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [selectedId, conversations, search, filter, draft]);
 
   const filtered = useMemo(() => {

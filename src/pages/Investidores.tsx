@@ -83,7 +83,7 @@ export default function Investidores() {
     setLoading(false);
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [user?.id]);
+  useEffect(() => { void load();   }, [user?.id]);
 
   const selected = investors.find((i) => i.id === selectedId) || null;
   const selectedLoans = useMemo(

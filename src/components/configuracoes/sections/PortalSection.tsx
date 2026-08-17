@@ -55,14 +55,28 @@ const PortalSection = ({ ctx }: SectionProps) => {
               </p>
             </div>
 
-            {/* Acesso do portal: somente CPF */}
+            {/* Segurança do acesso ao portal */}
             <div className="space-y-2 p-4 rounded-2xl border border-border bg-accent/5">
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Shield size={12} /> Segurança do acesso
               </p>
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                O acesso ao portal é feito apenas com o CPF do cliente — sem senha e sem data de nascimento.
+                Escolha se o cliente também deve confirmar a data de nascimento além do CPF.
               </p>
+              <label className="flex items-center justify-between gap-4 pt-2 cursor-pointer">
+                <span>
+                  <span className="block text-xs font-medium text-foreground">Exigir data de nascimento</span>
+                  <span className="block text-[10px] text-muted-foreground mt-0.5">
+                    Recomendado para reduzir tentativas de acesso usando apenas um CPF conhecido.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={form.portal_require_birth_date}
+                  onChange={(e) => setForm({ ...form, portal_require_birth_date: e.target.checked })}
+                  className="h-4 w-4 shrink-0 accent-primary"
+                />
+              </label>
             </div>
 
 

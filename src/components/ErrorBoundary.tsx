@@ -42,7 +42,7 @@ class ErrorBoundaryInner extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // eslint-disable-next-line no-console
+
     console.error("[ErrorBoundary]", error, info.componentStack);
 
     // Registra em `client_errors` para o dono do app ver em /admin → Logs.

@@ -114,7 +114,12 @@ const Cobrancas = () => {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [groupMode, setGroupMode] = useState<"expanded" | "collapsed">("collapsed");
   const toggleGroupCollapse = useCallback((cid: string) => {
-    setCollapsed(prev => { const n = new Set(prev); n.has(cid) ? n.delete(cid) : n.add(cid); return n; });
+    setCollapsed(prev => {
+      const n = new Set(prev);
+      if (n.has(cid)) n.delete(cid);
+      else n.add(cid);
+      return n;
+    });
   }, []);
   const [historyFor, setHistoryFor] = useState<{ installmentId: string; clientName: string } | null>(null);
   const [showAutomation, setShowAutomation] = useState(false);
@@ -1563,7 +1568,10 @@ const Cobrancas = () => {
 
         const toggleAll = () => setCobrarAteSelected(allChecked ? new Set() : new Set(allIds));
         const toggleOne = (id: string) => setCobrarAteSelected(prev => {
-          const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+          const n = new Set(prev);
+          if (n.has(id)) n.delete(id);
+          else n.add(id);
+          return n;
         });
 
         const cobrarSelecionados = () => {

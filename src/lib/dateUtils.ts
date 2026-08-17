@@ -17,9 +17,9 @@ export function parseLocalDate(input: string | Date | null | undefined): Date | 
   if (!s) return null;
 
   // DD/MM/YYYY ou DD-MM-YYYY
-  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  const dmy = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (dmy) {
-    let [, d, m, y] = dmy;
+    const [, d, m, y] = dmy;
     let year = parseInt(y);
     if (year < 100) year += 2000;
     const day = parseInt(d);

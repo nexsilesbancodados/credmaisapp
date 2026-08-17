@@ -43,7 +43,7 @@ export default function InvestidorDetalhe() {
     setLoading(false);
   };
 
-  useEffect(() => { void load(); /* eslint-disable-next-line */ }, [user?.id, id]);
+  useEffect(() => { void load();   }, [user?.id, id]);
 
   const s = useMemo(() => {
     const active = loans.filter((l) => l.status !== "paid");

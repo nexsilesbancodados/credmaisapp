@@ -49,7 +49,7 @@ const defaults: WhiteLabelConfig = {
   sidebarStyle: "default",
   loginTitle: "CREDMAIS APP",
   loginSubtitle: "SISTEMA DE GESTÃO DE EMPRÉSTIMOS",
-  footerText: "© 2025 CREDMAIS APP · TODOS OS DIREITOS RESERVADOS",
+  footerText: `© ${new Date().getFullYear()} CREDMAIS APP · TODOS OS DIREITOS RESERVADOS`,
   borderRadius: "16",
   fontFamily: "default",
   modulesEnabled: DEFAULT_MODULES,

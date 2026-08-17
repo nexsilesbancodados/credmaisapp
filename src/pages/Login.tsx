@@ -111,7 +111,7 @@ const Login = () => {
   const logoSrc = config.companyLogo || eagleLogo;
   const brandTitle = config.loginTitle || config.companyName || "CREDMAIS APP";
   const brandSubtitle = config.loginSubtitle || "SISTEMA DE GESTÃO DE EMPRÉSTIMOS";
-  const footerText = config.footerText || "© 2025 CREDMAIS APP · TODOS OS DIREITOS RESERVADOS";
+  const footerText = config.footerText || `© ${new Date().getFullYear()} CREDMAIS APP · TODOS OS DIREITOS RESERVADOS`;
 
   // Força da senha (apenas no registro)
   const passwordStrength = useMemo(() => {

@@ -57,7 +57,7 @@ export const NotificationsBell = ({ token }: Props) => {
     load();
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [token]);
 
   useEffect(() => {

@@ -51,7 +51,7 @@ const CobradorExterno = () => {
       setToken(saved);
       void loginWithToken(saved, true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   // Tudo vem do payload da RPC: clientes atribuídos, parcelas de cada um e os

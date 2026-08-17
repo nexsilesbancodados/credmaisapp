@@ -220,7 +220,7 @@ const Lucros = () => {
       }).reduce((s: number, p: any) => s + Number(p.amount), 0);
       return { month: monthStr, amount };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [profits]);
   const maxMonthly = Math.max(...monthlyData.map(m => m.amount), 1);
 

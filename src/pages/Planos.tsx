@@ -131,7 +131,7 @@ const Planos = () => {
       </section>
 
       <footer className="py-10 text-center text-white/30 text-xs tracking-wider">
-        © 2025 CREDMAIS APP · TODOS OS DIREITOS RESERVADOS
+        © {new Date().getFullYear()} CREDMAIS APP · TODOS OS DIREITOS RESERVADOS
       </footer>
     </div>
   );

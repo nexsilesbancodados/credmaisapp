@@ -57,7 +57,8 @@ const ClienteDetalhe = () => {
   const [expandedContracts, setExpandedContracts] = useState<Set<string>>(new Set());
   const toggleContract = (cid: string) => setExpandedContracts(prev => {
     const n = new Set(prev);
-    n.has(cid) ? n.delete(cid) : n.add(cid);
+    if (n.has(cid)) n.delete(cid);
+    else n.add(cid);
     return n;
   });
 
@@ -163,7 +164,7 @@ const ClienteDetalhe = () => {
     if (last.max_interest_cap_percent != null) setLoanMaxInterestCap(String(last.max_interest_cap_percent));
     // valueMode segue o padrão do wizard: "installment" quando o modo é parcelas.
     setLoanValueMode(last.loan_mode === "installments" ? "installment" : "rate");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [newLoanMode]);
 
 
@@ -586,7 +587,7 @@ const ClienteDetalhe = () => {
       setEditContractSaving(false);
     }
   };
-  
+
   const handleDeleteContract = async (contractId: string) => {
     const ok = await confirm({
       title: "Excluir Empréstimo?",
@@ -604,9 +605,9 @@ const ClienteDetalhe = () => {
       await supabase.from("transactions").delete().eq("contract_id", contractId);
       // Deleta o contrato
       const { error } = await supabase.from("contracts").delete().eq("id", contractId);
-      
+
       if (error) throw error;
-      
+
       toast({ title: "Empréstimo excluído com sucesso!" });
       invAll();
     } catch (err: any) {

@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 // Portal session utilities — o portal do cliente é 100% separado do app do credor.
 // Cliente do portal NUNCA deve conseguir acessar rotas do app principal.
 const PORTAL_SESSION_KEY = "portal-cliente-session";
@@ -39,13 +41,10 @@ export const clearPortalSession = () => {
 export const performFullPortalLogout = async (): Promise<void> => {
   // 1) Sign out do supabase (invalida refresh token + limpa storage do SDK)
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
-    try {
-      await supabase.auth.signOut({ scope: "global" } as any);
-    } catch {
-      await supabase.auth.signOut().catch(() => {});
-    }
-  } catch {}
+    await supabase.auth.signOut({ scope: "global" });
+  } catch {
+    await supabase.auth.signOut().catch(() => {});
+  }
 
   // 2) Limpar sessionStorage inteiro (portal, tentativas, cache de rota)
   try {
