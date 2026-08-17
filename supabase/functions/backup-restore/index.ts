@@ -24,6 +24,9 @@ const ORDEM_TABELAS = [
   "collector_assignments", "subscriptions", "notifications", "client_notifications",
   "collection_attempts", "audit_logs", "bot_actions_log", "support_tickets",
   "support_ticket_messages", "whatsapp_conversations", "whatsapp_messages",
+  "whatsapp_notes", "whatsapp_scheduled_messages", "message_templates", "leads",
+  "pledges", "ai_conversations", "chat_channel_members", "chat_messages",
+  "chat_message_reactions", "client_errors", "user_roles",
 ];
 
 const TABLE_WITHOUT_USER_ID = new Set(["support_ticket_messages"]);
@@ -111,11 +114,18 @@ Deno.serve(async (req) => {
   const relatorio: Record<string, { no_backup: number; na_base_hoje: number; gravados?: number }> = {};
   for (const tabela of ORDEM_TABELAS) {
     const linhas = Array.isArray(dump[tabela]) ? dump[tabela] : [];
-    let countQuery = admin.from(tabela).select("*", { count: "exact", head: true });
+    let count = 0;
     if (tabela === "support_ticket_messages") {
-      countQuery = ticketIds.size ? countQuery.in("ticket_id", [...ticketIds]) : null;
-    } else countQuery = countQuery.eq("user_id", userId);
-    const { count } = countQuery ? await countQuery : { count: 0 };
+      if (ticketIds.size) {
+        const result = await admin.from(tabela).select("*", { count: "exact", head: true })
+          .in("ticket_id", [...ticketIds]);
+        count = result.count ?? 0;
+      }
+    } else {
+      const result = await admin.from(tabela).select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      count = result.count ?? 0;
+    }
     relatorio[tabela] = { no_backup: linhas.length, na_base_hoje: count ?? 0 };
   }
 
@@ -132,19 +142,21 @@ Deno.serve(async (req) => {
 
   // Gravação: upsert por id. Nunca apaga — linhas criadas depois do backup
   // permanecem. Restaurar é devolver o que existia, não voltar o relógio.
-  const erros: string[] = [];
+  const { data: restored, error: restoreError } = await admin.rpc("restore_user_backup_atomic", {
+    _user_id: userId,
+    _dump: dump,
+  });
+  if (restoreError) {
+    return json({ error: "restauracao_revertida", detail: restoreError.message, caminho }, 409);
+  }
   for (const tabela of ORDEM_TABELAS) {
-    const linhas = Array.isArray(dump[tabela]) ? dump[tabela] : [];
-    if (!linhas.length) continue;
-    const { error } = await admin.from(tabela).upsert(linhas, { onConflict: "id" });
-    if (error) erros.push(`${tabela}: ${error.message}`);
-    else relatorio[tabela].gravados = linhas.length;
+    relatorio[tabela].gravados = Number((restored as any)?.counts?.[tabela] ?? 0);
   }
 
   return json({
     modo: "restauracao",
     caminho,
     relatorio,
-    erros: erros.length ? erros : undefined,
+    atomica: true,
   });
 });

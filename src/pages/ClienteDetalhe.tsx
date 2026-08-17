@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAll } from "@/lib/fetchAll";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import EditClienteModal from "@/components/cliente-detalhe/modals/EditClienteModal";
@@ -137,8 +138,8 @@ const ClienteDetalhe = () => {
   const { data: contracts = [] } = useQuery({
     queryKey: ["client-contracts", id],
     queryFn: async () => {
-      const { data } = await supabase.from("contracts").select("*").eq("client_id", id!).order("created_at", { ascending: false });
-      return data || [];
+      return fetchAll((from, to) => supabase.from("contracts").select("*")
+        .eq("client_id", id!).order("created_at", { ascending: false }).range(from, to));
     },
     enabled: !!id && !!user,
     staleTime: 30_000,
@@ -172,7 +173,9 @@ const ClienteDetalhe = () => {
   const { data: installments = [] } = useQuery({
     queryKey: ["client-installments", id],
     queryFn: async () => {
-      const { data } = await supabase.from("contract_installments").select("*, contracts(capital, frequency, daily_interest_percent, max_interest_cap_percent)").eq("client_id", id!).order("due_date");
+      const data = await fetchAll((from, to) => supabase.from("contract_installments")
+        .select("*, contracts(capital, frequency, daily_interest_percent, max_interest_cap_percent)")
+        .eq("client_id", id!).order("due_date").range(from, to));
       const now = new Date();
       return (data || []).map((i: any) => i.status === "pending" && new Date(i.due_date) < now ? { ...i, status: "overdue" } : i);
     },
@@ -193,8 +196,8 @@ const ClienteDetalhe = () => {
   const { data: profits = [] } = useQuery({
     queryKey: ["client-profits", id],
     queryFn: async () => {
-      const { data } = await supabase.from("profits").select("*").eq("client_id", id!).order("date", { ascending: false });
-      return data || [];
+      return fetchAll((from, to) => supabase.from("profits").select("*")
+        .eq("client_id", id!).order("date", { ascending: false }).range(from, to));
     },
     enabled: !!id && !!user,
     staleTime: 30_000,

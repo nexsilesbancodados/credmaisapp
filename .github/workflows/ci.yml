@@ -73,7 +73,7 @@ jobs:
 
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test e2e/dinheiro.spec.ts
+      - run: npx playwright test e2e/dinheiro.spec.ts e2e/responsive-accessibility.spec.ts
 
   segredos:
     name: Nenhum segredo no diff

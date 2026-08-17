@@ -5,6 +5,7 @@ import { callAnthropic } from "../_shared/anthropic.ts";
 import { parseMemory, summarizeIntents, lastApproach, pushIntent, serializeMemory } from "../_shared/memory.ts";
 import { renderTemplate, renderMessage } from "../_shared/messageTemplate.ts";
 import { assertReplySafe } from "../_shared/bot_utils.ts";
+import { alertPlatformAdmins } from "../_shared/operations.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,16 +94,16 @@ serve(async (req) => {
 
     for (const settings of allSettings) {
       const userId = settings.user_id;
-      const profile: any = profilesById.get(userId);
-      const entitlementEnd = profile?.subscription_type === "trial"
-        ? profile?.trial_ends_at || profile?.subscription_expires_at
-        : profile?.subscription_expires_at;
-      const expired = profile?.subscription_type !== "lifetime" &&
+      const entitlementProfile: any = profilesById.get(userId);
+      const entitlementEnd = entitlementProfile?.subscription_type === "trial"
+        ? entitlementProfile?.trial_ends_at || entitlementProfile?.subscription_expires_at
+        : entitlementProfile?.subscription_expires_at;
+      const expired = entitlementProfile?.subscription_type !== "lifetime" &&
         (!entitlementEnd || new Date(entitlementEnd).getTime() <= now.getTime());
-      if (!profile || profile.is_blocked || profile.plan_tier === "essencial" || expired) {
-        const reason = !profile ? "Perfil não encontrado"
-          : profile.is_blocked ? "Conta bloqueada"
-          : profile.plan_tier === "essencial" ? "Plano Essencial: automações desativadas"
+      if (!entitlementProfile || entitlementProfile.is_blocked || entitlementProfile.plan_tier === "essencial" || expired) {
+        const reason = !entitlementProfile ? "Perfil não encontrado"
+          : entitlementProfile.is_blocked ? "Conta bloqueada"
+          : entitlementProfile.plan_tier === "essencial" ? "Plano Essencial: automações desativadas"
           : "Assinatura expirada";
         results.push({ user_id: userId, sent: 0, skipped: 1, errors: [reason] });
         continue;
@@ -672,6 +673,19 @@ ${extraDiversity}`;
           type: "collection_auto", from: "Bot de Cobranças", link: "/auditoria",
         });
       }
+    }
+
+    const operationalErrors = results.flatMap((result: any) =>
+      (result.errors || []).filter((message: string) =>
+        !/Plano Essencial|Dia não útil|Sem regras|Limite diário|Assinatura expirada|Conta bloqueada/.test(message),
+      ).map((message: string) => `${result.user_id}: ${message}`),
+    );
+    if (operationalErrors.length) {
+      await alertPlatformAdmins(
+        supabase,
+        "auto-collection",
+        `Cobrança automática terminou com ${operationalErrors.length} erro(s): ${operationalErrors.slice(0, 3).join(" | ")}`,
+      );
     }
 
     return new Response(

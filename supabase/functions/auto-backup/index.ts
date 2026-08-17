@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { alertPlatformAdmins } from "../_shared/operations.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,6 +14,9 @@ const TABLES = [
   "investors", "investor_loans", "investor_payments", "subscriptions",
   "notifications", "client_notifications", "collection_attempts", "audit_logs",
   "bot_actions_log", "support_tickets", "whatsapp_conversations", "whatsapp_messages",
+  "ai_conversations", "chat_channel_members", "chat_messages", "chat_message_reactions",
+  "client_errors", "leads", "message_templates", "pledges", "user_roles",
+  "whatsapp_notes", "whatsapp_scheduled_messages",
 ];
 
 const PAGE_SIZE = 1000;
@@ -210,6 +214,10 @@ serve(async (req) => {
       }
     } catch (e) {
       errors.push(`expurgo_orfaos: ${e instanceof Error ? e.message : "?"}`);
+    }
+
+    if (errors.length) {
+      await alertPlatformAdmins(supabase, "auto-backup", `Backup terminou com ${errors.length} erro(s): ${errors.slice(0, 3).join(" | ")}`);
     }
 
     return new Response(
