@@ -702,6 +702,8 @@ export type Database = {
           paid_amount: number | null
           paid_at: string | null
           payment_method: string | null
+          receipt_review_status: string
+          receipt_storage_path: string | null
           receipt_url: string | null
           status: string
           user_id: string
@@ -722,6 +724,8 @@ export type Database = {
           paid_amount?: number | null
           paid_at?: string | null
           payment_method?: string | null
+          receipt_review_status?: string
+          receipt_storage_path?: string | null
           receipt_url?: string | null
           status?: string
           user_id: string
@@ -742,6 +746,8 @@ export type Database = {
           paid_amount?: number | null
           paid_at?: string | null
           payment_method?: string | null
+          receipt_review_status?: string
+          receipt_storage_path?: string | null
           receipt_url?: string | null
           status?: string
           user_id?: string
@@ -2086,6 +2092,8 @@ export type Database = {
           description: string
           id: string
           installment_id: string | null
+          investor_payment_id: string | null
+          source_key: string | null
           type: string
           user_id: string
         }
@@ -2099,6 +2107,8 @@ export type Database = {
           description: string
           id?: string
           installment_id?: string | null
+          investor_payment_id?: string | null
+          source_key?: string | null
           type?: string
           user_id: string
         }
@@ -2112,6 +2122,8 @@ export type Database = {
           description?: string
           id?: string
           installment_id?: string | null
+          investor_payment_id?: string | null
+          source_key?: string | null
           type?: string
           user_id?: string
         }
@@ -2655,6 +2667,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_client_contract: {
+        Args: {
+          _client: Json
+          _client_id: string | null
+          _contract: Json
+          _installments: Json
+        }
+        Returns: Json
+      }
       delete_client_cascade: {
         Args: { _client_id: string }
         Returns: undefined
@@ -2706,8 +2727,31 @@ export type Database = {
         }
         Returns: Json
       }
+      pay_installment_waiving_fees: {
+        Args: {
+          _installment_id: string
+          _method?: string
+          _paid_total: number
+          _receipt_url?: string
+        }
+        Returns: Json
+      }
+      register_investor_payment: {
+        Args: {
+          _amount: number
+          _loan_id: string
+          _method?: string
+          _notes?: string
+          _receipt_url?: string
+        }
+        Returns: Json
+      }
       portal_client_login: {
         Args: { _birth_date?: string; _cpf: string }
+        Returns: Json
+      }
+      portal_client_login_for_owner: {
+        Args: { _birth_date: string; _cpf: string; _owner_id: string }
         Returns: Json
       }
       portal_client_mark_notifications_read: {
@@ -2732,6 +2776,10 @@ export type Database = {
       }
       reverse_installment_payment: {
         Args: { _installment_id: string }
+        Returns: Json
+      }
+      reverse_last_investor_payment: {
+        Args: { _loan_id: string }
         Returns: Json
       }
       search_clients_by_document: {

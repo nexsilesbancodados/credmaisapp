@@ -91,7 +91,6 @@ export default function InvestidorDetalhe() {
 
   const deleteLoan = async (loanId: string) => {
     if (!confirm("Excluir este empréstimo e os pagamentos registrados nele?")) return;
-    await supabase.from("investor_payments" as never).delete().eq("loan_id", loanId);
     const { error } = await supabase.from("investor_loans" as never).delete().eq("id", loanId);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Empréstimo excluído" });
@@ -101,23 +100,11 @@ export default function InvestidorDetalhe() {
   const undoLastPayment = async (loanId: string) => {
     const loan = loans.find((l) => l.id === loanId);
     if (!loan) return;
-    const { data: pays, error: payErr } = await supabase
-      .from("investor_payments" as never)
-      .select("id, amount").eq("loan_id", loanId)
-      .order("paid_at", { ascending: false }).limit(1);
-    if (payErr) { toast({ title: "Erro", description: payErr.message, variant: "destructive" }); return; }
-    const last = (pays as any[])?.[0];
-    if (!last && Number(loan.paid_amount) <= 0) {
+    if (Number(loan.paid_amount) <= 0) {
       toast({ title: "Nenhum pagamento para desfazer", variant: "destructive" }); return;
     }
-    const valor = last ? Number(last.amount) : Number(loan.paid_amount);
-    if (!confirm(`Desfazer o pagamento de ${brl(valor)}?`)) return;
-    if (last) await supabase.from("investor_payments" as never).delete().eq("id", last.id);
-    const { error } = await supabase.from("investor_loans" as never).update({
-      paid_amount: Math.max(0, Number(loan.paid_amount) - valor),
-      status: "active",
-      paid_at: null,
-    } as never).eq("id", loanId);
+    if (!confirm("Desfazer o último pagamento deste empréstimo?")) return;
+    const { error } = await supabase.rpc("reverse_last_investor_payment", { _loan_id: loanId });
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Pagamento desfeito" });
     void load();

@@ -8,6 +8,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function removeAllBackupFiles(admin: any, userId: string): Promise<number> {
+  let removed = 0;
+  // Sempre busca a primeira pagina: depois da remocao, a proxima leva os itens
+  // restantes para o inicio. Assim nao pulamos arquivos ao paginar e nao existe
+  // mais o teto silencioso de mil backups.
+  while (true) {
+    const { data: files, error } = await admin.storage
+      .from("backups")
+      .list(userId, { limit: 1000, offset: 0 });
+    if (error) throw error;
+    const paths = (files || [])
+      .filter((file: any) => file?.name)
+      .map((file: any) => `${userId}/${file.name}`);
+    if (!paths.length) return removed;
+    const { error: removeError } = await admin.storage.from("backups").remove(paths);
+    if (removeError) throw removeError;
+    removed += paths.length;
+    if (paths.length < 1000) return removed;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -50,13 +71,7 @@ serve(async (req) => {
     // que aquela pasta ficou órfã até a próxima varredura do auto-backup.
     let backupsRemovidos = 0;
     try {
-      const { data: arquivos } = await admin.storage.from("backups").list(user.id, { limit: 1000 });
-      const caminhos = (arquivos || []).map((a: any) => `${user.id}/${a.name}`);
-      if (caminhos.length) {
-        const { error: rmErr } = await admin.storage.from("backups").remove(caminhos);
-        if (rmErr) console.error("[delete-user-account] falha ao apagar backups:", rmErr);
-        else backupsRemovidos = caminhos.length;
-      }
+      backupsRemovidos = await removeAllBackupFiles(admin, user.id);
     } catch (e) {
       // Não bloqueia a exclusão da conta: o direito ao esquecimento vem primeiro,
       // e a varredura de pastas órfãs do auto-backup pega o resto.

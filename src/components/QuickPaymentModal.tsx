@@ -160,6 +160,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     ));
     setBulkSaving(false);
     const failed = updates.filter((r) => r.error).length;
+    const succeeded = items.filter((_, index) => !updates[index].error);
     if (failed > 0) { toast.error(`${failed} pagamento(s) falharam`); }
     if (failed < items.length) {
       toast.success(`${items.length - failed} parcela(s) quitadas · ${METHODS.find(m => m.value === method)?.label}`, {
@@ -167,7 +168,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
           label: "Desfazer",
           onClick: async () => {
             // Estorno pelo RPC, que também remove lucro e caixa da parcela.
-            await Promise.all(items.map((i: any) =>
+            await Promise.all(succeeded.map((i: any) =>
               supabase.rpc("reverse_installment_payment", { _installment_id: i.id })
             ));
             qc.invalidateQueries({ queryKey: ["quick-pay-installments"] });
@@ -185,34 +186,26 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
 
   const handlePartial = async (inst: any) => {
     const paidNow = Number(String(partialValue).replace(",", "."));
-    const remaining = Number(inst.amount);
+    const alreadyPaid = Number(inst.paid_amount || 0);
+    const remaining = Math.max(0, Number(inst.amount) - alreadyPaid);
     if (!paidNow || paidNow <= 0) { toast.error("Informe um valor válido"); return; }
     if (paidNow >= remaining) {
-      await handlePay(inst.id, remaining);
+      await handlePay(inst.id, alreadyPaid + remaining);
       setPartialFor(null); setPartialValue("");
       return;
     }
     setSaving(inst.id);
     const newRemaining = +(remaining - paidNow).toFixed(2);
-    const accumulated = +(Number(inst.paid_amount || 0) + paidNow).toFixed(2);
-    const { error } = await supabase.from("contract_installments")
-      .update({ amount: newRemaining, paid_amount: accumulated, payment_method: method })
-      .eq("id", inst.id);
+    const accumulated = +(alreadyPaid + paidNow).toFixed(2);
+    const { error } = await supabase.rpc("pay_installment", {
+      _installment_id: inst.id,
+      _paid_total: accumulated,
+      _mark_paid: false,
+      _method: method,
+    });
     setSaving(null);
     if (error) { toast.error("Erro ao registrar pagamento parcial"); return; }
-    toast.success(`Parcial: R$ ${fmtBRL(paidNow)} · Resta R$ ${fmtBRL(newRemaining)}`, {
-      action: {
-        label: "Desfazer",
-        onClick: async () => {
-          await supabase.from("contract_installments")
-            .update({ amount: remaining, paid_amount: Number(inst.paid_amount || 0) || null })
-            .eq("id", inst.id);
-          qc.invalidateQueries({ queryKey: ["quick-pay-installments"] });
-          qc.invalidateQueries({ queryKey: ["hoje"] });
-          toast.success("Desfeito");
-        }
-      }
-    });
+    toast.success(`Parcial: R$ ${fmtBRL(paidNow)} · Resta R$ ${fmtBRL(newRemaining)}`);
     setPartialFor(null); setPartialValue("");
     qc.invalidateQueries({ queryKey: ["quick-pay-installments"] });
     qc.invalidateQueries({ queryKey: ["hoje"] });

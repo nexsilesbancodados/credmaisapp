@@ -2,6 +2,7 @@ import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.
 // Daily AI briefing for the dashboard top card
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,6 +26,8 @@ Deno.serve(async (req) => {
     });
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Não autenticado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const entitlement = await enforceEntitlement(user.id, "daily-briefing", { capacity: 12 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
     const today = new Date();

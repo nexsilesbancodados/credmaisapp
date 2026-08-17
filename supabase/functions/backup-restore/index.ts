@@ -18,10 +18,27 @@ const corsHeaders = {
 
 // Ordem importa na gravação: pai antes de filho, senão a chave estrangeira falha.
 const ORDEM_TABELAS = [
-  "clients", "contracts", "contract_installments", "transactions",
-  "expenses", "profits", "goals", "notes", "todos", "settings",
-  "collectors", "collector_assignments", "vehicles", "rentals", "stock_items",
+  "clients", "investors", "collectors", "vehicles", "stock_items", "settings",
+  "contracts", "investor_loans", "rentals", "goals", "notes", "todos",
+  "contract_installments", "investor_payments", "transactions", "expenses", "profits",
+  "collector_assignments", "subscriptions", "notifications", "client_notifications",
+  "collection_attempts", "audit_logs", "bot_actions_log", "support_tickets",
+  "support_ticket_messages", "whatsapp_conversations", "whatsapp_messages",
 ];
+
+const TABLE_WITHOUT_USER_ID = new Set(["support_ticket_messages"]);
+
+async function listAllBackups(admin: any, userId: string): Promise<any[]> {
+  const files: any[] = [];
+  for (let offset = 0;; offset += 1000) {
+    const { data, error } = await admin.storage.from("backups").list(userId, {
+      limit: 1000, offset, sortBy: { column: "name", order: "desc" },
+    });
+    if (error) throw error;
+    files.push(...(data || []));
+    if ((data || []).length < 1000) return files;
+  }
+}
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -50,10 +67,9 @@ Deno.serve(async (req) => {
 
   // Sem data: lista o que existe para aquele usuário.
   if (!data) {
-    const { data: arquivos, error } = await admin.storage
-      .from("backups")
-      .list(userId, { limit: 1000, sortBy: { column: "name", order: "desc" } });
-    if (error) return json({ error: error.message }, 500);
+    let arquivos: any[];
+    try { arquivos = await listAllBackups(admin, userId); }
+    catch (error) { return json({ error: error instanceof Error ? error.message : "list_failed" }, 500); }
     return json({
       user_id: userId,
       disponiveis: (arquivos || []).map((a: any) => a.name.replace(/\.json$/, "")),
@@ -72,14 +88,34 @@ Deno.serve(async (req) => {
     return json({ error: "backup_corrompido", caminho }, 422);
   }
 
+  if (!dump || typeof dump !== "object" || Array.isArray(dump)) {
+    return json({ error: "backup_formato_invalido", caminho }, 422);
+  }
+  const manifest = (dump as any)._manifest;
+  const ticketIds = new Set((Array.isArray(dump.support_tickets) ? dump.support_tickets : [])
+    .map((ticket: any) => ticket.id));
+  for (const tabela of ORDEM_TABELAS) {
+    const linhas = Array.isArray(dump[tabela]) ? dump[tabela] : [];
+    if (manifest?.counts?.[tabela] != null && manifest.counts[tabela] !== linhas.length) {
+      return json({ error: "backup_contagem_invalida", tabela, caminho }, 422);
+    }
+    for (const linha of linhas) {
+      const ownerOk = TABLE_WITHOUT_USER_ID.has(tabela)
+        ? tabela === "support_ticket_messages" && ticketIds.has(linha.ticket_id)
+        : linha.user_id === userId;
+      if (!ownerOk) return json({ error: "backup_usuario_invalido", tabela, caminho }, 422);
+    }
+  }
+
   // Conferência: o que o arquivo tem × o que a base tem hoje.
   const relatorio: Record<string, { no_backup: number; na_base_hoje: number; gravados?: number }> = {};
   for (const tabela of ORDEM_TABELAS) {
     const linhas = Array.isArray(dump[tabela]) ? dump[tabela] : [];
-    const { count } = await admin
-      .from(tabela)
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
+    let countQuery = admin.from(tabela).select("*", { count: "exact", head: true });
+    if (tabela === "support_ticket_messages") {
+      countQuery = ticketIds.size ? countQuery.in("ticket_id", [...ticketIds]) : null;
+    } else countQuery = countQuery.eq("user_id", userId);
+    const { count } = countQuery ? await countQuery : { count: 0 };
     relatorio[tabela] = { no_backup: linhas.length, na_base_hoje: count ?? 0 };
   }
 
@@ -88,6 +124,7 @@ Deno.serve(async (req) => {
       modo: "conferencia",
       caminho,
       integro: true,
+      versao: manifest?.version ?? 1,
       relatorio,
       aviso: 'Nada foi gravado. Para restaurar de verdade, envie confirmar: "RESTAURAR".',
     });

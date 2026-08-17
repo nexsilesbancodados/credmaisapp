@@ -83,19 +83,28 @@ serve(async (req) => {
     }
 
     // Plano Essencial (R$199) não inclui automações/IA — pula esses usuários.
-    const { data: essencialProfiles } = await supabase
+    const { data: automationProfiles } = await supabase
       .from("profiles")
-      .select("id")
-      .eq("plan_tier", "essencial");
-    const essencialIds = new Set((essencialProfiles ?? []).map((p: any) => p.id));
+      .select("id, plan_tier, is_blocked, subscription_type, subscription_expires_at, trial_ends_at");
+    const profilesById = new Map((automationProfiles ?? []).map((p: any) => [p.id, p]));
 
     let totalSent = 0, totalEmail = 0, totalSkipped = 0;
     const results: any[] = [];
 
     for (const settings of allSettings) {
       const userId = settings.user_id;
-      if (essencialIds.has(userId)) {
-        results.push({ user_id: userId, sent: 0, skipped: 1, errors: ["Plano Essencial: automações desativadas"] });
+      const profile: any = profilesById.get(userId);
+      const entitlementEnd = profile?.subscription_type === "trial"
+        ? profile?.trial_ends_at || profile?.subscription_expires_at
+        : profile?.subscription_expires_at;
+      const expired = profile?.subscription_type !== "lifetime" &&
+        (!entitlementEnd || new Date(entitlementEnd).getTime() <= now.getTime());
+      if (!profile || profile.is_blocked || profile.plan_tier === "essencial" || expired) {
+        const reason = !profile ? "Perfil não encontrado"
+          : profile.is_blocked ? "Conta bloqueada"
+          : profile.plan_tier === "essencial" ? "Plano Essencial: automações desativadas"
+          : "Assinatura expirada";
+        results.push({ user_id: userId, sent: 0, skipped: 1, errors: [reason] });
         continue;
       }
       const errors: string[] = [];
@@ -484,11 +493,9 @@ ${extraDiversity}`;
             data: insts[0]?.due_date ? new Date(insts[0].due_date).toLocaleDateString("pt-BR") : "",
             juros: `R$ ${totalLateFees.toFixed(2)}`,
             pix: profile?.pix_key ?? "",
-            // Link genérico do portal: o cliente entra com CPF + data de
-            // nascimento. Esta função não emite token de sessão, e mandar um
-            // link com token por disparo automático aumentaria a exposição —
-            // o token abre o dossiê inteiro para quem receber a mensagem.
-            portal: `${(Deno.env.get("SITE_URL") ?? "https://www.credmaisapp.com.br").replace(/\/+$/, "")}/portal-cliente`,
+            // O identificador público do credor elimina ambiguidade entre
+            // cadastros iguais sem emitir um token que abriria o dossiê.
+            portal: `${(Deno.env.get("SITE_URL") ?? "https://www.credmaisapp.com.br").replace(/\/+$/, "")}/portal-cliente?o=${userId}`,
           };
 
           const template = templates?.find(t => t.name.toLowerCase().includes(matchingRule.template.toLowerCase()));

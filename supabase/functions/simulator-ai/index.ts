@@ -1,6 +1,7 @@
 // AI Simulator: returns smart insights and 3 alternative scenarios for a loan setup.
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
 import { getCallerUser } from "../_shared/guard.ts";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +20,8 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const entitlement = await enforceEntitlement(user.id, "simulator-ai", { capacity: 20 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");

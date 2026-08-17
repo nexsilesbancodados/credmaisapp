@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,6 +43,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const entitlement = await enforceEntitlement(user.id, "agent-chat", { completeOnly: true, capacity: 60 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
     const { messages, context } = await req.json();
 

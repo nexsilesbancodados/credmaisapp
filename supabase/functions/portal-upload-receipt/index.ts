@@ -20,13 +20,12 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const session_token = String(body.session_token || "").trim();
-    const cpf = String(body.cpf || "").replace(/\D/g, "");
     const installment_id = String(body.installment_id || "");
     const content_type = String(body.content_type || "");
     const filename = String(body.filename || "comprovante");
     const file_base64 = String(body.file_base64 || "");
 
-    if ((!session_token && cpf.length < 11) || !installment_id || !file_base64 || !ALLOWED.includes(content_type)) {
+    if (!session_token || !installment_id || !file_base64 || !ALLOWED.includes(content_type)) {
       return new Response(JSON.stringify({ error: "Dados inválidos" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -34,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: inst, error: instErr } = await supabase
       .from("contract_installments")
-      .select("id, client_id, installment_number, clients:client_id ( cpf_cnpj )")
+      .select("id, user_id, client_id, contract_id, installment_number")
       .eq("id", installment_id)
       .maybeSingle();
 
@@ -42,25 +41,13 @@ Deno.serve(async (req) => {
 
     // Autorização.
     //
-    // Preferimos o token de sessão do portal, que é o mesmo mecanismo do resto
-    // da área do cliente. O CPF sozinho ficou como caminho antigo: ele bastava
-    // para gravar um comprovante na parcela de quem se soubesse o CPF, enquanto
-    // o LOGIN do portal já exige CPF + data de nascimento desde julho. Era a
-    // única porta do portal que continuava com o critério fraco.
-    let autorizado = false;
-
-    if (session_token) {
-      const { data: sess } = await supabase
-        .from("portal_sessions")
-        .select("client_id")
-        .eq("token", session_token)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-      autorizado = !!sess && sess.client_id === inst.client_id;
-    } else {
-      const dbCpf = String((inst as any).clients?.cpf_cnpj || "").replace(/\D/g, "");
-      autorizado = dbCpf.length >= 11 && dbCpf === cpf;
-    }
+    const { data: sess } = await supabase
+      .from("portal_sessions")
+      .select("client_id")
+      .eq("token", session_token)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    const autorizado = !!sess && sess.client_id === inst.client_id;
 
     if (!autorizado) {
       return new Response(JSON.stringify({ error: "Sem permissão para esta parcela" }), {
@@ -89,9 +76,31 @@ Deno.serve(async (req) => {
     const { data: signed } = await supabase.storage.from("uploads").createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl || path;
 
-    await supabase.from("contract_installments")
-      .update({ receipt_url: url })
+    const { error: updateErr } = await supabase.from("contract_installments")
+      .update({ receipt_url: url, receipt_storage_path: path, receipt_review_status: "pending" })
       .eq("id", installment_id);
+    if (updateErr) {
+      await supabase.storage.from("uploads").remove([path]);
+      throw updateErr;
+    }
+
+    await supabase.from("client_notifications").upsert({
+      client_id: inst.client_id,
+      user_id: (inst as any).user_id,
+      installment_id,
+      type: "receipt_uploaded",
+      title: "Comprovante enviado",
+      message: `Comprovante da parcela #${inst.installment_number} recebido e aguardando conferência.`,
+      metadata: { storage_path: path },
+    }, { onConflict: "installment_id,type,dedupe_day", ignoreDuplicates: true });
+
+    await supabase.from("audit_logs").insert({
+      user_id: (inst as any).user_id,
+      action: "receipt_uploaded",
+      entity_type: "contract_installment",
+      entity_id: installment_id,
+      details: { client_id: inst.client_id, contract_id: (inst as any).contract_id, storage_path: path },
+    });
 
     return new Response(JSON.stringify({ ok: true, url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -514,6 +514,7 @@ const NovoCliente = () => {
       return;
     }
     setSaving(true);
+    let uploadedAvatarPath: string | null = null;
 
     try {
       const clientId = existingClientId || crypto.randomUUID();
@@ -524,16 +525,13 @@ const NovoCliente = () => {
         const path = `${user!.id}/client-avatars/${clientId}.${ext}`;
         const { error: uploadError } = await supabase.storage.from("uploads").upload(path, avatarFile, { upsert: true });
         if (!uploadError) {
+          uploadedAvatarPath = path;
           const signed = await getSignedUploadUrl(path);
           if (signed) avatar_url = signed;
         }
       }
 
-      // 1. Create client (only when not adding to an existing one)
-      if (!existingClientId) {
-        const { error: clientErr } = await supabase.from("clients").insert({
-          id: clientId,
-          user_id: user.id,
+      const clientPayload = existingClientId ? {} : {
           name: nome.trim(),
           email: email.trim() || null,
           phone: telefone.trim() || null,
@@ -545,16 +543,12 @@ const NovoCliente = () => {
           status: "Ativo",
           avatar_url,
           address: rua ? { cep, street: rua, number: numero, complement: complemento, neighborhood: bairro, city: cidade, state: estado } : null,
-        });
-        if (clientErr) throw clientErr;
-      }
+      };
 
-      // 2. Create contract
       const n = calc.numParcelas;
       const freqValue = frequency === "daily" ? `daily_${dailyMode}` : frequency;
-      const { data: contract, error: contractErr } = await supabase.from("contracts").insert({
-        user_id: user.id,
-        client_id: clientId,
+      const signatureToken = requireSignature ? crypto.randomUUID() : null;
+      const contractPayload = {
         capital: parseFloat(capital),
         interest_rate: valueMode === "installment" ? Number((calc as any).derivedRate?.toFixed(4) ?? 0) : parseFloat(taxaJuros),
         num_installments: n,
@@ -582,11 +576,11 @@ const NovoCliente = () => {
         attachments: attachments,
         investor_loan_id: investorLoanId,
         signature_status: requireSignature ? "pending" : "not_required",
-        signature_token: requireSignature ? crypto.randomUUID() : null,
-      } as any).select().single();
-      if (contractErr) throw contractErr;
+        signature_token: signatureToken,
+      };
 
-      // 3. Create installments — usa o schedule real (parcelas podem ter valores diferentes)
+      // O cronograma é calculado no cliente, mas cliente + contrato + parcelas
+      // são persistidos por uma única transação no banco.
       let dueDates: string[];
       if (loanMode === "bullet") {
         // Pagamento único N períodos no futuro
@@ -602,41 +596,19 @@ const NovoCliente = () => {
         );
       }
       const installments = dueDates.map((dd, i) => ({
-        user_id: user.id,
-        contract_id: contract.id,
-        client_id: clientId,
         installment_number: i + 1,
         amount: calc.schedule[i] ?? calc.installmentAmount,
         due_date: dd,
-        status: "pending",
       }));
-      const { error: instErr } = await supabase.from("contract_installments").insert(installments);
+      const { data: created, error: createError } = await (supabase as any).rpc("create_client_contract", {
+        _client_id: existingClientId || null,
+        _client: clientPayload,
+        _contract: contractPayload,
+        _installments: installments,
+      });
+      if (createError) throw createError;
 
-      if (instErr) {
-        // São três escritas separadas (cliente, contrato, parcelas). Falhando
-        // aqui, sobrava um CONTRATO SEM PARCELAS: ele contava como capital na
-        // rua no painel, mas não havia nada para cobrar nem para receber.
-        // Desfazemos o que esta operação criou, na ordem inversa. Se a limpeza
-        // também falhar, o aviso diz exatamente o que ficou pendente.
-        const { error: rollbackContrato } = await supabase.from("contracts").delete().eq("id", contract.id);
-        let rollbackCliente = null;
-        if (!existingClientId) {
-          const r = await supabase.from("clients").delete().eq("id", clientId);
-          rollbackCliente = r.error;
-        }
-        if (rollbackContrato || rollbackCliente) {
-          toast({
-            title: "Erro ao gerar as parcelas",
-            description: "O contrato ficou incompleto e não consegui removê-lo. Abra o cliente e exclua o contrato sem parcelas antes de tentar de novo.",
-            variant: "destructive",
-          });
-          setSaving(false);
-          return;
-        }
-        throw instErr;
-      }
-
-      setCreatedContractId(contract.id);
+      setCreatedContractId(created.contract_id);
       try { localStorage.removeItem(DRAFT_KEY); } catch {}
       setHasDraft(false);
       toast({
@@ -645,6 +617,9 @@ const NovoCliente = () => {
       });
       setShowContract(true);
     } catch (err: any) {
+      if (uploadedAvatarPath && !existingClientId) {
+        await supabase.storage.from("uploads").remove([uploadedAvatarPath]);
+      }
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);

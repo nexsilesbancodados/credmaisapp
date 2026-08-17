@@ -30,7 +30,6 @@ Deno.serve(async (req) => {
     const existing = list?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
     if (existing) {
       userId = existing.id;
-      await admin.auth.admin.updateUserById(userId, { password, email_confirm: true });
     } else {
       const { data, error } = await admin.auth.admin.createUser({
         email,
@@ -50,7 +49,7 @@ Deno.serve(async (req) => {
       is_blocked: false,
     }).eq("id", userId);
 
-    return new Response(JSON.stringify({ ok: true, user_id: userId }), {
+    return new Response(JSON.stringify({ ok: true, user_id: userId, existing: !!existing }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

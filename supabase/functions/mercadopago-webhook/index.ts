@@ -76,11 +76,14 @@ serve(async (req) => {
   if (rl) return rl;
 
 
+  let claimedEventKey: string | null = null;
+  let eventClient: any = null;
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
+    eventClient = supabase;
 
     const accessToken = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") ?? "";
     const webhookSecret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET") ?? "";
@@ -202,6 +205,20 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    claimedEventKey = `mercadopago:${topic}:${orderId}:${subscriptionStatus}`;
+    const { error: claimError } = await supabase.from("webhook_events").insert({
+      event_key: claimedEventKey,
+      provider: "mercadopago",
+      status: "processing",
+    });
+    if (claimError?.code === "23505") {
+      return new Response(JSON.stringify({ message: "Webhook already processed" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (claimError) throw claimError;
 
     const { data: userData } = await supabase
       .from("profiles")
@@ -362,11 +379,20 @@ serve(async (req) => {
     }
 
 
+    await supabase.from("webhook_events").update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+    }).eq("event_key", claimedEventKey);
+
     return new Response(
       JSON.stringify({ message: "Webhook processed", status: subscriptionStatus }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error: any) {
+    if (claimedEventKey && eventClient) {
+      await eventClient.from("webhook_events").delete()
+        .eq("event_key", claimedEventKey).eq("status", "processing");
+    }
     console.error("MP webhook error:", error?.message || error);
     return new Response(JSON.stringify({ error: error?.message || "unknown" }), {
       status: 500,

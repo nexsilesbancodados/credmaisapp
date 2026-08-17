@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     q: "O cliente consegue ver o que deve?",
-    a: "Sim. Ele acessa o portal apenas com o CPF e vê parcelas, PIX, comprovantes e pode pedir negociação.",
+    a: "Sim. Ele acessa o portal com CPF e data de nascimento e vê parcelas, PIX, comprovantes e pode pedir negociação.",
   },
   {
     q: "A cobrança no WhatsApp é automática?",

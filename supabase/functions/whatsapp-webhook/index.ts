@@ -2206,19 +2206,23 @@ Ex6 — "queria mais 3 mil emprestado":
         // desde 30/05 o cliente pagava só os juros para rolar a dívida e o
         // vencimento não andava, e a parcela seguia acumulando atraso.
         // O vencimento é o que importa; o texto vai para o registro de auditoria.
-        const { error: renovErr } = await supabase.from("contract_installments")
-          .update({ due_date: nextDate.toISOString() })
-          .eq("id", target.id);
-        if (renovErr) console.error("[webhook] renovação: due_date não avançou:", renovErr);
-
-        await supabase.from("audit_logs").insert({
-          user_id: userId, entity_type: "installment", action: "renovacao_juros",
-          entity_id: target.id,
-          details: {
-            valor_juros: receiptValue,
-            proximo_vencimento: nextDate.toISOString().slice(0, 10),
-          },
-        }).then(() => {}, () => {});
+        const { error: renovErr } = await supabase.rpc("system_renew_installment_interest", {
+          _installment_id: target.id,
+          _amount: receiptValue,
+          _next_due_date: nextDate.toISOString(),
+          _origin: "bot WhatsApp",
+          _source_key: mediaHash ? `whatsapp-renewal:${mediaHash}` : null,
+        });
+        if (renovErr) {
+          console.error("[webhook] renovação não aplicada:", renovErr);
+          await logBotAction(supabase, {
+            userId, clientId: client.id, conversationId: convoId,
+            toolName: "renew_contract_interest_only", success: false,
+            errorMessage: renovErr.message,
+            toolInput: { contract_id: target.contract_id, installment_id: target.id, valor: receiptValue },
+          });
+          throw renovErr;
+        }
 
         await supabase.from("notifications").insert({
           user_id: userId,

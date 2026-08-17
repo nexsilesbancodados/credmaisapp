@@ -149,19 +149,16 @@ const Cobrancas = () => {
   const { data: installments = [], isLoading: loading, error: loadError, refetch: refetchInstallments } = useQuery({
     queryKey: ["cobrancas-installments", user?.id],
     queryFn: async () => {
-      const clients = await fetchAll((f, t) => supabase.from("clients").select("id, name, phone, whatsapp, email").eq("user_id", user!.id).range(f, t));
-      const clientMap = new Map((clients || []).map((c: any) => [c.id, { name: c.name, phone: c.whatsapp || c.phone, email: c.email }]));
-
       const data = await fetchAll((f, t) => supabase
         .from("contract_installments")
-        .select("*, contracts(capital, frequency, interest_rate, num_installments, total_amount, total_interest, loan_mode, daily_interest_percent, max_interest_cap_percent)")
+        .select("*, clients:client_id(name, phone, whatsapp, email), contracts(capital, frequency, interest_rate, num_installments, total_amount, total_interest, loan_mode, daily_interest_percent, max_interest_cap_percent)")
         .eq("user_id", user!.id)
         .order("due_date", { ascending: true })
         .range(f, t));
 
       const today = new Date(); today.setHours(0,0,0,0);
       return (data || []).map((inst: any) => {
-        const client = clientMap.get(inst.client_id);
+        const client = inst.clients;
         const dueLocal = parseLocalDate(inst.due_date);
         const isOverdue = inst.status === "pending" && dueLocal !== null && dueLocal < today;
         return {
@@ -210,8 +207,7 @@ const Cobrancas = () => {
 
   const logAttempt = async (inst: any, channel: "whatsapp" | "email" | "pix_copy" | "manual", preview?: string) => {
     if (!user) return;
-    try {
-      await supabase.from("collection_attempts").insert({
+    const { error } = await supabase.from("collection_attempts").insert({
         user_id: user.id,
         client_id: inst.client_id,
         contract_id: inst.contract_id,
@@ -219,22 +215,32 @@ const Cobrancas = () => {
         channel,
         message_preview: (preview || "").slice(0, 280),
       });
-      qc.invalidateQueries({ queryKey: ["collection-attempts", user.id] });
-    } catch { /* non-blocking */ }
+    if (error) {
+      console.error("[cobrancas] falha ao registrar tentativa", error);
+      toast({ title: "Cobrança aberta, mas o histórico não foi salvo", description: "Tente registrar novamente para manter a auditoria.", variant: "destructive" });
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ["collection-attempts", user.id] });
   };
 
 
   // Pagamento atômico via RPC no servidor: atualiza a parcela, lança lucro (juros
   // reais do contrato) e caixa (só o dinheiro novo) e conclui o contrato — tudo
   // numa transação. Elimina os estados inconsistentes das escritas separadas.
-  const markPaidOne = async (inst: any, paidValue?: number) => {
+  const markPaidOne = async (inst: any, paidValue?: number, waiveFee = false) => {
     if (!user) return;
     const paid = Number(paidValue ?? inst.amount);
-    const { error } = await supabase.rpc("pay_installment", {
-      _installment_id: inst.id,
-      _paid_total: paid,
-      _mark_paid: true,
-    });
+    const { error } = waiveFee
+      ? await (supabase as any).rpc("pay_installment_waiving_fees", {
+          _installment_id: inst.id,
+          _paid_total: paid,
+          _method: "manual",
+        })
+      : await supabase.rpc("pay_installment", {
+          _installment_id: inst.id,
+          _paid_total: paid,
+          _mark_paid: true,
+        });
     if (error) throw error;
   };
 
@@ -267,21 +273,7 @@ const Cobrancas = () => {
     const inst = installments.find((i: any) => i.id === id);
     if (!inst) return;
     const { withFees, base } = computeLateFeeBreakdown(inst);
-    // "Sem multa": os juros de atraso são perdoados — cobra-se só o valor original.
-    if (waiveFee) {
-      const { error } = await supabase
-        .from("contract_installments")
-        .update({ late_fee: 0 })
-        .eq("id", id);
-      if (error) {
-        toast({ title: "Erro ao perdoar a multa", description: error.message, variant: "destructive" });
-        return;
-      }
-      inst.late_fee = 0;
-      inst.late_fee_percent = 0;
-      inst.daily_interest_percent = 0;
-      if (inst.contracts) inst.contracts = { ...inst.contracts, daily_interest_percent: 0 };
-    }
+    // "Sem multa": o perdão e a baixa são feitos juntos no banco.
     const totalDue = Math.round((waiveFee ? base : withFees) * 100) / 100;
     const alreadyPaid = Number(inst.paid_amount || 0);
     const remaining = Math.max(0, Math.round((totalDue - alreadyPaid) * 100) / 100);
@@ -296,7 +288,7 @@ const Cobrancas = () => {
       const snapshot = optimisticMarkPaid([id]);
       toast({ title: "✓ Parcela quitada!" });
       try {
-        await markPaidOne(inst, alreadyPaid + value);
+        await markPaidOne(inst, alreadyPaid + value, waiveFee);
         qc.invalidateQueries({ queryKey: ["cobrancas-installments"] });
         qc.invalidateQueries({ queryKey: ["dashboard-data"] });
       } catch (e: any) {
@@ -318,7 +310,7 @@ const Cobrancas = () => {
   const handleBulkMarkPaid = async () => {
     const items = installments.filter((i: any) => selected.has(i.id) && i.status !== "paid");
     if (items.length === 0) { toast({ title: "Nada para pagar" }); return; }
-    const snapshot = optimisticMarkPaid(items.map((i: any) => i.id));
+    optimisticMarkPaid(items.map((i: any) => i.id));
     setBulkPaying(true);
     setBulkPayOpen(false);
     setSelected(new Set());
@@ -327,17 +319,16 @@ const Cobrancas = () => {
       try { await markPaidOne(inst); ok++; } catch { fail++; }
     }
     setBulkPaying(false);
-    if (fail > 0) qc.setQueryData(["cobrancas-installments", user?.id], snapshot);
     qc.invalidateQueries({ queryKey: ["cobrancas-installments"] });
     qc.invalidateQueries({ queryKey: ["dashboard-data"] });
     toast({
       title: `✓ ${ok} parcela(s) pagas`,
-      description: fail > 0 ? `${fail} falha(s) revertida(s).` : undefined,
+      description: fail > 0 ? `${fail} pagamento(s) não foram aplicados.` : undefined,
     });
   };
 
   const buildMessage = (inst: any, opts: { includePix?: boolean } = {}) => {
-    const portalUrl = `${window.location.origin}/portal-cliente`;
+    const portalUrl = `${window.location.origin}/portal-cliente?o=${user!.id}`;
     const total = inst.contracts?.num_installments || inst.total_installments || "";
     const parcelaInfo = total ? `${inst.installment_number}/${total}` : `${inst.installment_number}`;
     const nome = inst.client_name || "";
@@ -421,7 +412,7 @@ const Cobrancas = () => {
 
   const buildBulkWhatsAppMessage = (clientName: string, items: any[]) => {
     const pix = (profile as any)?.pix_key;
-    const portalUrl = `${window.location.origin}/portal-cliente`;
+    const portalUrl = `${window.location.origin}/portal-cliente?o=${user!.id}`;
     let total = 0;
     let totalFees = 0;
     const lines = items.map((i: any) => {
@@ -781,7 +772,7 @@ const Cobrancas = () => {
       const extra = bd.total > 0 ? ` [parcela R$ ${fmt(bd.base)} + juros R$ ${fmt(bd.total)} · ${bd.daysLate}d]` : "";
       return `- Parcela #${i.installment_number} · R$ ${fmt(due)} (venc. ${formatBR(i.due_date)})${extra}`;
     }).join("\n");
-    const portalUrl = `${window.location.origin}/portal-cliente`;
+    const portalUrl = `${window.location.origin}/portal-cliente?o=${user!.id}`;
     const feesBlock = totalFees > 0 ? `\nJuros de atraso incluídos: R$ ${fmt(totalFees)}` : "";
     const msg = `Olá ${group.client_name}, tudo bem?\n\nIdentificamos ${unpaid.length} parcelas pendentes totalizando R$ ${fmt(total)}:\n${lines}${feesBlock}\n\nVocê pode regularizar via PIX ou pelo portal: ${portalUrl}`;
     window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, "_blank");
@@ -1583,11 +1574,10 @@ const Cobrancas = () => {
         const baixarSelecionados = async () => {
           const target = selItems.length > 0 ? selItems : items;
           if (target.length === 0) return;
-          const snapshot = optimisticMarkPaid(target.map((i: any) => i.id));
+          optimisticMarkPaid(target.map((i: any) => i.id));
           setCobrarAteSelected(new Set());
           let ok = 0, fail = 0;
           for (const inst of target) { try { await markPaidOne(inst); ok++; } catch { fail++; } }
-          if (fail > 0) qc.setQueryData(["cobrancas-installments", user?.id], snapshot);
           qc.invalidateQueries({ queryKey: ["cobrancas-installments"] });
           qc.invalidateQueries({ queryKey: ["dashboard-data"] });
           toast({ title: `✓ ${ok} parcela(s) marcadas como pagas`, description: fail > 0 ? `${fail} falha(s).` : undefined });

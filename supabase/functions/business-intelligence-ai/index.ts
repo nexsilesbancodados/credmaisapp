@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 import { z } from "npm:zod";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -108,6 +109,8 @@ serve(async (req) => {
     if (!userId) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
+    const entitlement = await enforceEntitlement(userId, "business-intelligence-ai", { capacity: 20 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
 
     // 1. Fetch Global Data for Analysis

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
 import { getCallerUser } from "../_shared/guard.ts";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,6 +50,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const entitlement = await enforceEntitlement(user.id, "support-triage", { capacity: 20 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
     const { ticket_id } = await req.json();
     if (!ticket_id) {

@@ -10,7 +10,40 @@ const TABLES = [
   "clients", "contracts", "contract_installments", "transactions",
   "expenses", "profits", "goals", "notes", "todos", "settings",
   "collectors", "collector_assignments", "vehicles", "rentals", "stock_items",
+  "investors", "investor_loans", "investor_payments", "subscriptions",
+  "notifications", "client_notifications", "collection_attempts", "audit_logs",
+  "bot_actions_log", "support_tickets", "whatsapp_conversations", "whatsapp_messages",
 ];
+
+const PAGE_SIZE = 1000;
+const SECRET_FIELDS = new Set(["whatsapp_api_key", "api_key", "access_token", "refresh_token", "secret"]);
+
+async function fetchAllForUser(supabase: any, table: string, userId: string): Promise<any[]> {
+  const rows: any[] = [];
+  for (let from = 0;; from += PAGE_SIZE) {
+    const { data, error } = await supabase.from(table).select("*")
+      .eq("user_id", userId).range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`${table}: ${error.message}`);
+    rows.push(...(data || []));
+    if ((data || []).length < PAGE_SIZE) return rows;
+  }
+}
+
+function removeSecrets(rows: any[]): any[] {
+  return rows.map((row) => Object.fromEntries(
+    Object.entries(row).filter(([key]) => !SECRET_FIELDS.has(key)),
+  ));
+}
+
+async function listAllFiles(storage: any, folder: string): Promise<any[]> {
+  const files: any[] = [];
+  for (let offset = 0;; offset += PAGE_SIZE) {
+    const { data, error } = await storage.from("backups").list(folder, { limit: PAGE_SIZE, offset });
+    if (error) throw error;
+    files.push(...(data || []));
+    if ((data || []).length < PAGE_SIZE) return files;
+  }
+}
 
 // ── Retenção ────────────────────────────────────────────────────────────────
 // O backup rodava desde abril sem nunca apagar nada: 2.349 arquivos e 100 MB
@@ -43,10 +76,7 @@ async function aplicarRetencao(
   hoje: Date,
   apenasConferir = false,
 ): Promise<number> {
-  const { data: arquivos, error } = await supabase.storage
-    .from("backups")
-    .list(userId, { limit: 1000 });
-  if (error || !arquivos) return 0;
+  const arquivos = await listAllFiles(supabase.storage, userId);
 
   const remover = arquivos
     .filter((a: any) => a.name && !deveManter(a.name, hoje))
@@ -122,11 +152,27 @@ serve(async (req) => {
     for (const p of somenteOrfaos ? [] : (profiles || [])) {
       try {
         if (!apenasConferir) {
-          const dump: Record<string, unknown[]> = {};
+          const dump: Record<string, unknown> = {};
           for (const t of TABLES) {
-            const { data } = await supabase.from(t).select("*").eq("user_id", p.id);
-            dump[t] = data || [];
+            dump[t] = removeSecrets(await fetchAllForUser(supabase, t, p.id));
           }
+          const ticketIds = (dump.support_tickets as any[]).map((ticket) => ticket.id);
+          const ticketMessages: any[] = [];
+          for (let i = 0; i < ticketIds.length; i += 200) {
+            const { data, error } = await supabase.from("support_ticket_messages")
+              .select("*").in("ticket_id", ticketIds.slice(i, i + 200));
+            if (error) throw new Error(`support_ticket_messages: ${error.message}`);
+            ticketMessages.push(...(data || []));
+          }
+          dump.support_ticket_messages = ticketMessages;
+          dump._manifest = {
+            version: 2,
+            created_at: agora.toISOString(),
+            user_id: p.id,
+            counts: Object.fromEntries(Object.entries(dump)
+              .filter(([table]) => table !== "_manifest")
+              .map(([table, rows]) => [table, Array.isArray(rows) ? rows.length : 0])),
+          };
           const path = `${p.id}/${today}.json`;
           const blob = new Blob([JSON.stringify(dump)], { type: "application/json" });
           const { error: upErr } = await supabase.storage
@@ -152,12 +198,10 @@ serve(async (req) => {
       const { data: todosPerfis } = await supabase.from("profiles").select("id");
       const existentes = new Set((todosPerfis || []).map((p: any) => p.id));
 
-      const { data: pastas } = await supabase.storage.from("backups").list("", { limit: 1000 });
+      const pastas = await listAllFiles(supabase.storage, "");
       for (const pasta of pastas || []) {
         if (!pasta?.name || existentes.has(pasta.name)) continue;
-        const { data: arquivos } = await supabase.storage
-          .from("backups")
-          .list(pasta.name, { limit: 1000 });
+        const arquivos = await listAllFiles(supabase.storage, pasta.name);
         const caminhos = (arquivos || []).map((a: any) => `${pasta.name}/${a.name}`);
         if (!caminhos.length) continue;
         if (!podeApagarOrfaos) { pastasOrfasRemovidas++; continue; }

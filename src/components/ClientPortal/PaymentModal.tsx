@@ -128,15 +128,15 @@ export const PaymentModal = ({ isOpen, onOpenChange, installment, ownerProfile, 
     try {
       const buf = await file.arrayBuffer();
       const bytes = new Uint8Array(buf);
-      let bin = "";
-      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-      const base64 = btoa(bin);
+      const chunks: string[] = [];
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        chunks.push(String.fromCharCode(...bytes.subarray(i, i + chunkSize)));
+      }
+      const base64 = btoa(chunks.join(""));
       const { data, error } = await supabase.functions.invoke("portal-upload-receipt", {
         body: {
-          // O token da sessão do portal é a credencial preferida. O CPF vai
-          // junto só como caminho antigo, para não quebrar sessão já aberta.
           session_token: sessionToken ?? undefined,
-          cpf: (clientData?.cpf_cnpj || "").replace(/\D/g, ""),
           installment_id: installment.id,
           content_type: file.type,
           filename: file.name,

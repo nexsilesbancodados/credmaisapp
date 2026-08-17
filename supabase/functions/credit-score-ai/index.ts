@@ -2,6 +2,7 @@ import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,8 @@ serve(async (req) => {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const entitlement = await enforceEntitlement(user.id, "credit-score-ai", { capacity: 30 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
     const { data: client } = await supabase.from("clients").select("*").eq("id", client_id).eq("user_id", user.id).maybeSingle();
     if (!client) return new Response(JSON.stringify({ error: "client not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });

@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callAnthropicJSON } from "../_shared/anthropic.ts";
+import { enforceEntitlement, entitlementResponse } from "../_shared/entitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,8 @@ serve(async (req) => {
     const { data: userData } = await userClient.auth.getUser();
     const user = userData?.user;
     if (!user) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+    const entitlement = await enforceEntitlement(user.id, "whatsapp-ai-assist", { completeOnly: true, capacity: 60 });
+    if (!entitlement.ok) return entitlementResponse(entitlement, corsHeaders);
 
     const { conversation_id, mode } = await req.json();
     if (!conversation_id || !mode) {
