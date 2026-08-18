@@ -6,8 +6,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import ErrorState from "@/components/feedback/ErrorState";
+import { isOverdue } from "@/lib/dateUtils";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+const csvCell = (value: unknown) => {
+  let text = String(value ?? "");
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};
 
 const Planilha = () => {
   const { user } = useAuth();
@@ -17,21 +24,28 @@ const Planilha = () => {
   const [installments, setInstallments] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [sortBy, setSortBy] = useState<"name" | "capital" | "status">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
-      const [c, ct, i] = await Promise.all([
-        fetchAll((f, t) => supabase.from("clients").select("*").eq("user_id", user.id).order("name").range(f, t)),
-        fetchAll((f, t) => supabase.from("contracts").select("*").eq("user_id", user.id).range(f, t)),
-        fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user.id).range(f, t)),
-      ]);
-      setClients(c);
-      setContracts(ct);
-      setInstallments(i);
-      setLoading(false);
+      try {
+        const [c, ct, i] = await Promise.all([
+          fetchAll((f, t) => supabase.from("clients").select("*").eq("user_id", user.id).order("name").range(f, t)),
+          fetchAll((f, t) => supabase.from("contracts").select("*").eq("user_id", user.id).range(f, t)),
+          fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user.id).range(f, t)),
+        ]);
+        setClients(c);
+        setContracts(ct);
+        setInstallments(i);
+        setLoadError(null);
+      } catch (error) {
+        setLoadError(error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetch();
     const ch = supabase
@@ -50,8 +64,8 @@ const Planilha = () => {
       const totalCapital = cContracts.reduce((s, ct) => s + Number(ct.capital || 0), 0);
       const totalAmount = cContracts.reduce((s, ct) => s + Number(ct.total_amount || 0), 0);
       const paid = cInstallments.filter(i => i.status === "paid");
-      const overdue = cInstallments.filter(i => i.status !== "paid" && new Date(i.due_date) < new Date());
-      const totalPaid = paid.reduce((s, i) => s + Number(i.paid_amount || i.amount || 0), 0);
+      const overdue = cInstallments.filter(i => i.status !== "paid" && isOverdue(i.due_date));
+      const totalPaid = paid.reduce((s, i) => s + Number(i.paid_amount ?? i.amount ?? 0), 0);
       return { ...c, totalCapital, totalAmount, totalPaid, paidCount: paid.length, overdueCount: overdue.length, totalInstallments: cInstallments.length, contractCount: cContracts.length };
     });
   }, [clients, contracts, installments]);
@@ -80,11 +94,9 @@ const Planilha = () => {
   }), [enriched]);
 
   const handleExportCSV = () => {
-    const header = "Nome,CPF/CNPJ,Telefone,Status,Capital,Total,Pago,Contratos,Parcelas Pagas,Parcelas Total,Atrasadas\n";
-    const rows = sorted.map(c =>
-      `"${c.name}","${c.cpf_cnpj || ""}","${c.phone || ""}","${c.status}","${c.totalCapital.toFixed(2)}","${c.totalAmount.toFixed(2)}","${c.totalPaid.toFixed(2)}","${c.contractCount}","${c.paidCount}","${c.totalInstallments}","${c.overdueCount}"`
-    ).join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv" });
+    const header = ["Nome", "CPF/CNPJ", "Telefone", "Status", "Capital", "Total", "Pago", "Contratos", "Parcelas Pagas", "Parcelas Total", "Atrasadas"].map(csvCell).join(",");
+    const rows = sorted.map(c => [c.name, c.cpf_cnpj, c.phone, c.status, c.totalCapital.toFixed(2), c.totalAmount.toFixed(2), c.totalPaid.toFixed(2), c.contractCount, c.paidCount, c.totalInstallments, c.overdueCount].map(csvCell).join(",")).join("\r\n");
+    const blob = new Blob([`\uFEFF${header}\r\n${rows}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "planilha-clientes.csv"; a.click();
     URL.revokeObjectURL(url);
@@ -103,7 +115,7 @@ const Planilha = () => {
               <p className="text-muted-foreground text-sm mt-0.5">Visão completa dos dados de todos os clientes</p>
             </div>
           </div>
-          <button onClick={handleExportCSV} className="btn-premium">
+          <button onClick={handleExportCSV} disabled={loading || sorted.length === 0} className="btn-premium disabled:opacity-50 disabled:cursor-not-allowed">
             <Download size={16} /> Exportar CSV
           </button>
         </div>
@@ -139,6 +151,8 @@ const Planilha = () => {
 
       {loading ? (
         <div className="space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-14 rounded-xl skeleton-shimmer" />)}</div>
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => { setLoading(true); setLoadError(null); window.location.reload(); }} />
       ) : sorted.length === 0 ? (
         <EmptyState
           icon={Users}
