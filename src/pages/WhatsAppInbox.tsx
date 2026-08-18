@@ -70,6 +70,8 @@ export default function WhatsAppInbox() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterKind>("all");
   const [sending, setSending] = useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(true);
+  const [conversationsError, setConversationsError] = useState<string | null>(null);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -90,12 +92,13 @@ export default function WhatsAppInbox() {
   const [actionsLoading, setActionsLoading] = useState(false);
 
   const openBotActions = async () => {
-    if (!selected) return;
+    if (!selected || !user) return;
     setActionsOpen(true);
     setActionsLoading(true);
     const { data } = await supabase
       .from("bot_actions_log")
       .select("id, tool_name, tool_input, tool_output, success, created_at")
+      .eq("user_id", user.id)
       .eq("conversation_id", selected.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -115,10 +118,14 @@ export default function WhatsAppInbox() {
     if (!user) return;
     let mounted = true;
     const load = async () => {
-      const { data } = await supabase
+      if (mounted) { setLoadingConversations(true); setConversationsError(null); }
+      const { data, error } = await supabase
         .from("whatsapp_conversations").select("*")
         .eq("user_id", user.id).order("last_message_at", { ascending: false }).limit(300);
-      if (mounted) setConversations((data as Conversation[]) || []);
+      if (!mounted) return;
+      if (error) setConversationsError(error.message);
+      else setConversations((data as Conversation[]) || []);
+      setLoadingConversations(false);
     };
     load();
     const channel = supabase
@@ -166,15 +173,15 @@ export default function WhatsAppInbox() {
     const load = async () => {
       const [{ data: msgs }, { data: nts }] = await Promise.all([
         supabase.from("whatsapp_messages").select("*")
-          .eq("conversation_id", selectedId).order("created_at", { ascending: true }).limit(500),
+          .eq("user_id", user.id).eq("conversation_id", selectedId).order("created_at", { ascending: true }).limit(500),
         supabase.from("whatsapp_notes").select("*")
-          .eq("conversation_id", selectedId).order("created_at", { ascending: false }),
+          .eq("user_id", user.id).eq("conversation_id", selectedId).order("created_at", { ascending: false }),
       ]);
       if (!mounted) return;
       setMessages((msgs as Message[]) || []);
       setNotes((nts as Note[]) || []);
       setLoadingMsgs(false);
-      await supabase.from("whatsapp_conversations").update({ unread_count: 0 }).eq("id", selectedId);
+      await supabase.from("whatsapp_conversations").update({ unread_count: 0 }).eq("id", selectedId).eq("user_id", user.id);
     };
     load();
 
@@ -282,7 +289,7 @@ export default function WhatsAppInbox() {
   };
 
   const toggleBot = async () => {
-    if (!selected) return;
+    if (!selected || !user) return;
     const next = !selected.bot_paused;
     const patch: any = { bot_paused: next };
     // Ao reativar, limpa qualquer handoff pendente
@@ -294,16 +301,16 @@ export default function WhatsAppInbox() {
     } else {
       patch.bot_status = "paused";
     }
-    const { error } = await supabase.from("whatsapp_conversations").update(patch).eq("id", selected.id);
+    const { error } = await supabase.from("whatsapp_conversations").update(patch).eq("id", selected.id).eq("user_id", user.id);
     if (error) return toast({ ...friendlyError(error, "Não foi possível atualizar o bot."), variant: "destructive" });
     toast({ title: next ? "Bot pausado" : "Bot reativado — handoff limpo" });
   };
 
   const toggleBlock = async () => {
-    if (!selected) return;
+    if (!selected || !user) return;
     const next = !selected.blocked;
     const { error } = await supabase.from("whatsapp_conversations")
-      .update({ blocked: next, bot_paused: next || selected.bot_paused }).eq("id", selected.id);
+      .update({ blocked: next, bot_paused: next || selected.bot_paused }).eq("id", selected.id).eq("user_id", user.id);
     if (error) return toast({ ...friendlyError(error, "Não foi possível bloquear o contato."), variant: "destructive" });
     toast({ title: next ? "Bloqueado 🚫" : "Desbloqueado" });
   };
@@ -319,27 +326,30 @@ export default function WhatsAppInbox() {
 
   // === Tags ===
   const addTag = async () => {
-    if (!selected || !newTag.trim()) return;
+    if (!selected || !newTag.trim() || !user) return;
     const tags = Array.from(new Set([...(selected.tags || []), newTag.trim()]));
-    await supabase.from("whatsapp_conversations").update({ tags }).eq("id", selected.id);
+    const { error } = await supabase.from("whatsapp_conversations").update({ tags }).eq("id", selected.id).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível adicionar a tag."), variant: "destructive" });
     setNewTag("");
   };
   const removeTag = async (t: string) => {
-    if (!selected) return;
+    if (!selected || !user) return;
     const tags = (selected.tags || []).filter(x => x !== t);
-    await supabase.from("whatsapp_conversations").update({ tags }).eq("id", selected.id);
+    const { error } = await supabase.from("whatsapp_conversations").update({ tags }).eq("id", selected.id).eq("user_id", user.id);
+    if (error) toast({ ...friendlyError(error, "Não foi possível remover a tag."), variant: "destructive" });
   };
 
   // === Notes ===
   const addNote = async () => {
     if (!selected || !newNote.trim() || !user) return;
-    await supabase.from("whatsapp_notes").insert({
+    const { error } = await supabase.from("whatsapp_notes").insert({
       conversation_id: selected.id, user_id: user.id,
       content: newNote.trim(), author_name: user.email,
     });
+    if (error) return toast({ ...friendlyError(error, "Não foi possível salvar a nota."), variant: "destructive" });
     setNewNote("");
     const { data } = await supabase.from("whatsapp_notes").select("*")
-      .eq("conversation_id", selected.id).order("created_at", { ascending: false });
+      .eq("user_id", user.id).eq("conversation_id", selected.id).order("created_at", { ascending: false });
     setNotes((data as Note[]) || []);
   };
 
@@ -347,9 +357,11 @@ export default function WhatsAppInbox() {
   const onFileSelected = async (file: File) => {
     if (!selected || !user) return;
     setSending(true);
+    let uploadedPath: string | null = null;
     try {
       const ext = file.name.split(".").pop() || "bin";
       const path = `${user.id}/whatsapp/${Date.now()}.${ext}`;
+      uploadedPath = path;
       const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
       const publicUrl = await getSignedUploadUrl(path);
@@ -366,6 +378,7 @@ export default function WhatsAppInbox() {
       setDraft("");
       toast({ title: "Mídia enviada" });
     } catch (e: any) {
+      if (uploadedPath) await supabase.storage.from("uploads").remove([uploadedPath]);
       toast({ title: "Erro mídia", description: e?.message, variant: "destructive" });
     } finally { setSending(false); }
   };
@@ -373,7 +386,12 @@ export default function WhatsAppInbox() {
   // === Agendamento ===
   const scheduleSend = async () => {
     if (!selected || !scheduleText.trim() || !scheduleDate || !scheduleTime) return;
-    const iso = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+    const scheduledDate = new Date(`${scheduleDate}T${scheduleTime}`);
+    if (!Number.isFinite(scheduledDate.getTime()) || scheduledDate.getTime() <= Date.now()) {
+      toast({ title: "Horário inválido", description: "Escolha uma data e hora futuras.", variant: "destructive" });
+      return;
+    }
+    const iso = scheduledDate.toISOString();
     setSending(true);
     try {
       await invokeSend({ conversation_id: selected.id, text: scheduleText.trim(), schedule_for: iso });
@@ -508,7 +526,19 @@ export default function WhatsAppInbox() {
             </div>
           </div>
           <ScrollArea className="flex-1">
-            {filtered.length === 0 && (
+            {loadingConversations && (
+              <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Carregando conversas...
+              </div>
+            )}
+            {!loadingConversations && conversationsError && (
+              <div className="p-6 text-center">
+                <AlertTriangle className="mx-auto h-6 w-6 text-destructive" />
+                <p className="mt-2 text-sm font-semibold">Falha ao carregar conversas</p>
+                <p className="mt-1 text-xs text-muted-foreground">{conversationsError}</p>
+              </div>
+            )}
+            {!loadingConversations && !conversationsError && filtered.length === 0 && (
               <div className="p-8 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-muted/40 flex items-center justify-center mx-auto mb-3">
                   <MessageCircle className="h-5 w-5 text-muted-foreground" />
@@ -517,7 +547,7 @@ export default function WhatsAppInbox() {
                 <p className="text-[11px] text-muted-foreground/70 mt-0.5">Ajuste os filtros ou busca</p>
               </div>
             )}
-            {filtered.map((c) => {
+            {!loadingConversations && !conversationsError && filtered.map((c) => {
               const intentBadge = c.last_intent && INTENT_LABEL[c.last_intent];
               const name = c.contact_name || c.phone;
               const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase() || "").join("") || "?";
