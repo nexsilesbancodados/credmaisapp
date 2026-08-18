@@ -89,6 +89,7 @@ export function calculateLoan(input: CalculateLoanInput): CalculateLoanResult | 
   if (valueMode === "installment") {
     if (loanMode !== "installments" || periods <= 0 || installmentValue <= 0) return null;
     const totalAmount = installmentValue * periods;
+    if (totalAmount < capital) return null;
     const totalInterest = totalAmount - capital;
     const derivedRate = (totalInterest / (capital * periods)) * 100;
     return {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Camera, Search, ArrowLeft, ArrowRight, User, Phone, Mail, MapPin, Check, Loader2,
   Copy, AlertCircle, Hash, Percent, Calendar, Clock, Repeat, DollarSign, FileText, Printer, Shield,
@@ -175,6 +175,29 @@ const NovoCliente = () => {
   const [investorLoanId, setInvestorLoanId] = useState<string | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [requireSignature, setRequireSignature] = useState(false);
+  const location = useLocation();
+  const simulatorPresetApplied = useRef(false);
+
+  useEffect(() => {
+    if (simulatorPresetApplied.current) return;
+    const preset = (location.state as any)?.loanPreset;
+    if (!preset) return;
+    simulatorPresetApplied.current = true;
+    const presetCapital = Number(preset.capital) || 0;
+    const presetInstallment = Number(preset.installmentValue) || 0;
+    setCapital(presetCapital > 0 ? String(presetCapital) : "");
+    setCapitalDisplay(presetCapital > 0 ? presetCapital.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "");
+    setTaxaJuros(String(Number(preset.rate) || 0));
+    setNumInstallments(String(Number(preset.periods) || ""));
+    if (preset.loanMode) setLoanMode(preset.loanMode);
+    if (preset.frequency) setFrequency(preset.frequency);
+    if (preset.dailyMode) setDailyMode(preset.dailyMode);
+    if (preset.valueMode) setValueMode(preset.valueMode);
+    setInstallmentValue(presetInstallment > 0 ? String(presetInstallment) : "");
+    setInstallmentValueDisplay(presetInstallment > 0 ? presetInstallment.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "");
+    setGracePeriods(String(Number(preset.gracePeriods) || 0));
+    toast({ title: "Simulação carregada", description: "Preencha o cliente e avance para revisar o empréstimo." });
+  }, [location.state, toast]);
 
   // ── Settings defaults ──
   const { data: settings } = useQuery({

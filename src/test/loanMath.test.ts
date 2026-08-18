@@ -35,6 +35,13 @@ describe("calculateLoan", () => {
     expect(r.derivedRate).toBeCloseTo(10);
   });
 
+  it("rejeita parcelas cuja soma não devolve o capital", () => {
+    expect(calculateLoan({
+      capital: 1000, periods: 10, installmentValue: 90,
+      frequency: "monthly", loanMode: "installments", valueMode: "installment",
+    })).toBeNull();
+  });
+
   it("interest_only: n-1 parcelas de juros + última com capital", () => {
     const r = calculateLoan({ capital: 1000, rate: 10, periods: 5, frequency: "monthly", loanMode: "interest_only" })!;
     // 4 parcelas de 100 (juros) + 1 final de 1100
