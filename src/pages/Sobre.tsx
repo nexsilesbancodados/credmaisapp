@@ -1,6 +1,7 @@
 import { Shield, Code, Users, Zap, Star, Globe, Sparkles, Rocket, Heart } from "lucide-react";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
 import eagleLogo from "@/assets/eagle-logo.webp";
+import { Link } from "react-router-dom";
 
 const features = [
   { icon: Shield, title: "Segurança", desc: "Autenticação robusta com RLS no banco", color: "text-emerald-400", bg: "bg-emerald-400/10" },
@@ -12,9 +13,9 @@ const features = [
 ];
 
 const stats = [
-  { label: "Páginas", value: "40+", icon: Sparkles },
-  { label: "Realtime", value: "100%", icon: Zap },
-  { label: "Mobile", value: "First", icon: Rocket },
+  { label: "Módulos", value: "30", icon: Sparkles },
+  { label: "Atualizações", value: "Ao vivo", icon: Zap },
+  { label: "Aplicativo", value: "PWA", icon: Rocket },
 ];
 
 const Sobre = () => {
@@ -28,7 +29,7 @@ const Sobre = () => {
       <div className="page-hero text-center animate-fade-in">
         <div className="relative inline-block mb-5">
           <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl animate-pulse" />
-          <img src={logoSrc} alt={brandName} width={104} height={104} className="relative rounded-2xl ring-2 ring-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.3)]" />
+          <img src={logoSrc} onError={(event) => { event.currentTarget.src = eagleLogo; }} alt={brandName} width={104} height={104} className="relative rounded-2xl ring-2 ring-primary/30 shadow-[0_0_40px_hsl(var(--primary)/0.3)]" />
         </div>
         <h1 className="font-display text-3xl md:text-4xl tracking-[0.25em] text-shimmer mb-2">{brandName}</h1>
         <p className="text-muted-foreground text-xs md:text-sm tracking-[0.2em] uppercase font-semibold">Sistema completo de gestão financeira</p>
@@ -72,6 +73,11 @@ const Sobre = () => {
           Feito com <Heart size={11} className="text-destructive fill-destructive" /> por {brandName}
         </p>
         <p className="text-[11px] text-muted-foreground/60">© {new Date().getFullYear()} {brandName}. Todos os direitos reservados.</p>
+        <nav aria-label="Links institucionais" className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-2 text-xs">
+          <Link to="/suporte" className="text-muted-foreground hover:text-primary transition-colors">Suporte</Link>
+          <Link to="/privacidade" className="text-muted-foreground hover:text-primary transition-colors">Privacidade</Link>
+          <Link to="/termos" className="text-muted-foreground hover:text-primary transition-colors">Termos de uso</Link>
+        </nav>
       </div>
     </div>
   );
