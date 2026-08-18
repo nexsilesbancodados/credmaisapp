@@ -29,19 +29,23 @@ const Relatorios = () => {
   });
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const fetchReport = async () => {
     if (!user) return;
     setLoading(true);
+    setReportError(null);
     const [year, mon] = month.split("-").map(Number);
     const startDate = new Date(year, mon - 1, 1).toISOString();
     const endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
 
-    const [profitData, expenseData, clientData, installmentDataRaw, activeContractsRaw] = await Promise.all([
+    try {
+    const [profitData, expenseData, clientData, installmentDataRaw, receivedInstallments, activeContractsRaw] = await Promise.all([
       fetchAll((f, t) => supabase.from("profits").select("*").eq("user_id", user.id).gte("date", startDate).lte("date", endDate).range(f, t)),
       fetchAll((f, t) => supabase.from("expenses").select("*").eq("user_id", user.id).gte("date", startDate).lte("date", endDate).range(f, t)),
       fetchAll((f, t) => supabase.from("clients").select("*").eq("user_id", user.id).range(f, t)),
       fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user.id).gte("due_date", startDate).lte("due_date", endDate).range(f, t)),
+      fetchAll((f, t) => supabase.from("contract_installments").select("id,amount,paid_amount,paid_at,status").eq("user_id", user.id).eq("status", "paid").gte("paid_at", startDate).lte("paid_at", endDate).range(f, t)),
       fetchAll((f, t) => supabase.from("contracts").select("id,status").eq("user_id", user.id).in("status", ["active","overdue"]).range(f, t)),
     ]);
 
@@ -53,8 +57,8 @@ const Relatorios = () => {
     const totalProfit = profitData.reduce((a: number, p: any) => a + Number(p.amount), 0);
     const totalExpense = expenseData.reduce((a: number, e: any) => a + Number(e.amount), 0);
     const paidInstallments = installmentData.filter((i: any) => i.status === "paid");
-    const overdueInstallments = installmentData.filter((i: any) => i.status !== "paid" && new Date(i.due_date) < new Date());
-    const totalReceived = paidInstallments.reduce((a: number, i: any) => a + Number(i.paid_amount || i.amount), 0);
+    const overdueInstallments = installmentData.filter((i: any) => isEmAtraso(i));
+    const totalReceived = receivedInstallments.reduce((a: number, i: any) => a + Number(i.paid_amount || i.amount), 0);
     const totalOverdue = overdueInstallments.reduce((a: number, i: any) => a + Number(i.amount), 0);
 
     setData({
@@ -62,11 +66,16 @@ const Relatorios = () => {
       totalProfit, totalExpense, totalReceived, totalOverdue,
       paidCount: paidInstallments.length,
       overdueCount: overdueInstallments.length,
-      pendingCount: installmentData.filter((i: any) => isEmAberto(i) && new Date(i.due_date) >= new Date()).length,
+      pendingCount: installmentData.filter((i: any) => isEmAberto(i) && !isEmAtraso(i)).length,
       activeClients: clientData.filter((c: any) => c.status === "Ativo").length,
       balance: totalProfit - totalExpense,
     });
-    setLoading(false);
+    } catch (error) {
+      setData(null);
+      setReportError(error instanceof Error ? error.message : "Não foi possível gerar o relatório.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { 
@@ -276,6 +285,15 @@ const Relatorios = () => {
         <div className="space-y-4">
           <div className="h-8 w-48 skeleton-shimmer rounded-lg" />
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i => <div key={i} className="h-24 rounded-xl skeleton-shimmer" />)}</div>
+        </div>
+      ) : reportError ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 py-14 text-center">
+          <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+          <p className="mt-3 font-semibold text-foreground">Não foi possível gerar o relatório</p>
+          <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">{reportError}</p>
+          <button onClick={() => void fetchReport()} className="mt-4 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted">
+            Tentar novamente
+          </button>
         </div>
       ) : !data ? null : (
         <>
