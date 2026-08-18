@@ -23,7 +23,8 @@ export default function MFACard() {
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.auth.mfa.listFactors();
-    if (!error) setFactors(data?.totp || []);
+    if (error) toast({ title: "Erro ao carregar 2FA", description: error.message, variant: "destructive" });
+    else setFactors(data?.totp || []);
     setLoading(false);
   };
 
@@ -72,7 +73,11 @@ export default function MFACard() {
 
   const cancel = async () => {
     if (!qr) return;
-    await supabase.auth.mfa.unenroll({ factorId: qr.factorId });
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: qr.factorId });
+    if (error) {
+      toast({ title: "Erro ao cancelar 2FA", description: error.message, variant: "destructive" });
+      return;
+    }
     setQr(null); setCode("");
   };
 
@@ -85,9 +90,13 @@ export default function MFACard() {
 
   const copySecret = async () => {
     if (!qr) return;
-    await navigator.clipboard.writeText(qr.secret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(qr.secret);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast({ title: "Não foi possível copiar", description: "Selecione a chave e copie manualmente.", variant: "destructive" });
+    }
   };
 
   const active = factors.filter(f => f.status === "verified");

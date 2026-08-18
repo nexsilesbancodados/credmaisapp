@@ -10,9 +10,10 @@ import { getSignedUploadUrl } from "@/lib/storage";
 import DangerZone from "@/components/perfil/DangerZone";
 import { friendlyError } from "@/lib/friendlyError";
 import MFACard from "@/components/perfil/MFACard";
+import { isValidCNPJ, isValidCPF, onlyDigits } from "@/lib/cpfCnpj";
 
 const Perfil = () => {
-  const { user, profile, signOut, isPlatformAdmin } = useAuth();
+  const { user, profile, signOut, isPlatformAdmin, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [form, setForm] = useState({
@@ -37,33 +38,67 @@ const Perfil = () => {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      toast({ title: "Avatar inválido", description: "Use JPG, PNG ou WebP com até 5 MB.", variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+    if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
 
+  useEffect(() => () => {
+    if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
+  }, [avatarPreview]);
+
   const handleSave = async () => {
     if (!user) return;
+    if (form.name.trim().length < 2) {
+      toast({ title: "Nome inválido", description: "Informe pelo menos 2 caracteres.", variant: "destructive" });
+      return;
+    }
+    const pix = form.pix_key.trim();
+    const pixValid = !pix
+      || (form.pix_key_type === "cpf" && isValidCPF(pix))
+      || (form.pix_key_type === "cnpj" && isValidCNPJ(pix))
+      || (form.pix_key_type === "email" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pix))
+      || (form.pix_key_type === "phone" && [10, 11].includes(onlyDigits(pix).length))
+      || (form.pix_key_type === "random" && pix.length >= 8);
+    if (!pixValid) {
+      toast({ title: "Chave PIX inválida", description: "Confira a chave e o tipo selecionado.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     let avatar_url = profile?.avatar_url || null;
     if (avatarFile) {
-      const ext = avatarFile.name.split(".").pop();
+      const ext = avatarFile.type === "image/png" ? "png" : avatarFile.type === "image/webp" ? "webp" : "jpg";
       const path = `${user.id}/avatars/avatar.${ext}`;
-      const { error: uploadError } = await supabase.storage.from("uploads").upload(path, avatarFile, { upsert: true });
-      if (!uploadError) {
-        const signed = await getSignedUploadUrl(path);
-        if (signed) avatar_url = signed;
+      const { error: uploadError } = await supabase.storage.from("uploads").upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+      if (uploadError) {
+        setSaving(false);
+        toast({ ...friendlyError(uploadError, "Não foi possível enviar o avatar."), variant: "destructive" });
+        return;
       }
+      const signed = await getSignedUploadUrl(path);
+      if (!signed) {
+        setSaving(false);
+        toast({ title: "Avatar não salvo", description: "Não foi possível gerar o acesso à imagem.", variant: "destructive" });
+        return;
+      }
+      avatar_url = signed;
     }
     const { error } = await supabase.from("profiles").update({
       name: form.name.trim(), pix_key: form.pix_key.trim() || null,
       pix_key_type: form.pix_key_type, billing_message: form.billing_message.trim() || null, avatar_url,
-    }).eq("id", user.id);
+    }).eq("id", user.id).select("id").single();
     setSaving(false);
     if (error) toast({ ...friendlyError(error, "Não foi possível salvar o perfil."), variant: "destructive" });
     else {
       setSaved(true); setTimeout(() => setSaved(false), 2000);
       toast({ title: "✓ Perfil atualizado!" });
-      setTimeout(() => window.location.reload(), 1000);
+      setAvatarFile(null);
+      await refreshProfile();
     }
   };
 
@@ -73,6 +108,10 @@ const Perfil = () => {
   };
 
   const inputCls = "w-full px-4 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm input-enhanced";
+  const isLifetime = isPlatformAdmin || profile?.subscription_type === "lifetime";
+  const accessEnd = profile?.subscription_expires_at || profile?.trial_ends_at;
+  const accessActive = isLifetime || (!!accessEnd && new Date(accessEnd).getTime() > Date.now());
+  const accessTitle = isLifetime ? "Acesso Vitalício" : profile?.trial_ends_at && (!profile.subscription_expires_at || new Date(profile.trial_ends_at) > new Date(profile.subscription_expires_at)) ? "Período de teste" : "Assinatura";
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto animate-fade-in">
@@ -105,7 +144,7 @@ const Perfil = () => {
             <p className="text-sm text-muted-foreground">{profile?.email}</p>
             <div className="flex flex-wrap gap-2 mt-2">
               <Badge variant="outline" className="bg-gradient-to-r from-amber-500/15 to-yellow-500/15 text-amber-400 border-amber-500/30 text-[10px] font-bold">
-                <InfinityIcon size={10} className="mr-1" /> Acesso Vitalício
+                {isLifetime ? <InfinityIcon size={10} className="mr-1" /> : <CreditCard size={10} className="mr-1" />} {accessTitle}
               </Badge>
               {isPlatformAdmin && (
                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-[10px]">
@@ -117,20 +156,20 @@ const Perfil = () => {
         </div>
       </div>
 
-      {/* Lifetime Access Card */}
+      {/* Access status */}
       <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/[0.08] via-card to-yellow-500/[0.05] p-6 space-y-4 card-shine relative overflow-hidden group">
         <div className="flex items-center justify-between relative z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center ring-1 ring-amber-500/30">
-              <InfinityIcon size={18} className="text-amber-400" />
+              {isLifetime ? <InfinityIcon size={18} className="text-amber-400" /> : <CreditCard size={18} className="text-amber-400" />}
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Acesso Vitalício</h2>
-              <p className="text-[11px] text-muted-foreground">Sem renovação, sem assinatura</p>
+              <h2 className="text-sm font-semibold text-foreground">{accessTitle}</h2>
+              <p className="text-[11px] text-muted-foreground">Situação atual do seu acesso</p>
             </div>
           </div>
-          <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px] font-bold">
-            <Sparkles size={10} className="mr-1" /> Ativo
+          <Badge className={`${accessActive ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-destructive/10 text-destructive border-destructive/30"} text-[10px] font-bold`}>
+            <Sparkles size={10} className="mr-1" /> {accessActive ? "Ativo" : "Expirado"}
           </Badge>
         </div>
 
@@ -139,22 +178,26 @@ const Perfil = () => {
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Status</p>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-sm font-bold text-foreground">Liberado para sempre</p>
+              <p className="text-sm font-bold text-foreground">{accessActive ? "Acesso liberado" : "Acesso expirado"}</p>
             </div>
           </div>
 
           <div className="space-y-1">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Validade</p>
             <div className="flex items-center gap-2">
-              <InfinityIcon size={14} className="text-amber-400" />
-              <p className="text-sm font-bold text-foreground">Sem expiração</p>
+              {isLifetime ? <InfinityIcon size={14} className="text-amber-400" /> : <Clock size={14} className="text-amber-400" />}
+              <p className="text-sm font-bold text-foreground">{isLifetime ? "Sem expiração" : accessEnd ? formatBR(accessEnd) : "Não informada"}</p>
             </div>
           </div>
         </div>
 
         <div className="pt-4 border-t border-amber-500/15 relative z-10">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            ✨ Você tem <span className="font-semibold text-foreground">acesso ilimitado e vitalício</span> a todas as funcionalidades do sistema. Nenhum pagamento, renovação ou assinatura é necessário.
+            {isLifetime
+              ? <>✨ Você tem <span className="font-semibold text-foreground">acesso ilimitado e vitalício</span> ao sistema.</>
+              : accessActive
+                ? <>Seu acesso está ativo até <span className="font-semibold text-foreground">{accessEnd ? formatBR(accessEnd) : "a data contratada"}</span>.</>
+                : <>Seu acesso não está ativo. Consulte os planos ou fale com o suporte para renovar.</>}
           </p>
         </div>
 

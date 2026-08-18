@@ -22,6 +22,7 @@ export const DangerZone = () => {
     try {
       const { data: sess } = await supabase.auth.getSession();
       const token = sess.session?.access_token;
+      if (!token) throw new Error("Sua sessão expirou. Entre novamente para exportar os dados.");
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-user-data`;
       const resp = await fetch(url, {
         method: "POST",
@@ -34,9 +35,11 @@ export const DangerZone = () => {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const blob = await resp.blob();
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
+      const downloadUrl = URL.createObjectURL(blob);
+      a.href = downloadUrl;
       a.download = `meus-dados-${Date.now()}.json`;
       document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(downloadUrl);
       toast({ title: "Download iniciado", description: "Seu arquivo JSON com todos os dados foi gerado." });
     } catch (e: any) {
       toast({ title: "Falha ao exportar", description: e?.message || "Tente novamente.", variant: "destructive" });
