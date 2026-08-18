@@ -4,7 +4,7 @@ import {
   AlertCircle, Calendar, Landmark, TrendingUp, Users, ArrowRight,
   DollarSign, FileSignature, Clock, Sparkles,
   ArrowUpRight, Activity, Wallet, Target, ChevronRight, Zap,
-  BarChart3, Receipt, Bot, Plus,
+  BarChart3, Receipt, Bot, Plus, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlan } from "@/hooks/usePlan";
@@ -39,7 +39,7 @@ const Dashboard = () => {
     [["dashboard-data", user?.id || ""]],
   );
 
-  const { data, isLoading, error: dashError, refetch: refetchDash } = useQuery({
+  const { data, isLoading, isFetching, dataUpdatedAt, error: dashError, refetch: refetchDash } = useQuery({
     queryKey: ["dashboard-data", user?.id],
     queryFn: async () => {
       // Só as colunas que as métricas usam. Antes vinha `select("*")` das ~1.700
@@ -54,11 +54,11 @@ const Dashboard = () => {
           .eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("clients").select("id, name, credit_score, status").eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("goals").select("*").eq("user_id", user!.id).range(f, t)),
-        supabase.from("profits").select("amount, date").eq("user_id", user!.id).order("date", { ascending: false }).limit(30),
+        fetchAll((f, t) => supabase.from("profits").select("amount, date").eq("user_id", user!.id).order("date", { ascending: false }).range(f, t)),
       ]);
       return {
         contracts, installments, clients, goals,
-        profits: (profits as any).data || [],
+        profits,
       };
     },
     enabled: !!user,
@@ -124,9 +124,9 @@ const Dashboard = () => {
   const quickActions = [
     { label: "Novo cliente",    icon: Users,    path: "/clientes/novo", tone: "from-primary/25 to-primary/5",       ring: "ring-primary/30",    iconColor: "text-primary" },
     { label: "Nova cobrança",   icon: Receipt,  path: "/cobrancas",     tone: "from-success/25 to-success/5",       ring: "ring-success/30",    iconColor: "text-success" },
-    { label: "Ver carteira",    icon: Wallet,   path: "/carteira",      tone: "from-indigo-500/25 to-indigo-500/5", ring: "ring-indigo-500/30", iconColor: "text-indigo-400" },
+    { label: "Ver carteira",    icon: Wallet,   path: "/carteira",      tone: "from-white/10 to-white/[.02]", ring: "ring-white/15", iconColor: "text-zinc-200" },
     ...(hasAutomations
-      ? [{ label: "Agente IA", icon: Bot, path: "/agente-ia", tone: "from-violet-500/25 to-violet-500/5", ring: "ring-violet-500/30", iconColor: "text-violet-400" }]
+      ? [{ label: "Agente IA", icon: Bot, path: "/agente-ia", tone: "from-white/10 to-white/[.02]", ring: "ring-white/15", iconColor: "text-zinc-200" }]
       : [{ label: "Relatórios", icon: Receipt, path: "/relatorios", tone: "from-violet-500/25 to-violet-500/5", ring: "ring-violet-500/30", iconColor: "text-violet-400" }]),
   ];
 
@@ -168,6 +168,15 @@ const Dashboard = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => refetchDash()}
+              disabled={isFetching}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/[.035] border border-white/10 hover:bg-white/[.07] hover:border-white/20 transition text-xs font-semibold disabled:opacity-60"
+              title={dataUpdatedAt ? `Atualizado às ${new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Atualizar painel"}
+            >
+              <RefreshCw size={13} className={isFetching ? "animate-spin" : ""} />
+              {isFetching ? "Atualizando" : "Atualizar"}
+            </button>
             {metrics.paidTodayAmount > 0 && (
               <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-success/10 border border-success/25">
                 <Zap size={13} className="text-success" />
