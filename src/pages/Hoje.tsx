@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   Sunrise, AlertCircle, CheckCircle2, ListTodo, Receipt,
   ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
-  UserPlus, Cake, DollarSign
+  UserPlus, Cake, DollarSign, TrendingUp, CalendarDays, Wallet, History, X
 } from "lucide-react";
 import SmartAlerts from "@/components/SmartAlerts";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
@@ -36,6 +36,7 @@ const Hoje = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<{ id: string; amount: number; client: string } | null>(null);
   const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
@@ -182,6 +183,7 @@ const Hoje = () => {
     });
     setSavingId(null);
     if (error) { toast.error("Erro ao registrar pagamento"); return; }
+    setPendingPayment(null);
     toast.success("Pagamento registrado");
     qc.invalidateQueries({ queryKey: ["hoje"] });
     qc.invalidateQueries({ queryKey: ["dashboard-data"] });
@@ -344,6 +346,31 @@ const Hoje = () => {
         })}
       </nav>
 
+      {/* Visão operacional: contexto suficiente para decidir sem abrir relatórios. */}
+      <section aria-label="Resumo da operação" className="grid grid-cols-2 xl:grid-cols-4 gap-2.5">
+        {[
+          { label: "Recebido hoje", value: data?.profitToday || 0, helper: "lucro confirmado", Icon: TrendingUp, tone: "text-success bg-success/10 ring-success/20" },
+          { label: "A receber no mês", value: data?.aReceberMonth || 0, helper: "parcelas pendentes", Icon: CalendarDays, tone: "text-foreground bg-white/[.06] ring-white/10" },
+          { label: "Lucro no mês", value: data?.profitMonth || 0, helper: "resultado realizado", Icon: Wallet, tone: "text-success bg-success/10 ring-success/20" },
+          { label: "Pagamentos recentes", value: data?.paidRecent?.length || 0, helper: "últimas baixas", Icon: History, tone: "text-muted-foreground bg-white/[.04] ring-white/10", count: true },
+        ].map((item) => (
+          <article key={item.label} className="rounded-2xl border border-white/10 bg-card/55 p-4 backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[.14em] text-muted-foreground truncate">{item.label}</p>
+                <p className="mt-2 text-lg sm:text-xl font-extrabold tabular-nums text-foreground truncate">
+                  {item.count ? item.value : `R$ ${fmtBRL(Number(item.value))}`}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{item.helper}</p>
+              </div>
+              <span className={`w-9 h-9 rounded-xl ring-1 flex items-center justify-center shrink-0 ${item.tone}`}>
+                <item.Icon size={15} aria-hidden="true" />
+              </span>
+            </div>
+          </article>
+        ))}
+      </section>
+
 
 
       {/* Primeiro nível: Cobranças + painel lateral */}
@@ -402,7 +429,7 @@ const Hoje = () => {
                       <MessageSquare size={12} />
                     </button>
                     <button
-                      onClick={() => markPaid(inst.id, amount)}
+                      onClick={() => setPendingPayment({ id: inst.id, amount, client: clientName })}
                       disabled={savingId === inst.id}
                       className="min-h-8 px-2 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
                     >
@@ -472,6 +499,52 @@ const Hoje = () => {
         </aside>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <section className="rounded-2xl border border-white/10 bg-card/55 overflow-hidden" aria-labelledby="agenda-title">
+          <div className="px-4 py-3 border-b border-white/[.08] flex items-center justify-between">
+            <div>
+              <h2 id="agenda-title" className="text-sm font-bold text-foreground">Próximos 7 dias</h2>
+              <p className="text-[11px] text-muted-foreground">Agenda prevista de recebimentos</p>
+            </div>
+            <CalendarDays size={16} className="text-muted-foreground" />
+          </div>
+          <div className="divide-y divide-white/[.06] max-h-72 overflow-y-auto">
+            {(data?.agenda || []).length === 0 && <p className="p-6 text-center text-xs text-muted-foreground">Nenhum vencimento nos próximos dias.</p>}
+            {(data?.agenda || []).map((day: any) => (
+              <button key={day.date} onClick={() => navigate("/cobrancas")} className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-white/[.035] transition-colors">
+                <div>
+                  <p className="text-xs font-bold text-foreground capitalize">{fmtDayLabel(day.date)}</p>
+                  <p className="text-[11px] text-muted-foreground">{day.items.length} parcela{day.items.length !== 1 ? "s" : ""}</p>
+                </div>
+                <p className="text-sm font-bold tabular-nums text-foreground">R$ {fmtBRL(day.total)}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-card/55 overflow-hidden" aria-labelledby="recentes-title">
+          <div className="px-4 py-3 border-b border-white/[.08] flex items-center justify-between">
+            <div>
+              <h2 id="recentes-title" className="text-sm font-bold text-foreground">Pagamentos recentes</h2>
+              <p className="text-[11px] text-muted-foreground">Últimas baixas confirmadas</p>
+            </div>
+            <History size={16} className="text-muted-foreground" />
+          </div>
+          <div className="divide-y divide-white/[.06] max-h-72 overflow-y-auto">
+            {(data?.paidRecent || []).length === 0 && <p className="p-6 text-center text-xs text-muted-foreground">Nenhum pagamento recente.</p>}
+            {(data?.paidRecent || []).map((payment: any) => (
+              <button key={payment.id} onClick={() => navigate(`/clientes/${payment.client_id}`)} className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-white/[.035] transition-colors">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-foreground truncate">{payment.clients?.name || "Cliente"}</p>
+                  <p className="text-[11px] text-muted-foreground">{payment.paid_at ? formatBR(payment.paid_at) : "Data não informada"}</p>
+                </div>
+                <p className="text-sm font-bold tabular-nums text-success shrink-0">+ R$ {fmtBRL(Number(payment.paid_amount || 0))}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+
       {/* Aniversariantes — só aparece se houver alguém hoje */}
       {(data?.birthdays || []).length > 0 && (
         <section className="rounded-2xl border border-pink-500/20 bg-pink-500/5 overflow-hidden">
@@ -498,6 +571,34 @@ const Hoje = () => {
             ))}
           </ul>
         </section>
+      )}
+
+      {pendingPayment && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/75 backdrop-blur-sm p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setPendingPayment(null); }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="confirm-payment-title" className="w-full max-w-md rounded-2xl border border-white/15 bg-zinc-950/95 p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[.16em] text-muted-foreground">Confirmação financeira</p>
+                <h2 id="confirm-payment-title" className="mt-1 text-lg font-bold text-foreground">Registrar pagamento?</h2>
+              </div>
+              <button onClick={() => setPendingPayment(null)} className="w-9 h-9 rounded-xl hover:bg-white/[.07] grid place-items-center" aria-label="Fechar"><X size={16} /></button>
+            </div>
+            <div className="my-5 rounded-xl border border-white/10 bg-white/[.035] p-4">
+              <p className="text-xs text-muted-foreground">Cliente</p>
+              <p className="mt-0.5 font-bold text-foreground">{pendingPayment.client}</p>
+              <p className="mt-3 text-xs text-muted-foreground">Valor da baixa</p>
+              <p className="mt-0.5 text-2xl font-extrabold tabular-nums text-success">R$ {fmtBRL(pendingPayment.amount)}</p>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">A baixa atualiza a parcela, o caixa e o lucro. Confira o recebimento antes de continuar.</p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button onClick={() => setPendingPayment(null)} className="h-11 rounded-xl border border-white/10 bg-white/[.03] text-sm font-bold hover:bg-white/[.07]">Cancelar</button>
+              <button onClick={() => markPaid(pendingPayment.id, pendingPayment.amount)} disabled={savingId === pendingPayment.id} className="h-11 rounded-xl bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                {savingId === pendingPayment.id ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                Confirmar baixa
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );
