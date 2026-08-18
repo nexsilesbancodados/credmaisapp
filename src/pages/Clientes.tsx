@@ -43,6 +43,23 @@ const useDebounced = <T,>(value: T, ms = 200) => {
 
 const PAGE_SIZE = 30;
 
+const parseCsvLine = (line: string, separator: string) => {
+  const values: string[] = [];
+  let value = "";
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (quoted && line[i + 1] === '"') { value += '"'; i++; }
+      else quoted = !quoted;
+    } else if (char === separator && !quoted) {
+      values.push(value.trim()); value = "";
+    } else value += char;
+  }
+  values.push(value.trim());
+  return values;
+};
+
 const Clientes = () => {
   const confirm = useConfirm();
   const navigate = useNavigate();
@@ -110,7 +127,7 @@ const Clientes = () => {
     queryFn: async () => {
       const [ctr, ins] = await Promise.all([
         fetchAll((f, t) => supabase.from("contracts").select("client_id, status").eq("user_id", user!.id).range(f, t)),
-        fetchAll((f, t) => supabase.from("contract_installments").select("client_id, status, due_date").eq("user_id", user!.id).eq("status", "pending").range(f, t)),
+        fetchAll((f, t) => supabase.from("contract_installments").select("client_id, status, due_date").eq("user_id", user!.id).in("status", ["pending", "overdue", "late"]).range(f, t)),
       ]);
       const map: Record<string, { contracts: number; active: number; overdue: number }> = {};
       const now = Date.now();
@@ -118,7 +135,7 @@ const Clientes = () => {
         const k = c.client_id; if (!k) return;
         if (!map[k]) map[k] = { contracts: 0, active: 0, overdue: 0 };
         map[k].contracts++;
-        if (c.status === "active") map[k].active++;
+        if (c.status === "active" || c.status === "overdue") map[k].active++;
       });
       (ins || []).forEach((i: any) => {
         const k = i.client_id; if (!k) return;
@@ -173,6 +190,7 @@ const Clientes = () => {
         total: derived.length,
         active: derived.filter((c: any) => c.status === "Ativo").length,
         inactive: derived.filter((c: any) => c.status === "Inativo").length,
+        overdue: derived.filter((c: any) => (contractMap[c.id]?.overdue || 0) > 0).length,
       },
     };
   }, [clients, dSearch, statusFilter, scoreBand, sort, contractMap]);
@@ -272,7 +290,7 @@ const Clientes = () => {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return [];
     const sep = lines[0].includes(";") ? ";" : ",";
-    const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
+    const headers = parseCsvLine(lines[0], sep).map(h => h.trim().toLowerCase().replace(/['"]/g, ""));
     const map: Record<string, string> = {
       nome: "name", name: "name",
       cpf: "cpf_cnpj", cnpj: "cpf_cnpj", cpf_cnpj: "cpf_cnpj", documento: "cpf_cnpj",
@@ -283,7 +301,7 @@ const Clientes = () => {
       "data nascimento": "birth_date", nascimento: "birth_date", birth_date: "birth_date", aniversario: "birth_date",
     };
     return lines.slice(1).map((line, idx) => {
-      const cols = line.split(sep).map(c => c.trim().replace(/^["']|["']$/g, ""));
+      const cols = parseCsvLine(line, sep);
       const row: any = { _row: idx + 2, _errors: [] as string[] };
       headers.forEach((h, i) => {
         const key = map[h];
@@ -379,14 +397,15 @@ const Clientes = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
         {[
           { label: "Total", value: stats.total, color: "text-foreground", filter: "all" as const },
           { label: "Ativos", value: stats.active, color: "text-success", filter: "Ativo" as const },
           { label: "Inativos", value: stats.inactive, color: "text-muted-foreground", filter: "Inativo" as const },
+          { label: "Com atraso", value: stats.overdue, color: "text-destructive", filter: "overdue" as const },
         ].map(s => (
-          <button key={s.label} onClick={() => setStatusFilter(s.filter)}
-            className={`rounded-3xl border p-6 text-left transition-all duration-300 ${statusFilter === s.filter ? "border-primary/40 bg-card/60 shadow-xl shadow-primary/5 scale-[1.02] z-10" : "border-border/10 bg-card/20 hover:bg-card/40"}`}>
+          <button key={s.label} onClick={() => s.filter === "overdue" ? setSort("overdue") : setStatusFilter(s.filter)}
+            className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-6 text-left transition-all duration-300 ${(s.filter === "overdue" ? sort === "overdue" : statusFilter === s.filter) ? "border-white/20 bg-card/60 shadow-xl" : "border-white/10 bg-card/20 hover:bg-card/40"}`}>
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{s.label}</p>
             <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
           </button>
