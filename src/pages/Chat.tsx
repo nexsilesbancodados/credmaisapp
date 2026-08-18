@@ -91,6 +91,7 @@ const Chat = () => {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [sending, setSending] = useState(false);
 
   // Audio recording
   const [recording, setRecording] = useState(false);
@@ -358,38 +359,50 @@ const Chat = () => {
   };
 
   const send = async () => {
-    if (!user || !profile || !scope || !input.trim()) return;
+    if (!user || !profile || !scope || !input.trim() || sending) return;
     if (profile.is_chat_blocked) return toast.error("Você está bloqueado de enviar mensagens");
+    setSending(true);
 
-    // Edit mode
-    if (editingMsg) {
-      const { error } = await supabase
-        .from("chat_messages")
-        .update({ content: input.trim(), edited_at: new Date().toISOString() })
-        .eq("id", editingMsg.id);
-      if (error) toast.error("Erro ao editar");
-      setInput(""); setEditingMsg(null);
-      return;
+    try {
+      // Edit mode
+      if (editingMsg) {
+        const { error } = await supabase
+          .from("chat_messages")
+          .update({ content: input.trim(), edited_at: new Date().toISOString() })
+          .eq("id", editingMsg.id)
+          .eq("user_id", user.id);
+        if (error) { toast.error("Erro ao editar"); return; }
+        setInput(""); setEditingMsg(null);
+        return;
+      }
+
+      const payload: any = {
+        user_id: user.id, user_name: profile.name, user_avatar: profile.avatar_url || null,
+        content: input.trim(), type: "text",
+        reply_to: replyTo ? { id: replyTo.id, user_name: replyTo.user_name, content: replyTo.content.slice(0, 120) } : null,
+      };
+      if (scope.kind === "channel") payload.channel_id = scope.id; else payload.dm_thread_id = scope.id;
+      const { error } = await supabase.from("chat_messages").insert(payload);
+      if (error) {
+        const f = friendlyError(error, "Não foi possível enviar a mensagem.");
+        toast.error(f.title, { description: f.description });
+        return;
+      }
+      setInput(""); setReplyTo(null);
+    } finally {
+      setSending(false);
     }
-
-    const payload: any = {
-      user_id: user.id, user_name: profile.name, user_avatar: profile.avatar_url || null,
-      content: input.trim(), type: "text",
-      reply_to: replyTo ? { id: replyTo.id, user_name: replyTo.user_name, content: replyTo.content.slice(0, 120) } : null,
-    };
-    if (scope.kind === "channel") payload.channel_id = scope.id; else payload.dm_thread_id = scope.id;
-    setInput(""); setReplyTo(null);
-    const { error } = await supabase.from("chat_messages").insert(payload);
-    if (error) { const f = friendlyError(error, "Não foi possível enviar a mensagem."); toast.error(f.title, { description: f.description }); }
   };
 
   const handleFile = async (file: File, asAudio = false) => {
     if (!user || !profile || !scope) return;
     if (file.size > 10 * 1024 * 1024) return toast.error("Arquivo deve ter até 10MB");
     setUploading(true);
+    let uploadedPath: string | null = null;
     try {
       const ext = file.name.split(".").pop() || "bin";
       const path = `${user.id}/chat/${Date.now()}.${ext}`;
+      uploadedPath = path;
       const { error: upErr } = await supabase.storage.from("uploads").upload(path, file);
       if (upErr) throw upErr;
       const signedUrl = await getSignedUploadUrl(path);
@@ -407,6 +420,7 @@ const Chat = () => {
       const { error: msgErr } = await supabase.from("chat_messages").insert(payload);
       if (msgErr) throw msgErr;
     } catch (e: any) {
+      if (uploadedPath) await supabase.storage.from("uploads").remove([uploadedPath]);
       toast.error("Erro ao enviar arquivo: " + e.message);
     } finally { setUploading(false); }
   };
@@ -1080,7 +1094,7 @@ const Chat = () => {
                       className="flex-1 resize-none bg-muted/30 border border-border/40 rounded-xl px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 max-h-32"
                     />
                     {input.trim() ? (
-                      <button onClick={send} className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shrink-0" title={editingMsg ? "Salvar" : "Enviar"}>
+                      <button onClick={send} disabled={sending || !input.trim()} className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition shrink-0 disabled:opacity-50" title={editingMsg ? "Salvar" : "Enviar"}>
                         {editingMsg ? <Check size={16} /> : <Send size={16} />}
                       </button>
                     ) : (
