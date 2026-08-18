@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { formatBR } from "@/lib/dateUtils";
 import { useNavigate } from "react-router-dom";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/feedback/ErrorState";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,7 +57,7 @@ export default function HistoricoFinanceiro() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ["historico-financeiro", user?.id],
     queryFn: async () => {
       const [contracts, installments] = await Promise.all([
@@ -96,6 +97,19 @@ export default function HistoricoFinanceiro() {
     return map;
   }, [data]);
 
+  const receivedByContract = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!data) return map;
+    for (const installment of data.installments as any[]) {
+      if (!installment.contract_id) continue;
+      map.set(
+        installment.contract_id,
+        (map.get(installment.contract_id) || 0) + Number(installment.paid_amount || installment.amount || 0),
+      );
+    }
+    return map;
+  }, [data]);
+
   const contractsInRange = useMemo(() => {
     if (!data) return [] as any[];
     const list = data.contracts.map((c: any) => ({
@@ -113,22 +127,19 @@ export default function HistoricoFinanceiro() {
 
   const summary = useMemo(() => {
     if (!data) return null;
-    const ids = new Set(contractsInRange.map((c: any) => c.id));
-    const paidHere = data.installments.filter((i: any) => ids.has(i.contract_id));
-    const totalRecebido = paidHere.reduce((s: number, i: any) =>
-      s + Number(i.paid_amount || i.amount || 0), 0);
+    const totalRecebido = contractsInRange.reduce((sum: number, contract: any) =>
+      sum + (receivedByContract.get(contract.id) || 0), 0);
     const totalCapital = contractsInRange.reduce((s: number, c: any) =>
       s + Number(c.capital || 0), 0);
-    const totalLucro = contractsInRange.reduce((s: number, c: any) =>
-      s + Number(c.total_interest || 0), 0);
+    const totalLucro = Math.max(0, totalRecebido - totalCapital);
     return {
       totalRecebido,
       totalCapital,
       totalLucro,
-      totalGeral: totalCapital + totalLucro,
+      totalGeral: totalRecebido,
       quantidade: contractsInRange.length,
     };
-  }, [data, contractsInRange]);
+  }, [data, contractsInRange, receivedByContract]);
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
@@ -144,6 +155,18 @@ export default function HistoricoFinanceiro() {
       <div className="p-4 md:p-6 space-y-4">
         <Skeleton className="h-32 w-full rounded-2xl" />
         <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState
+          title="Não foi possível carregar o histórico financeiro"
+          description="Confira sua conexão e tente novamente."
+          onRetry={() => void refetch()}
+        />
       </div>
     );
   }
@@ -209,7 +232,7 @@ export default function HistoricoFinanceiro() {
         <KPI icon={HandCoins} label="Capital histórico" value={`R$ ${fmt(summary?.totalCapital ?? 0)}`} tone="indigo" />
         <KPI icon={Wallet} label="Recebido histórico" value={`R$ ${fmt(summary?.totalRecebido ?? 0)}`} tone="success" />
         <KPI icon={TrendingUp} label="Lucro histórico" value={`R$ ${fmt(summary?.totalLucro ?? 0)}`} tone="primary" />
-        <KPI icon={Archive} label="Total (capital + lucro)" value={`R$ ${fmt(summary?.totalGeral ?? 0)}`} tone="success" />
+        <KPI icon={Archive} label="Total realizado" value={`R$ ${fmt(summary?.totalGeral ?? 0)}`} tone="success" />
       </div>
 
       {/* Busca */}
@@ -239,9 +262,8 @@ export default function HistoricoFinanceiro() {
             <span className="text-right">Lucro</span>
           </div>
           {filtered.map((c: any) => {
-            const recebido = data!.installments
-              .filter((i: any) => i.contract_id === c.id)
-              .reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount || 0), 0);
+            const recebido = receivedByContract.get(c.id) || 0;
+            const lucroRealizado = Math.max(0, recebido - Number(c.capital || 0));
             return (
               <button
                 key={c.id}
@@ -268,7 +290,7 @@ export default function HistoricoFinanceiro() {
                   R$ {fmt(recebido)}
                 </span>
                 <span className="text-sm font-black tabular-nums text-primary">
-                  R$ {fmt(Number(c.total_interest || 0))}
+                  R$ {fmt(lucroRealizado)}
                 </span>
               </button>
             );
@@ -284,15 +306,12 @@ export default function HistoricoFinanceiro() {
             <span className="text-sm tabular-nums text-success">
               R$ {fmt(
                 filtered.reduce((s: number, c: any) => {
-                  const rec = data!.installments
-                    .filter((i: any) => i.contract_id === c.id)
-                    .reduce((ss: number, i: any) => ss + Number(i.paid_amount || i.amount || 0), 0);
-                  return s + rec;
+                  return s + (receivedByContract.get(c.id) || 0);
                 }, 0)
               )}
             </span>
             <span className="text-sm tabular-nums text-primary">
-              R$ {fmt(filtered.reduce((s: number, c: any) => s + Number(c.total_interest || 0), 0))}
+              R$ {fmt(filtered.reduce((s: number, c: any) => s + Math.max(0, (receivedByContract.get(c.id) || 0) - Number(c.capital || 0)), 0))}
             </span>
           </div>
         </div>
