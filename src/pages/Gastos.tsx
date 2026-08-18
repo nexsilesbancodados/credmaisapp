@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/feedback/ErrorState";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -60,7 +61,7 @@ const Gastos = () => {
     [["gastos-data", user?.id || ""]],
   );
 
-  const { data: expenses = [], isLoading: loading } = useQuery({
+  const { data: expenses = [], isLoading: loading, error: loadError, refetch } = useQuery({
     queryKey: ["gastos-data", user?.id],
     queryFn: async () => {
       const data = await fetchAll((f, t) => supabase.from("expenses").select("*").eq("user_id", user!.id).order("date", { ascending: false }).range(f, t));
@@ -81,16 +82,21 @@ const Gastos = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user || !desc.trim() || !amount) return;
+    if (!user || !desc.trim() || !amount || saving) return;
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast({ title: "Valor inválido", description: "Informe um valor maior que zero.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
     const payload = {
-      description: desc.trim(), amount: parseFloat(amount),
+      description: desc.trim(), amount: parsedAmount,
       date: new Date(date).toISOString(), category: category.trim() || null,
     };
 
     if (editingId) {
-      const { error } = await supabase.from("expenses").update(payload).eq("id", editingId);
+      const { error } = await supabase.from("expenses").update(payload).eq("id", editingId).eq("user_id", user.id);
       setSaving(false);
       if (error) toast({ ...friendlyError(error), variant: "destructive" });
       else { toast({ title: "✓ Gasto atualizado!" }); resetForm(); qc.invalidateQueries({ queryKey: ["gastos-data"] }); }
@@ -103,9 +109,10 @@ const Gastos = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) return;
     // Confere o erro: antes avisava "Gasto excluído" mesmo quando a exclusão
     // falhava, e o valor continuava descontando do saldo da carteira.
-    const { error } = await supabase.from("expenses").delete().eq("id", id);
+    const { error } = await supabase.from("expenses").delete().eq("id", id).eq("user_id", user.id);
     setDeleteConfirm(null);
     if (error) { toast({ ...friendlyError(error, "Não foi possível excluir o gasto."), variant: "destructive" }); return; }
     qc.invalidateQueries({ queryKey: ["gastos-data"] });
@@ -380,7 +387,12 @@ const Gastos = () => {
       {/* List grouped by date */}
       {loading ? (
         <SkeletonList rows={5} height="h-16" />
-
+      ) : loadError ? (
+        <ErrorState
+          title="Não foi possível carregar os gastos"
+          description="Confira sua conexão e tente novamente."
+          onRetry={() => void refetch()}
+        />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={TrendingDown}
