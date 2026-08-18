@@ -73,8 +73,16 @@ serve(async (req) => {
     const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
 
     const now = new Date();
-    const todayStr = now.toISOString().split("T")[0];
-    const dayOfWeek = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][now.getDay()];
+    const spParts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
+      }).formatToParts(now).map((part) => [part.type, part.value]),
+    );
+    const todayStr = `${spParts.year}-${spParts.month}-${spParts.day}`;
+    const dayOfWeek = String(spParts.weekday || "").slice(0, 3).toLowerCase();
+    const todayDateValue = Date.parse(`${todayStr}T12:00:00Z`);
+    const startOfTodayUtc = `${todayStr}T03:00:00Z`;
 
     const { data: allSettings } = await supabase.from("settings").select("*").eq("bot_enabled", true);
     if (!allSettings?.length) {
@@ -148,7 +156,7 @@ serve(async (req) => {
             .from("audit_logs").select("id", { count: "exact", head: true })
             .eq("user_id", userId).eq("entity_type", "auto_collection")
             .eq("action", "whatsapp_desconectado")
-            .gte("created_at", `${todayStr}T00:00:00Z`);
+            .gte("created_at", startOfTodayUtc);
           if (!jaAvisou.count) {
             await supabase.from("notifications").insert({
               user_id: userId,
@@ -169,7 +177,7 @@ serve(async (req) => {
       const { count: sentToday } = await supabase
         .from("audit_logs").select("id", { count: "exact", head: true })
         .eq("user_id", userId).eq("entity_type", "auto_collection")
-        .eq("action", "message_sent").gte("created_at", `${todayStr}T00:00:00Z`);
+        .eq("action", "message_sent").gte("created_at", startOfTodayUtc);
 
       const maxPerDay = settings.bot_max_messages_per_day ?? 50;
       if ((sentToday || 0) >= maxPerDay) {
@@ -260,7 +268,8 @@ serve(async (req) => {
         let selectedDays = -9999;   // valor "dias em atraso" (negativo = pré-vencimento)
         let selectedInst = insts[0];
         for (const i of insts) {
-          const days = Math.floor((now.getTime() - new Date(i.due_date).getTime()) / 86400000);
+          const dueDateValue = Date.parse(`${String(i.due_date).slice(0, 10)}T12:00:00Z`);
+          const days = Math.floor((todayDateValue - dueDateValue) / 86400000);
           if (days > selectedDays) { selectedDays = days; selectedInst = i; }
         }
 
@@ -340,7 +349,7 @@ serve(async (req) => {
         const liveLateFee = (i: any) => {
           const base = Number(i.amount) || 0;
           const due = new Date(String(i.due_date).slice(0, 10) + "T00:00:00");
-          const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
+          const today = new Date(todayStr + "T00:00:00");
           const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86400000));
           if (!base || days <= 0) return Number(i.late_fee) || 0;
           const contractRate = Number(i.contracts?.daily_interest_percent);
@@ -606,7 +615,6 @@ ${extraDiversity}`;
               });
               // Registra a abordagem usada NA MEMÓRIA do cliente (evita repetir no próximo cron)
               try {
-                const todayStr = new Date().toISOString().slice(0, 10);
                 const memUpd = pushIntent(clientMemory, {
                   tipo: "silencio", // será atualizado pela resposta do cliente, se houver
                   data: todayStr,
