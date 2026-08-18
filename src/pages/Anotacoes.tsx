@@ -9,13 +9,15 @@ import { friendlyError } from "@/lib/friendlyError";
 import { SkeletonCards } from "@/components/feedback/Skeletons";
 import ErrorState from "@/components/feedback/ErrorState";
 import LoadingButton from "@/components/feedback/LoadingButton";
+import type { Database } from "@/integrations/supabase/types";
 
+type Note = Database["public"]["Tables"]["notes"]["Row"];
 
 const Anotacoes = () => {
   const confirm = useConfirm();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [notes, setNotes] = useState<any[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<unknown>(null);
   const [saving, setSaving] = useState(false);
@@ -26,11 +28,12 @@ const Anotacoes = () => {
   const [editTitle, setEditTitle] = useState("");
 
   const fetchNotes = async () => {
+    if (!user) return;
     // Filtro explícito por dono. A RLS já garante o isolamento, mas depender só
     // dela deixa a tela à mercê de uma policy afrouxada no futuro — e sem o
     // filtro o Postgres também não usa o índice por user_id.
     const { data, error } = await supabase.from("notes").select("*")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) setLoadError(error);
     else { setLoadError(null); setNotes(data || []); }
@@ -58,15 +61,24 @@ const Anotacoes = () => {
 
 
   const handleDelete = async (id: string) => {
+    if (!user) return;
     if (!(await confirm("Excluir esta anotação?"))) return;
-    await supabase.from("notes").delete().eq("id", id);
+    const { error } = await supabase.from("notes").delete().eq("id", id).eq("user_id", user.id);
+    if (error) {
+      toast({ ...friendlyError(error, "Não foi possível excluir a anotação."), variant: "destructive" });
+      return;
+    }
     toast({ title: "Anotação excluída" });
     fetchNotes();
   };
 
   const handleEdit = async (id: string) => {
-    if (!editTitle.trim()) return;
-    await supabase.from("notes").update({ title: editTitle.trim() }).eq("id", id);
+    if (!user || !editTitle.trim()) return;
+    const { error } = await supabase.from("notes").update({ title: editTitle.trim() }).eq("id", id).eq("user_id", user.id);
+    if (error) {
+      toast({ ...friendlyError(error, "Não foi possível atualizar a anotação."), variant: "destructive" });
+      return;
+    }
     toast({ title: "✓ Atualizada!" });
     setEditingId(null);
     fetchNotes();
@@ -131,8 +143,8 @@ const Anotacoes = () => {
             <textarea value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Lembrar de cobrar fulano amanhã..."
               rows={3}
               className="w-full px-4 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm input-enhanced resize-none"
-              onKeyDown={(e) => e.key === "Enter" && e.metaKey && handleAdd()} />
-            <p className="text-[10px] text-muted-foreground mt-1">Cmd+Enter para salvar</p>
+              onKeyDown={(e) => e.key === "Enter" && (e.metaKey || e.ctrlKey) && handleAdd()} />
+            <p className="text-[10px] text-muted-foreground mt-1">Ctrl/Cmd+Enter para salvar</p>
           </div>
           <div className="flex gap-2">
             <LoadingButton onClick={handleAdd} loading={saving} loadingText="Salvando…">Salvar</LoadingButton>
@@ -176,7 +188,7 @@ const Anotacoes = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <div className="absolute top-4 right-4 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
                     <button onClick={() => { setEditingId(n.id); setEditTitle(n.title); }}
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
                       <Edit size={13} />
