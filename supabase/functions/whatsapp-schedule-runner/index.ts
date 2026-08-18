@@ -22,13 +22,8 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  const nowIso = new Date().toISOString();
-  const { data: jobs } = await supabase
-    .from("whatsapp_scheduled_messages")
-    .select("*")
-    .eq("status", "pending")
-    .lte("scheduled_for", nowIso)
-    .limit(50);
+  const { data: jobs, error: claimError } = await supabase.rpc("claim_due_whatsapp_messages", { _limit: 50 });
+  if (claimError) throw claimError;
 
   let sent = 0;
   let failed = 0;

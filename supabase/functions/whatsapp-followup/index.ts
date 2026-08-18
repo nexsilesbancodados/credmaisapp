@@ -33,21 +33,8 @@ serve(async (req) => {
     );
 
     // Conversas com cliente parado entre 6h e 48h, sem follow-up enviado, bot ativo, não bloqueada
-    const now = Date.now();
-    const minAgo = new Date(now - 48 * 60 * 60 * 1000).toISOString();
-    const maxAgo = new Date(now - 6 * 60 * 60 * 1000).toISOString();
-
-    const { data: convos } = await supabase
-      .from("whatsapp_conversations")
-      .select("id, user_id, jid, instance, contact_name, last_message_from")
-      .eq("last_message_from", "client")
-      .eq("bot_paused", false)
-      .eq("blocked", false)
-      .eq("needs_human", false)
-      .is("followup_sent_at", null)
-      .gte("last_message_at", minAgo)
-      .lte("last_message_at", maxAgo)
-      .limit(50);
+    const { data: convos, error: claimError } = await supabase.rpc("claim_whatsapp_followups", { _limit: 50 });
+    if (claimError) throw claimError;
 
     if (!convos?.length) {
       return new Response(JSON.stringify({ status: "ok", processed: 0 }), {
@@ -64,10 +51,16 @@ serve(async (req) => {
         .eq("user_id", c.user_id)
         .single();
 
-      if (!settings?.bot_enabled || !settings.whatsapp_api_url || !settings.whatsapp_api_key) continue;
+      if (!settings?.bot_enabled || !settings.whatsapp_api_url || !settings.whatsapp_api_key) {
+        await supabase.from("whatsapp_conversations").update({ followup_claimed_at: null }).eq("id", c.id);
+        continue;
+      }
 
       const instance = c.instance || settings.whatsapp_instance;
-      if (!instance) continue;
+      if (!instance) {
+        await supabase.from("whatsapp_conversations").update({ followup_claimed_at: null }).eq("id", c.id);
+        continue;
+      }
 
       const text = pick();
       try {
@@ -81,6 +74,7 @@ serve(async (req) => {
         );
         if (!res.ok) {
           console.error("send fail", c.id, await res.text());
+          await supabase.from("whatsapp_conversations").update({ followup_claimed_at: null }).eq("id", c.id);
           continue;
         }
 
@@ -99,12 +93,14 @@ serve(async (req) => {
           last_message_preview: text.slice(0, 200),
           last_message_from: "bot",
           followup_sent_at: new Date().toISOString(),
+          followup_claimed_at: null,
           updated_at: new Date().toISOString(),
         }).eq("id", c.id);
 
         sent++;
       } catch (e) {
         console.error("followup error", c.id, e);
+        await supabase.from("whatsapp_conversations").update({ followup_claimed_at: null }).eq("id", c.id);
       }
     }
 

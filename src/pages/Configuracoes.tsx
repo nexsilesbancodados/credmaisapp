@@ -62,7 +62,7 @@ const Configuracoes = () => {
 
   const [form, setForm] = useState({
     company_name: "", company_cnpj: "", company_address: "", company_phone: "", company_logo_url: "", favicon_url: "",
-    primary_color: "#4a86c8", accent_color: "#6ba3d6", theme_mode: "dark",
+    primary_color: "#f5f5f5", accent_color: "#a3a3a3", theme_mode: "dark",
     sidebar_style: "default", login_title: "", login_subtitle: "",
     footer_text: "", border_radius: "16", font_family: "default",
     default_interest_rate: "10", default_late_fee: "0", default_daily_interest: "4", default_frequency: "monthly",
@@ -117,8 +117,8 @@ const Configuracoes = () => {
         company_phone: s.company_phone || "",
         company_logo_url: s.company_logo_url || "",
         favicon_url: s.favicon_url || "",
-        primary_color: s.primary_color || "#4a86c8",
-        accent_color: s.accent_color || "#6ba3d6",
+        primary_color: s.primary_color || "#f5f5f5",
+        accent_color: s.accent_color || "#a3a3a3",
         theme_mode: s.theme_mode || "dark",
         sidebar_style: s.sidebar_style || "default",
         login_title: s.login_title || "",

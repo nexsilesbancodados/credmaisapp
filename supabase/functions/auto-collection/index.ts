@@ -209,7 +209,7 @@ serve(async (req) => {
       // A regra correta é a mesma do painel: em aberto = não paga e não cancelada.
       const { data: installments } = await supabase
         .from("contract_installments")
-        .select("id, amount, due_date, client_id, installment_number, late_fee")
+        .select("id, amount, due_date, client_id, installment_number, late_fee, contracts(daily_interest_percent)")
         .eq("user_id", userId)
         .not("status", "in", '("paid","cancelled")')
         .lte("due_date", lookAheadDate);
@@ -223,6 +223,11 @@ serve(async (req) => {
       const { data: clients } = await supabase
         .from("clients").select("id, name, phone, whatsapp, email, credit_score, bot_memory").in("id", clientIds);
       const clientMap = new Map((clients || []).map(c => [c.id, c]));
+
+      // Opt-out/bloqueio no Inbox vale também para a régua automática.
+      const { data: blockedConversations } = await supabase
+        .from("whatsapp_conversations").select("jid").eq("user_id", userId).eq("blocked", true);
+      const blockedPhones = new Set((blockedConversations || []).map((c: any) => String(c.jid || "").replace(/\D/g, "")));
 
       const { data: profile } = await supabase
         .from("profiles").select("name, billing_message, pix_key, pix_key_type").eq("id", userId).single();
@@ -247,6 +252,9 @@ serve(async (req) => {
 
         const phone = client.whatsapp || client.phone;
         const email = client.email;
+        const normalizedPhone = String(phone || "").replace(/\D/g, "");
+        const phoneWithCountry = normalizedPhone.startsWith("55") ? normalizedPhone : `55${normalizedPhone}`;
+        const whatsappBlocked = !!normalizedPhone && (blockedPhones.has(normalizedPhone) || blockedPhones.has(phoneWithCountry));
 
         // Descobre parcela mais atrasada OU mais próxima do vencimento
         let selectedDays = -9999;   // valor "dias em atraso" (negativo = pré-vencimento)
@@ -335,7 +343,8 @@ serve(async (req) => {
           const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00");
           const days = Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86400000));
           if (!base || days <= 0) return Number(i.late_fee) || 0;
-          const rate = (Number(i.daily_interest_percent) > 0 ? Number(i.daily_interest_percent) : 4) / 100;
+          const contractRate = Number(i.contracts?.daily_interest_percent);
+          const rate = (contractRate > 0 ? contractRate : 4) / 100;
           const fee = Math.round(base * (Math.pow(1 + rate, days) - 1) * 100) / 100;
           return Math.max(fee, Number(i.late_fee) || 0);
         };
@@ -346,7 +355,7 @@ serve(async (req) => {
         // 74 contratos em atraso são todos 4%, então o número está certo — mas
         // no dia em que uma taxa mudar, o cliente receberia por escrito um
         // percentual que não é o dele. Aqui o texto passa a sair do dado.
-        const taxasNoLote = [...new Set(insts.map((i: any) => Number(i.daily_interest_percent) > 0 ? Number(i.daily_interest_percent) : 4))];
+        const taxasNoLote = [...new Set(insts.map((i: any) => Number(i.contracts?.daily_interest_percent) > 0 ? Number(i.contracts.daily_interest_percent) : 4))];
         const taxaTexto = taxasNoLote.length === 1
           ? `${String(taxasNoLote[0]).replace(".", ",")}% ao dia`
           : "juros diários do contrato";
@@ -569,10 +578,14 @@ ${extraDiversity}`;
         }
 
         let waOk = false;
-        if (waConfigured && phone && (matchingRule.channel === "whatsapp" || matchingRule.channel === "both" || !matchingRule.channel)) {
+        if (waConfigured && phone && !whatsappBlocked && (matchingRule.channel === "whatsapp" || matchingRule.channel === "both" || !matchingRule.channel)) {
           const cleanPhone = phone.replace(/\D/g, "");
           const recipient = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
           try {
+            const { data: claimed } = await supabase.rpc("claim_collection_dispatch", {
+              _user_id: userId, _client_id: clientId, _channel: "whatsapp", _bucket: now.toISOString(),
+            });
+            if (!claimed) { skipped++; continue; }
             const sendResp = await fetch(`${apiUrl}/message/sendText/${instanceName}`, {
               method: "POST",
               headers: { "Content-Type": "application/json", apikey: apiKey },
@@ -626,10 +639,17 @@ ${extraDiversity}`;
           }
         }
 
-        const shouldEmail = email && (
+        let shouldEmail = !!email && (
           matchingRule.channel === "email" || matchingRule.channel === "both" ||
           (!waOk && !waConfigured) || (!waOk && daysOverdue >= 15) || daysOverdue >= 30
         );
+
+        if (shouldEmail) {
+          const { data: claimed } = await supabase.rpc("claim_collection_dispatch", {
+            _user_id: userId, _client_id: clientId, _channel: "email", _bucket: now.toISOString(),
+          });
+          shouldEmail = !!claimed;
+        }
 
         if (shouldEmail) {
           const subject = isPreDue

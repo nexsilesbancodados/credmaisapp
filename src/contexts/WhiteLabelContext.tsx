@@ -43,8 +43,8 @@ const defaults: WhiteLabelConfig = {
   companyName: "CREDMAIS APP",
   companyLogo: null,
   faviconUrl: null,
-  primaryColor: "#4a86c8",
-  accentColor: "#6ba3d6",
+  primaryColor: "#f5f5f5",
+  accentColor: "#a3a3a3",
   themeMode: "dark",
   sidebarStyle: "default",
   loginTitle: "CREDMAIS APP",
@@ -205,7 +205,13 @@ export const WhiteLabelProvider = ({ children }: { children: React.ReactNode }) 
 
   const loadConfig = useCallback(async () => {
     if (!user) {
-      setConfig(defaults);
+      let publicBrand = defaults;
+      try {
+        const cached = JSON.parse(localStorage.getItem("credmais-public-brand") || "null");
+        if (cached && typeof cached === "object") publicBrand = { ...defaults, ...cached };
+      } catch { /* cache inválido: usa o padrão */ }
+      setConfig(publicBrand);
+      applyConfig(publicBrand);
       setIsLoaded(true);
       const stored = localStorage.getItem("theme") as "light" | "dark" | null;
       const resolved = stored || "dark";
@@ -238,6 +244,14 @@ export const WhiteLabelProvider = ({ children }: { children: React.ReactNode }) 
         modulesEnabled: { ...DEFAULT_MODULES, ...(s.modules_enabled || {}) },
       };
       setConfig(newConfig);
+      // Cache restrito a dados públicos mantém a marca na tela de login após logout.
+      localStorage.setItem("credmais-public-brand", JSON.stringify({
+        companyName: newConfig.companyName, companyLogo: newConfig.companyLogo,
+        faviconUrl: newConfig.faviconUrl, primaryColor: newConfig.primaryColor,
+        accentColor: newConfig.accentColor, loginTitle: newConfig.loginTitle,
+        loginSubtitle: newConfig.loginSubtitle, footerText: newConfig.footerText,
+        borderRadius: newConfig.borderRadius, fontFamily: newConfig.fontFamily,
+      }));
       applyConfig(newConfig);
       const resolved = resolveTheme(newConfig.themeMode);
       setEffectiveTheme(resolved);
