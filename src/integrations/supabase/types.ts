@@ -2652,6 +2652,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_set_user_admin: {
+        Args: { _make_admin: boolean; _target_user_id: string }
+        Returns: undefined
+      }
       can_access_chat_topic: {
         Args: { _topic: string; _user_id: string }
         Returns: boolean

@@ -30,6 +30,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatBR } from "@/lib/dateUtils";
 import { PLANS, normalizeTier } from "@/lib/plans";
+import ErrorState from "@/components/feedback/ErrorState";
+
+const csvCell = (value: unknown) => {
+  let text = String(value ?? "");
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};
 
 type UserRow = {
   id: string;
@@ -71,6 +78,7 @@ const Admin = () => {
   const [supportUnread, setSupportUnread] = useState(0);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<FilterTab>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -85,11 +93,15 @@ const Admin = () => {
   const [createOpen, setCreateOpen] = useState(false);
 
   const fetchUsers = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
-    setUsers((data as UserRow[]) || []);
+    if (error) setLoadError(error);
+    else {
+      setLoadError(null);
+      setUsers((data as UserRow[]) || []);
+    }
     setLoading(false);
   };
 
@@ -195,14 +207,8 @@ const Admin = () => {
   };
 
   const handleToggleAdmin = async (userId: string, current: boolean) => {
-    // M6: checa cada escrita. Antes ignorava erros e mostrava sucesso mesmo se
-    // o RLS negasse — deixando profiles.is_admin e user_roles fora de sincronia.
-    const { error: pErr } = await supabase.from("profiles").update({ is_admin: !current }).eq("id", userId);
-    if (pErr) { toast({ ...friendlyError(pErr, "Não foi possível atualizar o admin."), variant: "destructive" }); return; }
-    const { error: rErr } = !current
-      ? await supabase.from("user_roles").insert({ user_id: userId, role: "admin" })
-      : await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
-    if (rErr) { toast({ ...friendlyError(rErr, "Perfil atualizado, mas a role admin falhou — verifique."), variant: "destructive" }); return; }
+    const { error } = await supabase.rpc("admin_set_user_admin", { _target_user_id: userId, _make_admin: !current });
+    if (error) { toast({ ...friendlyError(error, "Não foi possível atualizar o administrador."), variant: "destructive" }); return; }
     toast({ title: current ? "Admin removido" : "Promovido a admin" });
   };
 
@@ -284,13 +290,14 @@ const Admin = () => {
       u.is_admin ? "Sim" : "Não",
       formatBR(u.created_at),
     ]);
-    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const csv = [headers, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `usuarios-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
@@ -504,6 +511,8 @@ const Admin = () => {
             <div key={i} className="h-16 rounded-xl bg-muted/40 animate-pulse" />
           ))}
         </div>
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => { setLoading(true); fetchUsers(); }} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-border">
           <Users size={40} className="mx-auto text-muted-foreground mb-3" />
