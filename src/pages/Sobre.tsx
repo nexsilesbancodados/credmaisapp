@@ -7,7 +7,7 @@ const features = [
   { icon: Code, title: "Tecnologia", desc: "React, TypeScript, Supabase, Vite", color: "text-cyan-400", bg: "bg-cyan-400/10" },
   { icon: Users, title: "Multi-usuário", desc: "Roles, permissões e portais externos", color: "text-violet-400", bg: "bg-violet-400/10" },
   { icon: Zap, title: "Performance", desc: "Cache inteligente e Realtime", color: "text-amber-400", bg: "bg-amber-400/10" },
-  { icon: Star, title: "Interface", desc: "Design premium azul metálico", color: "text-blue-400", bg: "bg-blue-400/10" },
+  { icon: Star, title: "Interface", desc: "Design premium preto com efeito glass", color: "text-zinc-200", bg: "bg-white/10" },
   { icon: Globe, title: "Acessível", desc: "Responsivo em todos os dispositivos", color: "text-rose-400", bg: "bg-rose-400/10" },
 ];
 

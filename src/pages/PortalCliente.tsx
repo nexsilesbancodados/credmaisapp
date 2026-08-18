@@ -210,9 +210,8 @@ const PortalCliente = () => {
   // Apply dynamic primary color from branding
   useEffect(() => {
     const color = portalData?.branding?.portal_primary_color;
-    if (color) {
-      document.documentElement.style.setProperty("--portal-primary", color);
-    }
+    document.documentElement.style.setProperty("--portal-primary", color || "#f5f5f5");
+    return () => { document.documentElement.style.removeProperty("--portal-primary"); };
   }, [portalData?.branding?.portal_primary_color]);
 
   const formatCpf = (value: string) => {
@@ -928,7 +927,7 @@ const PortalCliente = () => {
                   <Sparkles size={12} /> Assistente de negociação
                 </h2>
                 <div className="bento-tile p-0 overflow-hidden">
-                  <NegotiationTab clientId={portalData.client.id} cpf={portalData.client.cpf_cnpj} />
+                  <NegotiationTab clientId={portalData.client.id} cpf={portalData.client.cpf_cnpj} sessionToken={portalData.session_token || ""} />
                 </div>
               </div>
             )}

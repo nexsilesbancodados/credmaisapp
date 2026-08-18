@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-export const NegotiationTab = ({ clientId, cpf }: { clientId: string, cpf: string }) => {
+export const NegotiationTab = ({ clientId, cpf, sessionToken }: { clientId: string, cpf: string, sessionToken: string }) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Olá! Sou o assistente de negociação. Identifiquei algumas pendências em seu nome. Como posso ajudar você a regularizar sua situação hoje?" }
   ]);
@@ -36,19 +35,18 @@ export const NegotiationTab = ({ clientId, cpf }: { clientId: string, cpf: strin
     setIsLoading(true);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData?.session;
-      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/client-negotiation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token || ""}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           messages: newMessages.slice(-10), // Enviar apenas as últimas 10 para economizar tokens
           clientId,
-          cpf
+          // Compatibilidade temporária até a função protegida por sessão ser publicada.
+          cpf,
+          session_token: sessionToken,
         }),
       });
 

@@ -306,15 +306,15 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         fixed left-0 top-0 h-dvh flex flex-col z-50
         transition-[width] duration-300 ease-out
         border-r border-border/10 shadow-2xl shadow-black/40
-        ${collapsed ? "w-[76px]" : "w-[260px]"}
+        ${collapsed ? "w-[84px]" : "w-[280px]"}
       `}
       style={{
-        background: sidebarBg || "hsl(var(--card) / 0.45)",
+        background: sidebarBg || "linear-gradient(180deg, hsl(0 0% 7% / .94), hsl(0 0% 3% / .97))",
         backdropFilter: "blur(40px)",
       }}
     >
       {/* Logo */}
-      <div className={`flex items-center h-14 border-b border-border/10 shrink-0 ${collapsed ? "justify-center px-2" : "px-3 gap-2.5"}`}>
+      <div className={`flex items-center h-16 border-b border-white/10 shrink-0 ${collapsed ? "justify-center px-2" : "px-4 gap-3"}`}>
         <div className="relative shrink-0">
           <img src={logoSrc} alt={brandName} width={30} height={30} className="rounded-lg ring-1 ring-primary/20" />
           <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-card" />
@@ -334,7 +334,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
       {/* Botão colapsar */}
       <button
         onClick={onToggleCollapse}
-        className="absolute -right-3 top-12 w-6 h-6 rounded-full bg-background border border-border/30 shadow-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors z-10"
+        className="absolute -right-3 top-14 w-7 h-7 rounded-full bg-zinc-950 border border-white/15 shadow-xl flex items-center justify-center text-zinc-400 hover:text-white hover:border-white/35 transition-colors z-10"
         title={collapsed ? "Expandir" : "Minimizar"}
       >
         <span className={`transition-transform duration-300 ${collapsed ? "rotate-0" : "rotate-180"}`}>

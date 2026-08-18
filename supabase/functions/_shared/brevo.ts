@@ -12,6 +12,7 @@ interface EmailPayload {
   to: { email: string; name?: string }[];
   subject: string;
   htmlContent: string;
+  senderName?: string;
 }
 
 export async function sendEmail(payload: EmailPayload) {
@@ -20,6 +21,7 @@ export async function sendEmail(payload: EmailPayload) {
     return { error: "BREVO_API_KEY not set" };
   }
 
+  const { senderName, ...emailPayload } = payload;
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
@@ -28,8 +30,11 @@ export async function sendEmail(payload: EmailPayload) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "System Juros", email: "noreply@systemjuros.com.br" }, // TODO: Make dynamic if needed
-      ...payload,
+      sender: {
+        name: senderName || Deno.env.get("EMAIL_SENDER_NAME") || "CredMais App",
+        email: Deno.env.get("BREVO_SENDER_EMAIL") || "noreply@systemjuros.com.br",
+      },
+      ...emailPayload,
     }),
   });
 
@@ -44,15 +49,15 @@ export async function sendEmail(payload: EmailPayload) {
 
 export const templates = {
   welcome: (name: string) => ({
-    subject: "Bem-vindo ao System Juros! 🚀",
+    subject: "Bem-vindo ao CredMais App! 🚀",
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #333;">Olá, ${name}!</h2>
-        <p>Estamos muito felizes em ter você conosco no <strong>System Juros</strong>.</p>
+        <p>Estamos muito felizes em ter você conosco no <strong>CredMais App</strong>.</p>
         <p>Sua conta foi criada com sucesso e seu <strong>teste grátis de 3 dias</strong> já está ativo!</p>
         <p>Aproveite todas as ferramentas de gestão de cobranças e automações para escalar seu negócio.</p>
         <div style="margin: 30px 0; text-align: center;">
-          <a href="https://systemjuros.com.br" style="background: #fbbf24; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Dashboard</a>
+          <a href="https://credmaisapp.com.br" style="background: #fbbf24; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Dashboard</a>
         </div>
         <p style="font-size: 12px; color: #666;">Se precisar de ajuda, responda a este e-mail.</p>
       </div>
@@ -63,10 +68,10 @@ export const templates = {
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #333;">Olá, ${name}!</h2>
-        <p>Passando para avisar que seu período de teste no <strong>System Juros</strong> termina em <strong>${daysLeft} dias</strong>.</p>
+        <p>Passando para avisar que seu período de teste no <strong>CredMais App</strong> termina em <strong>${daysLeft} dias</strong>.</p>
         <p>Para não perder o acesso às suas automações e dados, recomendamos que assine um de nossos planos agora mesmo.</p>
         <div style="margin: 30px 0; text-align: center;">
-          <a href="https://systemjuros.com.br/checkout" style="background: #fbbf24; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Renovar Assinatura</a>
+          <a href="https://credmaisapp.com.br/checkout" style="background: #fbbf24; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Renovar Assinatura</a>
         </div>
         <p style="font-size: 12px; color: #666;">Qualquer dúvida, estamos à disposição.</p>
       </div>
@@ -77,10 +82,10 @@ export const templates = {
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
         <h2 style="color: #333;">Olá, ${name}!</h2>
-        <p>Seu pagamento foi aprovado e sua assinatura no <strong>System Juros</strong> está <strong>Ativa</strong>!</p>
+        <p>Seu pagamento foi aprovado e sua assinatura no <strong>CredMais App</strong> está <strong>Ativa</strong>!</p>
         <p>Agora você tem acesso ilimitado a todas as funcionalidades do sistema.</p>
         <div style="margin: 30px 0; text-align: center;">
-          <a href="https://systemjuros.com.br" style="background: #fbbf24; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ir para o Sistema</a>
+          <a href="https://credmaisapp.com.br" style="background: #fbbf24; color: #000; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Ir para o Sistema</a>
         </div>
       </div>
     `
@@ -91,7 +96,7 @@ export const templates = {
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #f9fafb;">
         <div style="text-align: center; padding-bottom: 20px;">
           <h1 style="color: #1e293b; margin: 0;">Relatório Mensal BI</h1>
-          <p style="color: #64748b; font-size: 14px;">System Juros - Inteligência de Negócios</p>
+          <p style="color: #64748b; font-size: 14px;">CredMais App - Inteligência de Negócios</p>
         </div>
         
         <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -119,10 +124,10 @@ export const templates = {
         </div>
 
         <div style="margin: 30px 0; text-align: center;">
-          <a href="https://systemjuros.com.br/relatorios" style="background: #1e293b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">Ver Detalhes no Sistema</a>
+          <a href="https://credmaisapp.com.br/relatorios" style="background: #1e293b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">Ver Detalhes no Sistema</a>
         </div>
         
-        <p style="font-size: 11px; color: #94a3b8; text-align: center;">Este é um relatório automático gerado pelo seu assistente de BI do System Juros.</p>
+        <p style="font-size: 11px; color: #94a3b8; text-align: center;">Este é um relatório automático gerado pelo seu assistente de BI do CredMais App.</p>
       </div>
     `
   })

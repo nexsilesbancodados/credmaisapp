@@ -16,29 +16,29 @@ const PRO_PATHS = ["/comunicacao", "/comunicacao/inbox", "/agente-ia", "/automac
 
 const mobileIconColor: Record<string, string> = {
   "/hoje": "text-amber-400",
-  "/dashboard": "text-blue-400",
-  "/clientes": "text-cyan-400",
-  "/cobrancas": "text-blue-300",
-  "/carteira": "text-sky-400",
-  "/analises": "text-indigo-400",
-  "/relatorios": "text-sky-300",
+  "/dashboard": "text-zinc-300",
+  "/clientes": "text-zinc-300",
+  "/cobrancas": "text-zinc-200",
+  "/carteira": "text-zinc-300",
+  "/analises": "text-zinc-400",
+  "/relatorios": "text-zinc-300",
   "/cobradores": "text-slate-300",
   "/lucros": "text-emerald-400",
   "/gastos": "text-rose-400",
   "/agente-ia": "text-violet-400",
-  "/ferramentas/simulador": "text-cyan-300",
-  "/ferramentas/metas": "text-blue-300",
-  "/ferramentas/tarefas": "text-sky-300",
+  "/ferramentas/simulador": "text-zinc-300",
+  "/ferramentas/metas": "text-zinc-300",
+  "/ferramentas/tarefas": "text-zinc-300",
   "/ferramentas/anotacoes": "text-slate-300",
-  "/ferramentas/planilha": "text-indigo-300",
-  "/puxada-dados": "text-blue-400",
-  "/qrcode": "text-cyan-400",
+  "/ferramentas/planilha": "text-zinc-300",
+  "/puxada-dados": "text-zinc-300",
+  "/qrcode": "text-zinc-300",
   "/historico": "text-slate-400",
   "/auditoria": "text-red-300",
   "/automacoes": "text-amber-400",
   "/configuracoes": "text-zinc-400",
   "/admin": "text-amber-300",
-  "/sobre": "text-blue-300",
+  "/sobre": "text-zinc-300",
   "/suporte": "text-pink-400",
   "/chat": "text-emerald-400",
 };
@@ -261,7 +261,7 @@ const MobileBottomNav = () => {
 
       {/* Bottom nav */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 glass-strong border-t border-border/40"
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-white/10 bg-black/75 backdrop-blur-2xl shadow-[0_-16px_40px_-28px_hsl(0_0%_0%/.9)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-stretch justify-around px-1.5 pt-1 pb-1">

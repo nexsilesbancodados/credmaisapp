@@ -24,21 +24,32 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { messages, clientId, cpf } = await req.json();
+    const { messages, clientId, session_token } = await req.json();
 
-    if (!clientId || !cpf) {
-      return new Response(JSON.stringify({ error: "ClientId e CPF são obrigatórios" }), {
+    if (!clientId || !session_token) {
+      return new Response(JSON.stringify({ error: "ClientId e token de sessão são obrigatórios" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validar cliente
+    const { data: portalSession } = await supabase
+      .from("portal_sessions").select("client_id")
+      .eq("token", String(session_token))
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (!portalSession || portalSession.client_id !== clientId) {
+      return new Response(JSON.stringify({ error: "Sessão inválida ou expirada" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validar cliente associado à sessão curta e revogável do portal.
     const { data: client, error: clientError } = await supabase
       .from("clients")
       .select("*, profiles!user_id(*)")
       .eq("id", clientId)
-      .eq("cpf_cnpj", cpf.replace(/\D/g, ""))
       .single();
 
     if (clientError || !client) {

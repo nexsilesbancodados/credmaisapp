@@ -69,7 +69,7 @@ const DashboardLayout = () => {
   if (blockedByMode) return <Navigate to="/admin" replace />;
 
   return (
-    <div className="min-h-dvh bg-background relative overflow-x-hidden">
+    <div className="app-shell min-h-dvh bg-background relative overflow-x-hidden">
       {/* Static mesh gradients — no animation (animated blur is one of the heaviest paints).
        *
        * Ficam dentro de uma camada `fixed` que corta o que passa da tela. Antes
@@ -95,14 +95,14 @@ const DashboardLayout = () => {
         <Sidebar collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
       )}
 
-      <div className={`transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[76px]" : "ml-[260px]"}`}>
+      <div className={`app-workspace transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[84px]" : "ml-[280px]"}`}>
         <TopBar onSearchClick={() => setSearchOpen(true)} />
 
         <GlobalAnnouncement />
         <InstallAppBanner />
         <Breadcrumbs />
         <main
-          className={`max-w-[1600px] mx-auto min-w-0 ${
+          className={`app-content max-w-[1680px] mx-auto min-w-0 ${
             isMobile
               ? "px-3 py-3 pb-[calc(7.5rem+env(safe-area-inset-bottom))]"
               : "px-4 py-4 sm:px-5 sm:py-5 md:px-6 md:py-6 lg:px-8 lg:py-8"

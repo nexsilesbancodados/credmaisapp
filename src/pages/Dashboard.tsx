@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { lazy, Suspense, useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertCircle, Calendar, Landmark, TrendingUp, Users, ArrowRight,
@@ -14,7 +14,7 @@ import ErrorState from "@/components/feedback/ErrorState";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
-import DashboardCharts from "@/components/dashboard/DashboardCharts";
+const DashboardCharts = lazy(() => import("@/components/dashboard/DashboardCharts"));
 import DailyBriefing from "@/components/dashboard/DailyBriefing";
 import PeriodComparison from "@/components/dashboard/PeriodComparison";
 import NarrativeHero from "@/components/dashboard/NarrativeHero";
@@ -396,11 +396,9 @@ const Dashboard = () => {
         {/* ─── TAB: Análises ─── */}
         <TabsContent value="analytics" className="space-y-5 mt-5">
           <PeriodComparison installments={data?.installments || []} />
-          <DashboardCharts
-            contracts={metrics.contracts}
-            installments={data?.installments || []}
-            profits={data?.profits || []}
-          />
+          <Suspense fallback={<div className="h-72 skeleton-shimmer rounded-2xl" aria-label="Carregando gráficos" />}>
+            <DashboardCharts contracts={metrics.contracts} installments={data?.installments || []} profits={data?.profits || []} />
+          </Suspense>
         </TabsContent>
 
         {/* ─── TAB: Listas ─── */}

@@ -73,10 +73,10 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
 
   return (
     <header
-      className="sticky top-0 z-40 border-b border-border/40 bg-gradient-to-b from-card/85 via-card/65 to-card/40 backdrop-blur-2xl shadow-[0_1px_0_hsl(var(--border)/0.4),0_8px_24px_-12px_hsl(0_0%_0%/0.4)]"
+      className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-[0_1px_0_hsl(0_0%_100%/.04),0_18px_40px_-24px_hsl(0_0%_0%/.85)]"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      <div className="h-14 lg:h-16 flex items-center justify-between px-3 lg:px-6 gap-2 lg:gap-3">
+      <div className="h-16 lg:h-[72px] flex items-center justify-between px-3 lg:px-7 gap-2 lg:gap-4">
       {isMobile ? (
         <button
           onClick={() => navigate("/perfil")}
@@ -99,7 +99,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         <button
           data-tour="topbar-search"
           onClick={onSearchClick}
-          className="group flex items-center gap-2.5 px-4 h-10 min-w-[260px] rounded-full bg-muted/30 border border-border/40 text-sm text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-muted/50 hover:shadow-[0_0_0_4px_hsl(var(--primary)/0.06)] transition-all duration-300"
+          className="group flex items-center gap-2.5 px-4 h-11 min-w-[300px] rounded-xl bg-white/[.035] border border-white/10 text-sm text-muted-foreground hover:text-foreground hover:border-white/20 hover:bg-white/[.06] hover:shadow-[0_0_0_4px_hsl(0_0%_100%/.025)] transition-all duration-300"
         >
           <Search size={15} className="text-muted-foreground/60 group-hover:text-primary transition-colors" />
           <span className="hidden sm:inline text-[13px] flex-1 text-left">Buscar clientes, contratos...</span>

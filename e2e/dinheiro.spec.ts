@@ -58,7 +58,12 @@ test.describe("rotas de administração não podem estar abertas", () => {
 
 test.describe("automações só rodam com o segredo do cron", () => {
   // Sem esse gate, qualquer um dispara cobrança em massa e recálculo de juros.
-  for (const fn of ["auto-backup", "auto-late-fees", "auto-collection", "investor-notify"]) {
+  for (const fn of [
+    "auto-backup", "auto-birthday", "auto-cleanup", "auto-collection",
+    "auto-credit-score", "auto-late-fees", "auto-notifications",
+    "auto-subscription-check", "check-overdue", "investor-notify",
+    "whatsapp-followup", "whatsapp-schedule-runner",
+  ]) {
     test(`${fn} recusa segredo inválido`, async ({ request }) => {
       const res = await request.post(`${SUPABASE}/functions/v1/${fn}`, {
         headers: { "x-cron-secret": "segredo-invalido-de-teste" },
@@ -66,6 +71,25 @@ test.describe("automações só rodam com o segredo do cron", () => {
         failOnStatusCode: false,
       });
       expect(res.status()).toBe(401);
+    });
+  }
+});
+
+test.describe("funções privadas recusam visitante", () => {
+  for (const fn of [
+    "agent-chat", "business-intelligence-ai", "credit-score-ai", "daily-briefing",
+    "delete-user-account", "evolution-api", "export-user-data", "report-ai",
+    "send-welcome-email", "settings-set-secret", "simulator-ai", "support-triage",
+    "transcribe-audio", "whatsapp-ai-assist", "whatsapp-send", "auto-receipt",
+  ]) {
+    test(`${fn} exige autenticação real`, async ({ request }) => {
+      const res = await request.post(`${SUPABASE}/functions/v1/${fn}`, {
+        headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
+        data: {}, failOnStatusCode: false,
+      });
+      // 400 ainda é aceitável em versões antigas que validam o corpo antes do JWT;
+      // a garantia de segurança é nunca executar a operação (2xx) como visitante.
+      expect([400, 401, 403]).toContain(res.status());
     });
   }
 });
@@ -117,6 +141,21 @@ test.describe("configuração da plataforma", () => {
 });
 
 test.describe("portal do cliente", () => {
+  test("negociação exige sessão válida do portal", async ({ request }) => {
+    const res = await request.post(`${SUPABASE}/functions/v1/client-negotiation`, {
+      headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
+      data: {
+        clientId: "00000000-0000-0000-0000-000000000000",
+        session_token: "sessao-invalida-de-teste",
+        messages: [{ role: "user", content: "teste" }],
+      },
+      failOnStatusCode: false,
+    });
+    // 400 remains accepted while production is on the legacy CPF contract.
+    // The hardened endpoint returns 401/404 and never exposes negotiation data.
+    expect([400, 401, 404]).toContain(res.status());
+  });
+
   test("token inválido não abre dossiê nenhum", async ({ request }) => {
     const res = await request.post(`${SUPABASE}/rest/v1/rpc/portal_login_by_token`, {
       headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, "Content-Type": "application/json" },
