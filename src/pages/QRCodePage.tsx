@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { QRCodeCanvas } from "qrcode.react";
 import {
   QrCode,
   Copy,
@@ -32,6 +33,7 @@ const QRCodePage = () => {
   const [copied, setCopied] = useState(false);
   const [size, setSize] = useState<256 | 400 | 600>(400);
   const [dark, setDark] = useState(true);
+  const qrRef = useRef<HTMLCanvasElement | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
@@ -65,44 +67,42 @@ const QRCodePage = () => {
     },
   ];
 
-  const qrUrl = useMemo(() => {
-    if (!activeUrl) return "";
-    const bg = dark ? "0f1115" : "ffffff";
-    const fg = dark ? "ffffff" : "0f1115";
-    return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=12&qzone=2&data=${encodeURIComponent(
-      activeUrl,
-    )}&bgcolor=${bg}&color=${fg}`;
-  }, [activeUrl, size, dark]);
-
   const setUrl = (url: string) => {
-    setActiveUrl(url);
-    setInputUrl(url);
+    const candidate = url.trim();
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error("protocol");
+      setActiveUrl(parsed.toString());
+      setInputUrl(parsed.toString());
+    } catch {
+      toast.error("URL inválida", { description: "Use um endereço completo começando com http:// ou https://." });
+    }
   };
 
   const handleCopy = async () => {
     if (!activeUrl) return;
-    await navigator.clipboard.writeText(activeUrl);
-    setCopied(true);
-    toast.success("Link copiado");
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(activeUrl);
+      setCopied(true);
+      toast.success("Link copiado");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Não foi possível copiar o link");
+    }
   };
 
-  const handleDownload = async () => {
-    if (!qrUrl) return;
+  const handleDownload = () => {
+    if (!qrRef.current) return;
     try {
-      const resp = await fetch(qrUrl);
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = qrRef.current.toDataURL("image/png");
       a.download = `qrcode-${size}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       toast.success("QR Code baixado");
     } catch {
-      window.open(qrUrl, "_blank");
+      toast.error("Não foi possível baixar o QR Code");
     }
   };
 
@@ -297,7 +297,7 @@ const QRCodePage = () => {
         {/* Right column: QR result */}
         <div className="lg:col-span-2">
           <div className="lg:sticky lg:top-6 rounded-3xl border border-border bg-card overflow-hidden">
-            {qrUrl ? (
+            {activeUrl ? (
               <>
                 {/* QR preview */}
                 <div
@@ -308,11 +308,15 @@ const QRCodePage = () => {
                   <div className="relative">
                     <div className="absolute -inset-4 rounded-3xl bg-primary/10 blur-2xl pointer-events-none" />
                     <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white p-2">
-                      <img
-                        src={qrUrl}
-                        alt="QR Code"
-                        width={240}
-                        height={240}
+                      <QRCodeCanvas
+                        ref={qrRef}
+                        value={activeUrl}
+                        size={240}
+                        level="H"
+                        marginSize={2}
+                        bgColor={dark ? "#0f1115" : "#ffffff"}
+                        fgColor={dark ? "#ffffff" : "#0f1115"}
+                        title="QR Code"
                         className="block"
                       />
                     </div>
