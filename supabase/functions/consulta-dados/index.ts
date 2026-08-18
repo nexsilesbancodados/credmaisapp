@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getCallerUser } from "../_shared/guard.ts";
+import { consume } from "../_shared/rate_limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +24,14 @@ serve(async (req) => {
       });
     }
 
+    const rate = await consume({ key: `consulta-dados:${user.id}`, capacity: 10, refillPerSec: 1 / 60 });
+    if (!rate.allowed) {
+      return new Response(JSON.stringify({ error: "Muitas consultas. Aguarde um minuto e tente novamente." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) },
+      });
+    }
+
     const { tipo, documento } = await req.json();
 
     if (!tipo || !documento) {
@@ -33,6 +42,12 @@ serve(async (req) => {
     }
 
     const cleanDoc = documento.replace(/\D/g, "");
+    if ((tipo === "cpf" && !validateCPF(cleanDoc)) || (tipo === "cnpj" && !validateCNPJ(cleanDoc))) {
+      return new Response(JSON.stringify({ error: `${String(tipo).toUpperCase()} inválido` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Use BrasilAPI (free, no auth required) for CNPJ
     if (tipo === "cnpj") {
@@ -172,4 +187,15 @@ function validateCPF(cpf: string): boolean {
 
 function formatCPF(cpf: string): string {
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
+function validateCNPJ(cnpj: string): boolean {
+  if (cnpj.length !== 14 || /^(\d)\1+$/.test(cnpj)) return false;
+  const digit = (weights: number[]) => {
+    const sum = weights.reduce((total, weight, index) => total + Number(cnpj[index]) * weight, 0);
+    const rest = sum % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+  return digit([5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) === Number(cnpj[12])
+    && digit([6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) === Number(cnpj[13]);
 }

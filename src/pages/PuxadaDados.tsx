@@ -3,6 +3,7 @@ import { Database, Search, Building2, User, MapPin, Phone, Mail, Users, AlertCir
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { isValidCNPJ, isValidCPF } from "@/lib/cpfCnpj";
 
 const PuxadaDados = () => {
   const { toast } = useToast();
@@ -14,7 +15,8 @@ const PuxadaDados = () => {
 
   const handleSearch = async () => {
     const clean = documento.replace(/\D/g, "");
-    if ((tipo === "cpf" && clean.length !== 11) || (tipo === "cnpj" && clean.length !== 14)) {
+    const valid = tipo === "cpf" ? isValidCPF(clean) : isValidCNPJ(clean);
+    if (!valid) {
       toast({ title: "Documento inválido", description: `Informe um ${tipo.toUpperCase()} válido.`, variant: "destructive" });
       return;
     }
@@ -86,6 +88,7 @@ const PuxadaDados = () => {
           <label className="text-xs font-medium text-muted-foreground mb-1 block">{tipo.toUpperCase()}</label>
           <div className="flex gap-2">
             <input
+              aria-label={`Consultar ${tipo.toUpperCase()}`}
               value={documento}
               onChange={(e) => setDocumento(formatDoc(e.target.value))}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -94,6 +97,7 @@ const PuxadaDados = () => {
               className={inputCls}
             />
             <button
+              aria-label={`Buscar ${tipo.toUpperCase()}`}
               onClick={handleSearch}
               disabled={loading}
               className="px-4 py-2.5 rounded-lg text-primary-foreground text-sm font-semibold disabled:opacity-50 shrink-0"

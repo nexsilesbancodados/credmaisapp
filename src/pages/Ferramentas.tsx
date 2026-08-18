@@ -38,7 +38,7 @@ const TOOLS = [
     tone: "from-indigo-500/20 to-indigo-500/5 text-indigo-300 ring-indigo-500/30",
   },
   {
-    label: "Importar contratos",
+    label: "Consulta CPF/CNPJ",
     desc: "Traga contratos e clientes de outro sistema.",
     path: "/puxada-dados",
     icon: Database,

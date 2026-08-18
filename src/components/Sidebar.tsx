@@ -87,7 +87,7 @@ const sections: MenuSection[] = [
       { label: "Tarefas", icon: CheckSquare, path: "/ferramentas/tarefas", module: "tarefas" },
       { label: "Anotações", icon: StickyNote, path: "/ferramentas/anotacoes", module: "anotacoes" },
       { label: "Planilha", icon: Table, path: "/ferramentas/planilha", module: "planilha" },
-      { label: "Importar contratos", icon: Database, path: "/puxada-dados", module: "puxada_dados" },
+      { label: "Consulta CPF/CNPJ", icon: Database, path: "/puxada-dados", module: "puxada_dados" },
     ],
   },
   {

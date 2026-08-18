@@ -100,7 +100,7 @@ const moreGroups = [
       { label: "Tarefas", icon: CheckSquare, path: "/ferramentas/tarefas" },
       { label: "Anotações", icon: StickyNote, path: "/ferramentas/anotacoes" },
       { label: "Planilha", icon: Table, path: "/ferramentas/planilha" },
-      { label: "Importar contratos", icon: Database, path: "/puxada-dados" },
+      { label: "Consulta CPF/CNPJ", icon: Database, path: "/puxada-dados" },
     ],
   },
   {
