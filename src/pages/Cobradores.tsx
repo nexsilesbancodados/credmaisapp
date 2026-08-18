@@ -125,7 +125,8 @@ const Cobradores = () => {
     if (editingId) {
       const { error } = await supabase.from("collectors")
         .update({ name, phone, email, city, state })
-        .eq("id", editingId);
+        .eq("id", editingId)
+        .eq("user_id", user.id);
       setSaving(false);
       if (error) toast({ ...friendlyError(error), variant: "destructive" });
       else {
@@ -145,15 +146,20 @@ const Cobradores = () => {
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
-    await supabase.from("collectors").update({ is_active: !isActive }).eq("id", id);
+    if (!user) return;
+    const { error } = await supabase.from("collectors").update({ is_active: !isActive }).eq("id", id).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível atualizar o cobrador."), variant: "destructive" });
     inv("collectors");
     toast({ title: isActive ? "Cobrador desativado" : "Cobrador ativado" });
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("collector_assignments").delete().eq("collector_id", id);
-    await supabase.from("collector_tokens").delete().eq("collector_id", id);
-    await supabase.from("collectors").delete().eq("id", id);
+    if (!user) return;
+    const { error } = await supabase.from("collectors").delete().eq("id", id).eq("user_id", user.id);
+    if (error) {
+      setDeleteConfirm(null);
+      return toast({ ...friendlyError(error, "Não foi possível excluir o cobrador."), variant: "destructive" });
+    }
     inv("collectors"); inv("collector-assignments"); inv("collector-tokens");
     toast({ title: "Cobrador excluído" });
     setDeleteConfirm(null);
@@ -174,8 +180,10 @@ const Cobradores = () => {
   };
 
   const handleRevokeToken = async (tokenId: string) => {
+    if (!user) return;
     if (!(await confirm("Revogar este token de acesso? O cobrador perderá o acesso ao portal."))) return;
-    await supabase.from("collector_tokens").delete().eq("id", tokenId);
+    const { error } = await supabase.from("collector_tokens").delete().eq("id", tokenId).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível revogar o token."), variant: "destructive" });
     inv("collector-tokens");
     toast({ title: "Token revogado" });
   };
@@ -193,8 +201,10 @@ const Cobradores = () => {
   };
 
   const handleRemoveAssignment = async (id: string) => {
+    if (!user) return;
     if (!(await confirm("Remover esta atribuição de cliente?"))) return;
-    await supabase.from("collector_assignments").delete().eq("id", id);
+    const { error } = await supabase.from("collector_assignments").delete().eq("id", id).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível remover a atribuição."), variant: "destructive" });
     inv("collector-assignments");
     inv("all-installments-collectors");
     toast({ title: "Atribuição removida" });
@@ -232,7 +242,7 @@ const Cobradores = () => {
   const fichaClientIds = fichaAssignments.map((a: any) => a.client_id);
   const fichaInstallments = allInstallments.filter((i: any) => fichaClientIds.includes(i.client_id));
   const fichaPending = fichaInstallments.filter((i: any) => isEmAberto(i));
-  const fichaOverdue = fichaPending.filter((i: any) => new Date(i.due_date) < now);
+  const fichaOverdue = fichaPending.filter((i: any) => isEmAtraso(i, now));
   const fichaPaid = fichaInstallments.filter((i: any) => i.status === "paid");
   const fichaTotalPending = fichaPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
   const fichaTotalOverdue = fichaOverdue.reduce((s: number, i: any) => s + Number(i.amount), 0);
@@ -388,7 +398,7 @@ const Cobradores = () => {
             const cClientIds = cAssignments.map((a: any) => a.client_id);
             const cInstallments = allInstallments.filter((i: any) => cClientIds.includes(i.client_id));
             const cPending = cInstallments.filter((i: any) => isEmAberto(i));
-            const cOverdue = cPending.filter((i: any) => new Date(i.due_date) < now);
+            const cOverdue = cPending.filter((i: any) => isEmAtraso(i, now));
 
             return (
               <div key={c.id}
@@ -666,7 +676,7 @@ const Cobradores = () => {
                       {fichaAssignments.map((a: any) => {
                         const clientInst = fichaInstallments.filter((i: any) => i.client_id === a.client_id);
                         const clientPending = clientInst.filter((i: any) => isEmAberto(i));
-                        const clientOverdue = clientPending.filter((i: any) => new Date(i.due_date) < now);
+                        const clientOverdue = clientPending.filter((i: any) => isEmAtraso(i, now));
                         const clientTotal = clientPending.reduce((s: number, i: any) => s + Number(i.amount), 0);
 
                         return (
@@ -706,7 +716,7 @@ const Cobradores = () => {
                             {clientPending.length > 0 && (
                               <div className="divide-y divide-border/30 max-h-40 overflow-y-auto">
                                 {clientPending.slice(0, 5).map((inst: any) => {
-                                  const isOverdue = new Date(inst.due_date) < now;
+                                  const isOverdue = isEmAtraso(inst, now);
                                   return (
                                     <div key={inst.id} className="flex items-center gap-3 px-4 py-2">
                                       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
@@ -790,7 +800,7 @@ const Cobradores = () => {
                   const clientPendingInst = allInstallments.filter((i: any) =>
                     i.client_id === cl.id && isEmAberto(i)
                   );
-                  const clientOverdueInst = clientPendingInst.filter((i: any) => new Date(i.due_date) < now);
+                  const clientOverdueInst = clientPendingInst.filter((i: any) => isEmAtraso(i, now));
                   const totalPending = clientPendingInst.reduce((s: number, i: any) => s + Number(i.amount), 0);
 
                   return (
