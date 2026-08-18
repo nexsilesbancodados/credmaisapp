@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Shield, Search, Activity, FilePlus, Trash2, CreditCard, Edit, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import ErrorState from "@/components/feedback/ErrorState";
+import type { Database } from "@/integrations/supabase/types";
+
+type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"];
+const PAGE_SIZE = 200;
+const csvCell = (value: unknown) => {
+  let text = String(value ?? "");
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};
 
 const actionLabels: Record<string, string> = {
   create: "Criação",
@@ -47,27 +57,31 @@ const Auditoria = () => {
 
   useRealtimeSubscription("audit_logs", [["audit-logs", user?.id || ""]]);
 
-  const { data: logs = [], isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["audit-logs", user?.id, filterAction, filterEntity],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       let query = supabase
         .from("audit_logs")
         .select("*")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
 
       if (filterAction) query = query.eq("action", filterAction);
       if (filterEntity) query = query.eq("entity_type", filterEntity);
 
-      const { data } = await query;
-      return data || [];
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as AuditLog[];
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => lastPage.length === PAGE_SIZE ? pages.length * PAGE_SIZE : undefined,
     enabled: !!user,
   });
+  const logs = data?.pages.flat() || [];
 
   const filteredLogs = search
-    ? logs.filter((l: any) =>
+    ? logs.filter((l) =>
         JSON.stringify(l.details || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.entity_type || "").toLowerCase().includes(search.toLowerCase()) ||
         (l.action || "").toLowerCase().includes(search.toLowerCase())
@@ -79,15 +93,15 @@ const Auditoria = () => {
   const exportCsv = () => {
     const rows = [
       ["Data", "Ação", "Entidade", "ID", "Detalhes"],
-      ...filteredLogs.map((l: any) => [
+      ...filteredLogs.map((l) => [
         new Date(l.created_at).toLocaleString("pt-BR"),
         actionLabels[l.action] || l.action,
         entityLabels[l.entity_type] || l.entity_type,
         l.entity_id || "",
-        JSON.stringify(l.details || {}).replace(/"/g, '""'),
+        JSON.stringify(l.details || {}),
       ]),
     ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const csv = rows.map(r => r.map(csvCell).join(",")).join("\r\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -98,10 +112,10 @@ const Auditoria = () => {
   };
 
   const statItems = [
-    { label: "Total de Ações", value: logs.length, icon: Activity, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Criações", value: logs.filter((l: any) => l.action === "create").length, icon: FilePlus, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "Pagamentos", value: logs.filter((l: any) => l.action === "payment").length, icon: CreditCard, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Exclusões", value: logs.filter((l: any) => l.action === "delete").length, icon: Trash2, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: "Ações carregadas", value: logs.length, icon: Activity, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Criações", value: logs.filter((l) => l.action === "create").length, icon: FilePlus, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Pagamentos", value: logs.filter((l) => l.action === "payment").length, icon: CreditCard, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Exclusões", value: logs.filter((l) => l.action === "delete").length, icon: Trash2, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 
   return (
@@ -113,7 +127,7 @@ const Auditoria = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-shimmer">Auditoria</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Log completo de todas as ações do sistema</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Histórico rastreável das ações do sistema</p>
           </div>
         </div>
       </div>
@@ -171,6 +185,8 @@ const Auditoria = () => {
           <div className="p-5 space-y-3">
             {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
           </div>
+        ) : isError ? (
+          <div className="p-5"><ErrorState error={error} onRetry={() => refetch()} /></div>
         ) : filteredLogs.length === 0 ? (
           <div className="py-16 text-center">
             <Shield size={48} className="mx-auto text-muted-foreground/20 mb-4" />
@@ -178,8 +194,8 @@ const Auditoria = () => {
           </div>
         ) : (
           <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
-            {filteredLogs.map((log: any) => {
-              const details = typeof log.details === "object" ? log.details : {};
+            {filteredLogs.map((log) => {
+              const details = log.details && !Array.isArray(log.details) && typeof log.details === "object" ? log.details : {};
               const Icon = actionIcons[log.action] || Activity;
               return (
                 <div key={log.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-accent/50 transition-colors">
@@ -194,7 +210,7 @@ const Auditoria = () => {
                       <span className="text-sm text-foreground font-medium">
                         {entityLabels[log.entity_type] || log.entity_type}
                       </span>
-                      {details?.description && (
+                      {typeof details.description === "string" && (
                         <span className="text-xs text-muted-foreground truncate">— {details.description}</span>
                       )}
                     </div>
@@ -206,6 +222,13 @@ const Auditoria = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+        {!isLoading && !isError && hasNextPage && !search && (
+          <div className="p-4 border-t border-border text-center">
+            <button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="px-4 py-2 rounded-xl border border-border text-sm hover:bg-accent disabled:opacity-50">
+              {isFetchingNextPage ? "Carregando..." : "Carregar mais 200 registros"}
+            </button>
           </div>
         )}
       </div>
