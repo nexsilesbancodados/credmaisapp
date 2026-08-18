@@ -73,7 +73,7 @@ const InstallmentRowInner = ({
 
   return (
     <div
-      className={`group/row relative rounded-xl border p-3 flex items-center gap-3 transition-all cursor-pointer ${rowBg}`}
+      className={`collection-installment-row group/row relative rounded-xl border p-3 flex items-center gap-3 transition-all cursor-pointer ${rowBg}`}
       onClick={() => onRowClick(inst.client_id)}
     >
       {!isPaid && (
@@ -93,7 +93,7 @@ const InstallmentRowInner = ({
       </div>
 
       {/* Main info */}
-      <div className="flex-1 min-w-0">
+      <div className="collection-installment-info flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-semibold ${statusChip.cls}`}>
             <StatusIcon size={10} /> {statusChip.label}
@@ -133,7 +133,7 @@ const InstallmentRowInner = ({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="collection-installment-actions flex items-center gap-1.5 shrink-0">
         {!isPaid && (
           <>
             <button

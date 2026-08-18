@@ -791,24 +791,24 @@ const Cobrancas = () => {
   };
 
   return (
-    <div className="space-y-5 pb-24">
+    <div className="collections-page space-y-5 pb-24">
       {/* HERO Premium */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-destructive/10 via-card to-card p-6 md:p-8 animate-fade-in">
-        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-destructive/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="collections-hero relative overflow-hidden rounded-[28px] border p-5 sm:p-6 md:p-8 animate-fade-in">
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-stone-200/[0.035] blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
 
-        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-destructive/20 border border-destructive/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--destructive)/0.25)]">
+            <div className="collections-hero-icon w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center">
               <Receipt size={26} className="text-destructive" />
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Cobranças</p>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+              <h1 className="text-display text-2xl sm:text-3xl md:text-4xl font-semibold text-foreground tracking-[-0.04em]">
                 Total a Receber
               </h1>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl md:text-5xl font-bold text-destructive tracking-tight tabular-nums">
+                <span className="collections-total text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.055em] tabular-nums">
                   R$ {fmt(stats.totalOverdue + dueTodayStats.total)}
                 </span>
               </div>
@@ -820,15 +820,15 @@ const Cobrancas = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="collections-hero-actions flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
             {stats.overdue > 0 && selected.size === 0 && (
-              <button onClick={() => handleBulk("whatsapp")} className="btn-premium" style={{ background: "linear-gradient(135deg, hsl(var(--success)), hsl(152 65% 55%))" }}>
+              <button onClick={() => handleBulk("whatsapp")} className="collections-primary-action btn-premium">
                 <MessageSquare size={14} /> Cobrar atrasadas ({stats.overdue})
               </button>
             )}
             <button
               onClick={() => { setCobrarAteDate(todayISO); setCobrarAteSelected(new Set()); setCobrarAteOpen(true); }}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card/70 backdrop-blur border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring"
+              className="collections-secondary-action flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-semibold transition-colors focus-ring"
               title="Selecionar parcelas até uma data"
             >
               <CalendarIcon size={13} className="text-primary" /> Cobrar até…
@@ -845,7 +845,7 @@ const Cobrancas = () => {
 
       {/* Reminder schedule card — só no modo avançado */}
       {showAutomation && reminderSettings && (
-        <div className="rounded-2xl border border-border bg-card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 animate-fade-in">
+        <div className="collections-automation rounded-2xl border p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 animate-fade-in">
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${reminderSettings.bot_auto_send ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"}`}>
               <Bell size={18} />
@@ -921,13 +921,13 @@ const Cobrancas = () => {
           },
         ];
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 stagger-fade-in">
+          <div className="collections-stats grid grid-cols-1 sm:grid-cols-3 gap-3 stagger-fade-in">
             {kpis.map((s, idx) => (
               <button
                 key={s.label}
                 onClick={s.onClick}
                 style={{ animationDelay: `${idx * 60}ms` }}
-                className={`relative overflow-hidden rounded-2xl border bg-card p-5 card-shine text-left transition-all focus-ring group ${s.active ? "border-primary/40 ring-2 ring-primary/20 shadow-lg shadow-primary/10" : s.ring} hover:border-primary/30`}
+                className={`collection-stat relative overflow-hidden rounded-2xl border p-5 text-left transition-all focus-ring group ${s.active ? "is-active" : s.ring}`}
               >
                 {s.urgent && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-destructive via-destructive/70 to-transparent" />}
                 <div className="flex items-start justify-between mb-3">
@@ -972,7 +972,7 @@ const Cobrancas = () => {
         ] as const;
         const sortLabel = sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
         return (
-          <div className="relative rounded-3xl border border-border/60 bg-gradient-to-b from-card/90 to-card/60 backdrop-blur-xl shadow-lg shadow-black/5 p-2 sm:p-2.5 animate-fade-in">
+          <div className="collection-toolbar relative rounded-[22px] border p-2 sm:p-2.5 animate-fade-in">
             <div className="flex flex-col lg:flex-row lg:items-center gap-2">
               {/* Search */}
               <div className="relative flex-1 min-w-0 group">
@@ -998,14 +998,14 @@ const Cobrancas = () => {
               </div>
 
               {/* Segmented tabs com contagem */}
-              <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/40 border border-border/40 overflow-x-auto scrollbar-thin">
+              <div className="collection-tabs flex items-center gap-1 p-1 rounded-xl border overflow-x-auto scrollbar-thin">
                 {tabs.map((f) => {
                   const toneColor = f.tone === "destructive" ? "text-destructive" : f.tone === "success" ? "text-success" : f.tone === "primary" ? "text-primary" : "text-muted-foreground";
                   return (
                     <button
                       key={f.key}
                       onClick={() => applyFocus(f.key as any)}
-                      className={`relative flex items-center gap-1.5 px-3 h-9 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${f.match ? "bg-background text-foreground shadow-sm border border-border/60" : "text-muted-foreground hover:text-foreground"}`}
+                       className={`relative flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${f.match ? "is-active text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     >
                       <span>{f.label}</span>
                       {f.count > 0 && (
@@ -1019,13 +1019,13 @@ const Cobrancas = () => {
               </div>
 
               {/* Sort + selection */}
-              <div className="flex items-center gap-2">
-                <div className="relative">
+              <div className="collection-sort-actions flex items-center gap-2">
+                <div className="relative min-w-0 flex-1 lg:flex-none">
                   <ArrowUpDown size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value as SortKey)}
-                    className="appearance-none pl-8 pr-8 h-11 rounded-2xl text-xs font-semibold bg-background/60 text-foreground border border-border/50 hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
+                    className="w-full appearance-none pl-8 pr-8 h-11 rounded-xl text-xs font-semibold bg-background/60 text-foreground border border-border/50 hover:border-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer"
                     title={`Ordenar por: ${sortLabel}`}
                     aria-label="Ordenar por"
                   >
@@ -1085,7 +1085,7 @@ const Cobrancas = () => {
 
       {/* Sticky bulk action bar */}
       {selected.size > 0 && (
-        <div className="sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-primary/10 border border-primary/30 backdrop-blur-md shadow-lg shadow-primary/10 animate-fade-in">
+        <div className="collection-bulk-bar sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border backdrop-blur-xl animate-fade-in">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-primary">{selected.size} selecionada(s)</span>
             <span className="text-xs text-foreground/80">Total: <span className="font-bold text-foreground">R$ {fmt(selectedSum)}</span></span>
@@ -1137,7 +1137,7 @@ const Cobrancas = () => {
           ) : undefined}
         />
       ) : (
-        <div className="space-y-2 stagger-fade-in">
+        <div className="collection-list space-y-3 stagger-fade-in">
           {(() => null)()}
           {(() => {
             const maxTotalWithFees = Math.max(1, ...grouped.map((g: any) => g.totalWithFees || g.total || 0));
@@ -1214,11 +1214,11 @@ const Cobrancas = () => {
             };
 
             return (
-              <div key={group.client_id} className={`group relative rounded-2xl border ${cardTint} hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 transition-all overflow-hidden ${dueInfo.tone === "danger" ? "border-destructive/25" : "border-border"}`}>
+              <div key={group.client_id} className={`collection-account-card group relative rounded-[22px] border ${cardTint} transition-all overflow-hidden ${dueInfo.tone === "danger" ? "is-overdue border-destructive/25" : "border-border"}`}>
                 {/* Top gradient accent strip */}
                 <div className={`h-1 w-full bg-gradient-to-r ${accentGrad}`} />
                 {showHeader && (
-                  <div className="p-4 flex flex-col gap-3.5">
+                  <div className="p-4 sm:p-5 flex flex-col gap-4">
                     {/* Top row: avatar + name + status + quick chips + select */}
                     <div className="flex items-start gap-3">
                       <button
