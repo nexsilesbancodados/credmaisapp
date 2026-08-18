@@ -45,7 +45,8 @@ const Configuracoes = () => {
       // Sem `as any`: é justamente esse cast que deixava o form ler/gravar colunas
       // que não existem no banco (foi assim que `hubla_checkout_url` passou batido
       // e o salvamento quebrou o link de cadastro).
-      const { data } = await supabase.from("settings_safe").select("*").eq("user_id", user!.id).maybeSingle();
+      const { data, error } = await supabase.from("settings_safe").select("*").eq("user_id", user!.id).maybeSingle();
+      if (error) throw error;
       return data;
     },
     enabled: !!user,
@@ -54,7 +55,8 @@ const Configuracoes = () => {
   const { data: templates = [] } = useQuery({
     queryKey: ["message-templates", user?.id],
     queryFn: async () => {
-      const { data } = await supabase.from("message_templates").select("*").eq("user_id", user!.id).order("trigger_days");
+      const { data, error } = await supabase.from("message_templates").select("*").eq("user_id", user!.id).order("trigger_days");
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
@@ -193,20 +195,30 @@ const Configuracoes = () => {
     label: string
   ) => {
     if (!user) return;
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/svg+xml", "image/x-icon"]);
+    if (!allowedTypes.has(file.type) || file.size > 5 * 1024 * 1024) {
+      toast({ title: "Arquivo inválido", description: "Use JPG, PNG, WebP, SVG ou ICO com até 5 MB.", variant: "destructive" });
+      return;
+    }
     setBusy(true);
     const ext = (file.name.split(".").pop() || "png").toLowerCase();
     const path = `${user.id}/${folder}/${field}.${ext}`;
-    const { error } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
-    if (error) {
-      toast({ ...friendlyError(error, "Não foi possível enviar o arquivo."), variant: "destructive" });
-    } else {
-      const url = await getSignedUploadUrl(path);
-      if (url) {
-        setForm((f) => ({ ...f, [field]: url }));
-        toast({ title: `✓ ${label} enviado!` });
+    try {
+      const { error } = await supabase.storage.from("uploads").upload(path, file, { upsert: true, contentType: file.type });
+      if (error) {
+        toast({ ...friendlyError(error, "Não foi possível enviar o arquivo."), variant: "destructive" });
+      } else {
+        const url = await getSignedUploadUrl(path);
+        if (url) {
+          setForm((f) => ({ ...f, [field]: url }));
+          toast({ title: `✓ ${label} enviado!` });
+        } else {
+          toast({ title: "Upload incompleto", description: "O arquivo foi enviado, mas não foi possível gerar o acesso.", variant: "destructive" });
+        }
       }
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const handleUploadLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -294,12 +306,13 @@ const Configuracoes = () => {
       : await supabase.from("settings").insert(payload);
 
     // Persist sensitive secrets via dedicated edge function (cols revoked from authenticated)
+    let secretError: unknown = null;
     if (form.whatsapp_api_key && form.whatsapp_api_key.trim().length > 0) {
       const { error: secErr } = await supabase.functions.invoke("settings-set-secret", {
         body: { whatsapp_api_key: form.whatsapp_api_key.trim() },
       });
-      if (secErr) toast({ title: "Erro ao salvar segredos", description: secErr.message, variant: "destructive" });
-      else {
+      secretError = secErr;
+      if (!secErr) {
         // Clear from local form so the masked placeholder reappears
         setForm(prev => ({ ...prev, whatsapp_api_key: "" }));
       }
@@ -313,9 +326,9 @@ const Configuracoes = () => {
     }).eq("id", user.id);
 
     setSaving(false);
-    if (error || profileError) {
+    if (error || profileError || secretError) {
       toast({
-        ...friendlyError(error ?? profileError, "Não foi possível salvar as configurações."),
+        ...friendlyError(error ?? profileError ?? secretError, "Não foi possível salvar todas as configurações."),
         variant: "destructive",
       });
     } else {
@@ -341,8 +354,13 @@ const Configuracoes = () => {
     }
   };
   const handleDeleteTemplate = async (id: string) => {
+    if (!user) return;
     if (!(await confirm("Excluir este template?"))) return;
-    await supabase.from("message_templates").delete().eq("id", id);
+    const { error } = await supabase.from("message_templates").delete().eq("id", id).eq("user_id", user.id);
+    if (error) {
+      toast({ ...friendlyError(error, "Não foi possível excluir o template."), variant: "destructive" });
+      return;
+    }
     queryClient.invalidateQueries({ queryKey: ["message-templates"] });
   };
 
