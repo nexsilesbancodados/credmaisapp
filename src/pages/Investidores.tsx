@@ -46,6 +46,7 @@ export default function Investidores() {
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const expandedId = searchParams.get("perfil");
@@ -74,13 +75,21 @@ export default function Investidores() {
   const load = async () => {
     if (!user?.id) return;
     setLoading(true);
-    const [{ data: inv }, { data: ln }] = await Promise.all([
-      supabase.from("investors" as never).select("*").order("created_at", { ascending: false }),
-      supabase.from("investor_loans" as never).select("*").order("due_date", { ascending: true }),
-    ]);
-    setInvestors((inv as any) || []);
-    setLoans((ln as any) || []);
-    setLoading(false);
+    setLoadError(null);
+    try {
+      const [investorResult, loanResult] = await Promise.all([
+        supabase.from("investors" as never).select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("investor_loans" as never).select("*").eq("user_id", user.id).order("due_date", { ascending: true }),
+      ]);
+      const error = investorResult.error || loanResult.error;
+      if (error) throw error;
+      setInvestors((investorResult.data as any) || []);
+      setLoans((loanResult.data as any) || []);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Não foi possível carregar os investidores.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { void load();   }, [user?.id]);
@@ -95,7 +104,7 @@ export default function Investidores() {
     const active = loans.filter((l) => l.status !== "paid");
     return {
       captado: active.reduce((s, l) => s + Number(l.principal), 0),
-      devido: active.reduce((s, l) => s + Number(l.total_due), 0),
+      devido: active.reduce((s, l) => s + Math.max(0, Number(l.total_due) - Number(l.paid_amount)), 0),
       pago: loans.reduce((s, l) => s + Number(l.paid_amount), 0),
       contagem: investors.filter((i) => i.status === "active").length,
     };
@@ -298,6 +307,15 @@ export default function Investidores() {
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-56 animate-pulse rounded-2xl border border-border/50 bg-card/40" />
             ))}
+          </div>
+        ) : loadError ? (
+          <div className="rounded-2xl border border-destructive/30 bg-destructive/5 py-12 text-center">
+            <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+            <p className="mt-3 font-semibold text-foreground">Não foi possível carregar os investidores</p>
+            <p className="mx-auto mt-1 max-w-lg text-sm text-muted-foreground">{loadError}</p>
+            <Button variant="outline" className="mt-4 gap-2" onClick={() => void load()}>
+              <RefreshCw className="h-4 w-4" /> Tentar novamente
+            </Button>
           </div>
         ) : investors.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border/60 py-16 text-center">
