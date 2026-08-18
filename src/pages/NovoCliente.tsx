@@ -481,13 +481,42 @@ const NovoCliente = () => {
   // ── Step navigation ──
   const goNext = () => {
     if (step === 1) {
-      setTouched({ nome: true });
+      setTouched((current) => ({
+        ...current,
+        nome: true,
+        email: true,
+        cpfCnpj: true,
+        telefone: true,
+      }));
       if (!canGoStep2) {
         toast({ title: "Nome obrigatório", variant: "destructive" });
         return;
       }
       if (email.trim() && !validateEmail(email)) {
         toast({ title: "E-mail inválido", variant: "destructive" });
+        return;
+      }
+      if (cpfCnpj.trim()) {
+        const digits = cpfCnpj.replace(/\D/g, "");
+        const validDocument =
+          (digits.length === 11 && validateCPF(cpfCnpj)) ||
+          (digits.length === 14 && validateCNPJ(cpfCnpj));
+
+        if (!validDocument) {
+          toast({
+            title: "CPF/CNPJ inválido",
+            description: "Confira os dígitos antes de continuar.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      if (telefone.trim() && telefone.replace(/\D/g, "").length < 10) {
+        toast({
+          title: "Telefone incompleto",
+          description: "Informe DDD e número ou deixe o campo vazio.",
+          variant: "destructive",
+        });
         return;
       }
       setStep(2);
@@ -507,7 +536,7 @@ const NovoCliente = () => {
 
   // ── Save all ──
   const handleSave = async () => {
-    if (!user || !calc) return;
+    if (!user || !calc || saving) return;
     if (hasLoanErrors) {
       const firstErr = loanErrors.capital || loanErrors.taxa || loanErrors.parcela || loanErrors.n || loanErrors.geral;
       toast({ title: firstErr || "Corrija os campos do empréstimo", variant: "destructive" });
