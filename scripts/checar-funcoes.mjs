@@ -26,11 +26,13 @@ const alvos = readdirSync(raiz, { withFileTypes: true })
 // `deno` nem sempre está no PATH (no Windows deste projeto ele vem pelo npx).
 // Sem esta detecção o script "falhava" em todos os arquivos por não achar o
 // comando — o que parece erro de tipo em 41 funções e ninguém olha.
-const temDeno = spawnSync("deno", ["--version"], { encoding: "utf8", shell: true }).status === 0;
+const denoCommand = process.platform === "win32" ? "deno.exe" : "deno";
+const npxCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+const temDeno = spawnSync(denoCommand, ["--version"], { encoding: "utf8" }).status === 0;
 const executar = (arquivo) =>
   temDeno
-    ? spawnSync("deno", ["check", arquivo], { encoding: "utf8" })
-    : spawnSync("npx", ["deno", "check", arquivo], { encoding: "utf8", shell: true });
+    ? spawnSync(denoCommand, ["check", arquivo], { encoding: "utf8" })
+    : spawnSync(npxCommand, ["deno", "check", arquivo], { encoding: "utf8" });
 
 const ehErroDeTipo = (saida) => /\bTS\d{4}\b/.test(saida);
 
