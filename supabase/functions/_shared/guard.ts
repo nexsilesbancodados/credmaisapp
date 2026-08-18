@@ -30,17 +30,15 @@ export async function getCallerUser(req: Request) {
 }
 
 /**
- * Gate por segredo compartilhado (cron/webhook interno). FAIL-SAFE:
- * se o env `envName` NÃO estiver configurado, retorna true (não bloqueia) e apenas
- * loga um aviso — assim o deploy do código não derruba jobs/recepção antes de você
- * configurar o segredo. Quando o env é configurado, passa a EXIGIR o segredo.
+ * Gate por segredo compartilhado (cron/webhook interno). Fecha por padrão:
+ * se o env `envName` NÃO estiver configurado, a requisição é negada.
  * O segredo pode vir no header (default `x-cron-secret`) ou no query `?secret=`.
  */
 export function checkSharedSecret(req: Request, envName: string, headerName = "x-cron-secret"): boolean {
   const expected = Deno.env.get(envName);
   if (!expected) {
-    console.warn(`[guard] ${envName} não configurado — endpoint operando sem proteção de segredo`);
-    return true;
+    console.error(`[guard] ${envName} não configurado — requisição negada`);
+    return false;
   }
   const url = new URL(req.url);
   const provided = req.headers.get(headerName) ?? url.searchParams.get("secret") ?? "";

@@ -431,7 +431,7 @@ serve(async (req) => {
   // compartilhado. Configure o webhook do Evolution com `?secret=<valor>` na URL
   // (ou header x-webhook-secret) e defina EVOLUTION_WEBHOOK_SECRET nos secrets.
   //
-  // FAIL-SAFE: `checkSharedSecret` só EXIGE o segredo quando o env está definido.
+  // Fecha por padrão: sem segredo configurado ou informado, o webhook é negado.
   //
   // HISTÓRICO: este guard chegou a ficar anulado por um `if (false && ...)` posto
   // como medida temporária para destravar a recepção. Com o env já configurado,

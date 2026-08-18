@@ -14,6 +14,7 @@ import {
   Image as ImageIcon, Mic, Video, File as FileIcon, MapPin, Sticker, Check, CheckCheck
 } from "lucide-react";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
+import { SafeMessageContent } from "@/components/agent/SafeMessageContent";
 
 interface Message {
   role: "user" | "assistant";
@@ -1733,18 +1734,7 @@ const AgenteIA = () => {
                     {msg.role === "assistant" ? <Bot size={16} className="text-primary" /> : <User size={16} className="text-foreground" />}
                   </div>
                   <div className={`max-w-[75%] rounded-xl px-4 py-2.5 text-sm relative ${msg.role === "assistant" ? "bg-muted/50 text-foreground" : "bg-primary text-primary-foreground"}`}>
-                    <div
-                      translate="no"
-                      className="notranslate whitespace-pre-wrap leading-relaxed prose-sm"
-                      dangerouslySetInnerHTML={{
-                        __html: msg.content
-                          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-                          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                          .replace(/\*(.*?)\*/g, "<em>$1</em>")
-                          .replace(/`([^`]+)`/g, '<code class="bg-background/40 px-1 py-0.5 rounded text-xs">$1</code>')
-                          .replace(/^- (.+)$/gm, '• $1')
-                      }}
-                    />
+                    <SafeMessageContent content={msg.content} />
                     <div className="flex items-center justify-between gap-2 mt-1.5">
                       <p className={`text-[10px] ${msg.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/60"}`}>
                         {msg.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}

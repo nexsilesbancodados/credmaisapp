@@ -19,13 +19,8 @@ serve(async (req) => {
     // qualquer destinatário (spam/phishing + queima de cota Brevo). Aceita um usuário
     // autenticado OU um segredo interno para chamadas server-side.
     //
-    // O guard genérico `checkSharedSecret` é fail-SAFE de propósito: se a variável
-    // não estiver definida, ele deixa passar, para não derrubar um cron por causa
-    // de configuração faltando. Aqui isso é a decisão errada — `INTERNAL_FN_SECRET`
-    // nunca tinha sido criada, então a porta ficou escancarada: em 05/08 eu chamei
-    // esta função da internet, sem credencial nenhuma, e ela enviou o e-mail.
-    //
-    // Quem manda e-mail em nome da empresa fecha por padrão.
+    // Quem manda e-mail em nome da empresa fecha por padrão. Além do guard
+    // compartilhado, Boolean evita aceitar uma chamada interna sem segredo definido.
     const segredoInterno = Deno.env.get("INTERNAL_FN_SECRET");
     const user = await getCallerUser(req);
     const chamadaInterna = Boolean(segredoInterno) &&
