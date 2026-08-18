@@ -561,8 +561,8 @@ const Clientes = () => {
       ) : viewMode === "list" ? (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block rounded-3xl border border-border/10 overflow-hidden bg-gradient-to-b from-card/40 to-card/10 backdrop-blur-xl shadow-2xl">
-            <table className="w-full text-sm">
+          <div className="clients-table-wrap hidden xl:block rounded-3xl border border-border/10 overflow-x-auto bg-gradient-to-b from-card/40 to-card/10 backdrop-blur-xl shadow-2xl">
+            <table className="clients-table w-full min-w-[1050px] text-sm">
               <thead>
                 <tr className="border-b border-border/40 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent">
                   <th className="w-10 px-4 py-2.5">
@@ -600,7 +600,7 @@ const Clientes = () => {
 
 
           {/* Mobile List */}
-          <div className="md:hidden space-y-2">
+          <div className="xl:hidden space-y-2">
             {visible.map((c: any) => {
               const summary = contractMap[c.id] || { contracts: 0, active: 0, overdue: 0 };
               return (

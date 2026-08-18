@@ -1656,6 +1656,20 @@ div[style*="Edit with Lovable"],
   [data-tour="topbar-search"] kbd { display: none; }
 }
 
+.clients-table th,
+.clients-table td,
+.clients-table button,
+.clients-table span,
+.clients-table p {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.clients-table-wrap {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
 /* Obsidian workspace overrides. Kept last so legacy module styles converge on
    one consistent surface system without changing any business component. */
 .dark .app-shell {
