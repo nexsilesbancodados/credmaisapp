@@ -7,7 +7,7 @@ import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import {
   Download, CalendarIcon, BarChart3, Brain, FileText,
   TrendingUp, TrendingDown, Wallet, HandCoins, AlertTriangle, CheckCircle2,
-  Users, FileSignature, Clock, Target, PiggyBank, Receipt,
+  Users, FileSignature, Clock, Target, PiggyBank, Receipt, RefreshCw,
 } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth, subDays, startOfDay, endOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import ErrorState from "@/components/feedback/ErrorState";
 
 import AnaliseNarrative from "@/components/dashboard/AnaliseNarrative";
 import { fetchAll } from "@/lib/fetchAll";
@@ -210,7 +211,7 @@ const Analises = () => {
     [["analises-data", user?.id || ""]],
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery({
     queryKey: ["analises-data", user?.id],
     queryFn: async () => {
       const [contracts, installments, clients] = await Promise.all([
@@ -570,9 +571,21 @@ const Analises = () => {
     a.href = url;
     a.download = "relatorio-analises.csv";
     a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
-  if (isLoading || !m) return <div className="text-center py-12 text-muted-foreground">Carregando análises...</div>;
+  if (error && !data) return <ErrorState error={error} onRetry={() => refetch()} />;
+
+  if (isLoading || !m) return (
+    <div role="status" aria-label="Carregando análises" className="space-y-4 animate-pulse">
+      <div className="h-44 rounded-3xl bg-white/[.04]" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 rounded-2xl bg-white/[.04]" />)}
+      </div>
+      <div className="h-72 rounded-3xl bg-white/[.04]" />
+    </div>
+  );
 
   const periodLabel = `${format(dateFrom, "dd/MM/yy")} → ${format(dateTo, "dd/MM/yy")}`;
 
@@ -616,6 +629,9 @@ const Analises = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <button onClick={() => refetch()} disabled={isFetching} title={dataUpdatedAt ? `Atualizado às ${new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Atualizar análises"} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/[.035] border border-white/10 text-xs font-semibold hover:bg-white/[.07] disabled:opacity-60 transition-colors">
+              <RefreshCw size={13} className={isFetching ? "animate-spin" : ""} /> {isFetching ? "Atualizando" : "Atualizar"}
+            </button>
             <button onClick={handleExport} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card/70 backdrop-blur border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring">
               <Download size={13} className="text-primary" /> Exportar CSV
             </button>
