@@ -115,7 +115,7 @@ const Tarefas = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 stagger-fade-in">
+      <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3 stagger-fade-in">
         {[
           { label: "Total", value: all.length, accent: "text-foreground", f: "all" as const },
           { label: "Pendentes", value: pending.length, accent: "text-warning", f: "pending" as const },

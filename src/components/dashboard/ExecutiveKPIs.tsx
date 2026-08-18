@@ -150,7 +150,7 @@ const ExecutiveKPIs = ({ contracts, installments }: Props) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: "30 dias", value: kpis.cash30, color: "from-emerald-500 to-emerald-400", ring: "ring-emerald-500/30" },
             { label: "60 dias", value: kpis.cash60, color: "from-primary to-primary/70", ring: "ring-primary/30" },

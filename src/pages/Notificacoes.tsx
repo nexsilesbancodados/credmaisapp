@@ -164,7 +164,7 @@ const Notificacoes = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
         <button
           onClick={() => setStatusFilter("all")}
           className={`text-left rounded-2xl border p-4 transition ${statusFilter === "all" ? "border-primary/40 bg-primary/5" : "border-border bg-card hover:border-border/80"}`}
@@ -188,7 +188,7 @@ const Notificacoes = () => {
       {/* Filters bar */}
       <div className="rounded-2xl border border-border bg-card p-3 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-2 rounded-xl bg-muted/30 border border-border/40">
+          <div className="flex items-center gap-2 flex-1 min-w-0 sm:min-w-[200px] px-3 py-2 rounded-xl bg-muted/30 border border-border/40">
             <Search size={14} className="text-muted-foreground" />
             <input
               value={search}

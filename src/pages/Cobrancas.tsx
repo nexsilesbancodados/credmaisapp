@@ -1355,7 +1355,7 @@ const Cobrancas = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="grid grid-cols-4 gap-2 pt-0.5">
+                    <div className="collection-card-actions grid grid-cols-4 gap-2 pt-0.5">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleWhatsAppGroup(group); }}
                         className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-br from-success to-success/85 text-success-foreground text-sm font-semibold hover:shadow-md hover:shadow-success/30 active:scale-[0.98] transition-all focus-ring"

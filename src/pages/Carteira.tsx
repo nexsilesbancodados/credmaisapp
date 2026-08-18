@@ -517,7 +517,7 @@ const Carteira = () => {
             <div className="h-full bg-success transition-all duration-700" style={{ width: `${lucrosPct}%` }} title="Lucros" />
             <div className="h-full bg-info transition-all duration-700" style={{ width: `${parcelasPct}%` }} title="Principal recebido" />
           </div>
-          <div className="grid grid-cols-3 gap-2 mt-3 text-[11px]">
+          <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-2 mt-3 text-[11px]">
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary" /><span className="text-muted-foreground">Aportes</span><span className="ml-auto font-semibold text-foreground">{capitalPct.toFixed(0)}%</span></div>
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-success" /><span className="text-muted-foreground">Lucros</span><span className="ml-auto font-semibold text-foreground">{lucrosPct.toFixed(0)}%</span></div>
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-info" /><span className="text-muted-foreground">Principal</span><span className="ml-auto font-semibold text-foreground">{parcelasPct.toFixed(0)}%</span></div>

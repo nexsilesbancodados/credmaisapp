@@ -1144,7 +1144,7 @@ const NovoCliente = () => {
                 <p className="text-[10px] text-muted-foreground">Periodicidade das parcelas</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-5 gap-2.5">
               {([
                 { v: "daily" as Frequency, label: "Diário", Icon: Clock },
                 { v: "weekly" as Frequency, label: "Semanal", Icon: Repeat },
@@ -1166,7 +1166,7 @@ const NovoCliente = () => {
               })}
             </div>
             {frequency === "daily" && (
-              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/10">
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-2 pt-3 border-t border-white/10">
                 {([
                   { v: "mon-fri" as DailyMode, label: "Seg → Sex" },
                   { v: "mon-sat" as DailyMode, label: "Seg → Sáb" },
