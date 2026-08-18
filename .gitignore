@@ -34,3 +34,4 @@ supabase/.temp/
 test-results/
 playwright-report/
 deno.lock
+.vercel
