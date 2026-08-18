@@ -31,6 +31,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/feedback/ErrorState";
 import { formatBR } from "@/lib/dateUtils";
 import { useConfirm } from "@/components/ConfirmProvider";
 import { calculateLoan, generateInstallmentSchedule, LOAN_MODE_LABEL, type LoanMode, type Frequency, type DailyMode } from "@/lib/loanMath";
@@ -124,7 +125,7 @@ const ClienteDetalhe = () => {
     ],
   );
 
-  const { data: client, isLoading } = useQuery({
+  const { data: client, isLoading, error: clientError, refetch: refetchClient } = useQuery({
     queryKey: ["client-detail", id],
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("*").eq("id", id!).single();
@@ -204,7 +205,7 @@ const ClienteDetalhe = () => {
   });
 
   const kpis = useMemo(() => {
-    const activeContracts = contracts.filter((c: any) => c.status === "active");
+    const activeContracts = contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
     const totalCapital = activeContracts.reduce((s: number, c: any) => s + Number(c.capital || 0), 0);
     const lifetimeCapital = contracts.reduce((s: number, c: any) => s + Number(c.capital || 0), 0);
     const totalAmount = contracts.reduce((s: number, c: any) => s + Number(c.total_amount || 0), 0);
@@ -1079,6 +1080,8 @@ const ClienteDetalhe = () => {
     </div>
   );
 
+  if (clientError) return <ErrorState error={clientError} onRetry={() => refetchClient()} />;
+
   if (!client) return (
     <div className="text-center py-16"><User size={48} className="mx-auto text-muted-foreground/20 mb-4" /><p className="text-muted-foreground">Cliente não encontrado</p></div>
   );
@@ -1145,14 +1148,14 @@ const ClienteDetalhe = () => {
       {/* ===== Banner Navy + Ações Rápidas + KPIs (padrão CRM) ===== */}
       <header className="space-y-5">
         {/* Banner escuro com ondas */}
-        <div className="relative overflow-hidden rounded-[24px] border border-border/40 shadow-2xl shadow-primary/10"
-             style={{ background: "linear-gradient(120deg, hsl(222 47% 11%) 0%, hsl(217 60% 18%) 60%, hsl(214 80% 28%) 100%)" }}>
+        <div className="relative overflow-hidden rounded-[24px] border border-white/10 shadow-2xl shadow-black/40"
+             style={{ background: "linear-gradient(120deg, hsl(0 0% 4%) 0%, hsl(0 0% 8%) 60%, hsl(0 0% 13%) 100%)" }}>
           {/* Ondas decorativas à direita */}
           <svg className="pointer-events-none absolute inset-y-0 right-0 h-full w-[55%] opacity-70" viewBox="0 0 600 220" fill="none" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="waveGrad" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stopColor="hsl(210 100% 70%)" stopOpacity="0" />
-                <stop offset="1" stopColor="hsl(210 100% 75%)" stopOpacity="0.55" />
+                <stop offset="0" stopColor="hsl(0 0% 100%)" stopOpacity="0" />
+                <stop offset="1" stopColor="hsl(0 0% 100%)" stopOpacity="0.22" />
               </linearGradient>
             </defs>
             {[0, 14, 28, 42, 56, 70].map((off, i) => (
