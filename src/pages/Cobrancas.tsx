@@ -798,17 +798,17 @@ const Cobrancas = () => {
         <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
 
         <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div className="flex items-start gap-4">
+          <div className="collections-hero-summary flex items-start gap-4 min-w-0">
             <div className="collections-hero-icon w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center">
               <Receipt size={26} className="text-destructive" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Cobranças</p>
               <h1 className="text-display text-2xl sm:text-3xl md:text-4xl font-semibold text-foreground tracking-[-0.04em]">
                 Total a Receber
               </h1>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="collections-total text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.055em] tabular-nums">
+                <span className="collections-total money-fit block max-w-full text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.055em] tabular-nums whitespace-nowrap">
                   R$ {fmt(stats.totalOverdue + dueTodayStats.total)}
                 </span>
               </div>
@@ -1047,7 +1047,7 @@ const Cobrancas = () => {
             </div>
 
             {/* Ações secundárias inline */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-border/40">
+            <div className="collection-tools flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-border/40">
               <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 pl-2 pr-1">Ferramentas</span>
               <button
                 onClick={() => setShowAging(v => !v)}
@@ -1434,7 +1434,7 @@ const Cobrancas = () => {
       {bulkPreview && (
         <div className="modal-backdrop" onClick={() => !bulkSending && (setBulkPreview(null), setPreviewEditIdx(null))}>
           <div className="modal-content max-w-2xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+            <div className="collection-modal-header px-5 py-4 border-b border-border flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold flex items-center gap-2"><MessageSquare size={16} className="text-success" /> Pré-visualizar cobrança em lote</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -1446,12 +1446,12 @@ const Cobrancas = () => {
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {bulkPreview.groups.map((g, idx) => (
                 <div key={g.clientId} className="rounded-2xl border border-border bg-card/50">
-                  <div className="px-4 py-2.5 border-b border-border flex items-center justify-between gap-2">
+                  <div className="collection-preview-row px-4 py-2.5 border-b border-border flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">{g.clientName}</div>
                       <div className="text-[11px] text-muted-foreground">📱 +{g.phone} • {g.items.length} parcela(s)</div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="collection-preview-actions flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => { navigator.clipboard?.writeText(g.message); toast({ title: "Mensagem copiada" }); }}
                         className="px-2 py-1 rounded-lg text-[11px] bg-accent hover:bg-accent/70 text-foreground flex items-center gap-1"
@@ -1491,7 +1491,7 @@ const Cobrancas = () => {
                 <div className="text-center text-sm text-muted-foreground py-8">Nenhum cliente no lote.</div>
               )}
             </div>
-            <div className="px-5 py-4 border-t border-border flex items-center gap-2">
+            <div className="collection-modal-footer px-5 py-4 border-t border-border flex items-center gap-2">
               <button disabled={bulkSending} onClick={() => { setBulkPreview(null); setPreviewEditIdx(null); }} className="flex-1 px-4 py-2.5 rounded-2xl border border-border text-sm text-muted-foreground hover:bg-accent transition-colors disabled:opacity-50">Cancelar</button>
               <button
                 disabled={bulkSending || bulkPreview.groups.length === 0}
@@ -1630,18 +1630,18 @@ const Cobrancas = () => {
                     >{p.label}</button>
                   ))}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="collection-date-summary grid grid-cols-3 gap-2">
                   <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-2.5">
                     <p className="text-[10px] uppercase tracking-wider text-destructive font-semibold">Atrasadas</p>
-                    <p className="text-sm font-bold text-destructive">R$ {fmt(totalOverdue)}</p>
+                    <p className="money-fit text-sm font-bold text-destructive">R$ {fmt(totalOverdue)}</p>
                   </div>
                   <div className="rounded-xl bg-warning/10 border border-warning/20 p-2.5">
                     <p className="text-[10px] uppercase tracking-wider text-warning font-semibold">Vence hoje</p>
-                    <p className="text-sm font-bold text-warning">R$ {fmt(totalToday)}</p>
+                    <p className="money-fit text-sm font-bold text-warning">R$ {fmt(totalToday)}</p>
                   </div>
                   <div className="rounded-xl bg-primary/10 border border-primary/20 p-2.5">
                     <p className="text-[10px] uppercase tracking-wider text-primary font-semibold">Total a cobrar</p>
-                    <p className="text-sm font-bold text-primary">R$ {fmt(totalAll)}</p>
+                    <p className="money-fit text-sm font-bold text-primary">R$ {fmt(totalAll)}</p>
                   </div>
                 </div>
               </div>
@@ -1667,9 +1667,9 @@ const Cobrancas = () => {
                       const sum = list.reduce((s, i) => s + Number(i.amount), 0);
                       return (
                         <div key={cid} className="rounded-xl border border-border bg-card/50">
-                          <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-                            <p className="text-sm font-semibold text-foreground">{name}</p>
-                            <p className="text-xs font-bold text-primary">R$ {fmt(sum)}</p>
+                          <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
+                            <p className="min-w-0 truncate text-sm font-semibold text-foreground">{name}</p>
+                            <p className="money-fit shrink-0 text-xs font-bold text-primary">R$ {fmt(sum)}</p>
                           </div>
                           <div className="divide-y divide-border/40">
                             {list.map((inst: any) => {
@@ -1707,12 +1707,12 @@ const Cobrancas = () => {
 
               {/* Footer */}
               {items.length > 0 && (
-                <div className="px-5 py-3 border-t border-border bg-card/95 backdrop-blur flex items-center justify-between gap-3 shrink-0">
-                  <div>
+                <div className="collection-date-footer px-5 py-3 border-t border-border bg-card/95 backdrop-blur flex items-center justify-between gap-3 shrink-0">
+                  <div className="min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{selItems.length > 0 ? `${selItems.length} selecionada(s)` : "Todas as parcelas"}</p>
-                    <p className="text-base font-bold text-foreground">R$ {fmt(selItems.length > 0 ? selSum : totalAll)}</p>
+                    <p className="money-fit truncate text-base font-bold text-foreground">R$ {fmt(selItems.length > 0 ? selSum : totalAll)}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="collection-date-actions flex items-center gap-2 shrink-0">
                     <button onClick={cobrarSelecionados} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-success/15 text-success border border-success/30 text-xs font-semibold hover:bg-success/25 transition-colors">
                       <MessageSquare size={14} /> Cobrar WhatsApp
                     </button>

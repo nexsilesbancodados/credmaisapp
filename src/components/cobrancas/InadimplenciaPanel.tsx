@@ -173,19 +173,19 @@ const InadimplenciaPanel = () => {
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="collection-aging-kpis grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label: "Total em atraso", value: fmtBRL(kpis.total), icon: DollarSign, color: "text-rose-400" },
           { label: "Clientes inadimplentes", value: kpis.clients, icon: Users, color: "text-amber-400" },
           { label: "Parcelas vencidas", value: kpis.installments, icon: TrendingDown, color: "text-orange-400" },
           { label: "Média de dias atraso", value: `${kpis.avgDays}d`, icon: Clock, color: "text-violet-400" },
         ].map((k) => (
-          <Card key={k.label} className="p-4">
+          <Card key={k.label} className="min-w-0 p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-muted-foreground">{k.label}</span>
               <k.icon size={16} className={k.color} />
             </div>
-            {loading ? <Skeleton className="h-7 w-24" /> : <p className="text-xl font-bold">{k.value}</p>}
+            {loading ? <Skeleton className="h-7 w-24" /> : <p className="money-fit whitespace-nowrap text-lg sm:text-xl font-bold">{k.value}</p>}
           </Card>
         ))}
       </div>
@@ -240,7 +240,7 @@ const InadimplenciaPanel = () => {
             {byClient.slice(0, 20).map((row) => (
               <div
                 key={row.client.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-card/50 border border-border/40 hover:border-primary/40 transition"
+                className="collection-debtor-row flex items-center gap-3 p-3 rounded-xl bg-card/50 border border-border/40 hover:border-primary/40 transition"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

@@ -1712,6 +1712,11 @@ div[style*="Edit with Lovable"],
   text-shadow: 0 12px 40px hsl(42 30% 65% / .07);
 }
 
+.money-fit {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .collections-primary-action {
   min-height: 46px;
   border-radius: .75rem;
@@ -1790,6 +1795,12 @@ div[style*="Edit with Lovable"],
   .collections-page { margin-inline: -.125rem; }
   .collections-hero { border-radius: 1.25rem; }
   .collections-hero-actions > * { width: 100%; }
+  .collections-hero-summary { gap: .75rem; }
+  .collections-hero-icon { width: 2.625rem; height: 2.625rem; border-radius: .75rem; flex: 0 0 auto; }
+  .collections-total { font-size: clamp(1.75rem, 9vw, 2.6rem) !important; line-height: 1.05; }
+  .collections-hero-summary h1 { font-size: clamp(1.3rem, 6.4vw, 1.75rem); }
+  .collections-hero-summary > div:last-child > p:last-child { column-gap: .5rem; }
+  .collections-hero-summary > div:last-child > p:last-child > .text-border { display: none; }
   .collections-stats { grid-template-columns: 1fr; }
   .collection-stat { padding: .875rem 1rem; }
   .collection-stat > div:first-of-type { margin-bottom: .4rem; }
@@ -1797,6 +1808,10 @@ div[style*="Edit with Lovable"],
   .collection-tabs > button { justify-content: center; padding-inline: .375rem; }
   .collection-sort-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; }
   .collection-sort-actions > button { border-radius: .75rem; }
+  .collection-tools { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .collection-tools > span { grid-column: 1 / -1; padding-block: .125rem; }
+  .collection-tools > button { width: 100%; height: auto; min-height: 40px; justify-content: center; padding: .5rem; white-space: normal; line-height: 1.15; }
+  .collection-tools > button:last-child:nth-child(even) { grid-column: 1 / -1; }
   .collection-toolbar { border-radius: 1rem; }
   .collection-list { gap: .75rem; }
   .collection-account-card { border-radius: 1rem; }
@@ -1804,9 +1819,27 @@ div[style*="Edit with Lovable"],
   .collection-installment-info { min-width: calc(100% - 5.75rem); }
   .collection-installment-actions { width: 100%; justify-content: flex-end; padding-top: .625rem; border-top: 1px solid hsl(40 10% 70% / .08); }
   .collection-installment-actions > button { min-height: 38px; min-width: 42px; justify-content: center; }
+  .collection-modal-header { padding: .875rem 1rem; }
+  .collection-preview-row { flex-direction: column; align-items: stretch; }
+  .collection-preview-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr auto; }
+  .collection-preview-actions > button { min-width: 0; justify-content: center; }
+  .collection-modal-footer { padding: .75rem 1rem max(.75rem, env(safe-area-inset-bottom)); }
+  .collection-modal-footer > button { min-width: 0; padding-inline: .625rem; font-size: .75rem; line-height: 1.2; }
+  .collection-date-summary { grid-template-columns: 1fr; }
+  .collection-date-summary > div { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+  .collection-date-summary .money-fit { max-width: 58%; }
+  .collection-date-footer { flex-direction: column; align-items: stretch; padding: .75rem 1rem max(.75rem, env(safe-area-inset-bottom)); }
+  .collection-date-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .collection-date-actions > button { min-width: 0; justify-content: center; padding-inline: .5rem; line-height: 1.15; }
+  .collection-performance-grid { grid-template-columns: 1fr; }
+  .collection-aging-kpis { grid-template-columns: 1fr; }
+  .collection-debtor-row { flex-wrap: wrap; }
+  .collection-debtor-row > div:first-child { flex-basis: calc(100% - 7rem); }
+  .collection-debtor-row > button { width: 100%; justify-content: center; }
 }
 
 @media (max-width: 359px) {
   .collections-hero { padding-inline: .875rem; }
   .collection-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .collection-preview-actions { grid-template-columns: 1fr 1fr 42px; }
 }

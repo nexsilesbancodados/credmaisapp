@@ -95,14 +95,14 @@ const CollectionMetrics = () => {
         <Sparkles className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold text-foreground/90">Performance das Cobranças (últimos 30 dias)</h3>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="collection-performance-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map((c) => (
-          <div key={c.label} className="rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3 hover:border-primary/40 transition-colors">
+          <div key={c.label} className="min-w-0 rounded-xl bg-card/60 backdrop-blur border border-border/50 p-3 hover:border-primary/40 transition-colors">
             <div className="flex items-center justify-between mb-1">
               <c.icon className={`h-4 w-4 ${c.color}`} />
             </div>
             <div className="text-xs text-muted-foreground truncate">{c.label}</div>
-            <div className="text-lg font-bold text-foreground tracking-tight truncate">{c.value}</div>
+            <div className="money-fit text-base sm:text-lg font-bold text-foreground tracking-tight whitespace-nowrap">{c.value}</div>
             <div className="text-[10px] text-muted-foreground/70 truncate">{c.sub}</div>
           </div>
         ))}
