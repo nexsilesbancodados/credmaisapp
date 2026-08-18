@@ -46,9 +46,24 @@ A verificação estrutural do banco remoto continua pendente porque `supabase db
 - Impacto: a chave `anon` é pública por desenho e não equivale à service-role, porém a duplicação dificulta rotação e auditoria.
 - Recomendação: jobs novos devem obter configuração por secret/vault; migrations históricas não devem ser reescritas após aplicadas.
 
+### SEC-007 — Alto — upload do cobrador não validava carteira atribuída (corrigido)
+
+- Evidência: `supabase/functions/portal-upload-comprovante/index.ts` usava service-role e verificava apenas se parcela e token pertenciam à mesma empresa.
+- Risco anterior: um cobrador com token válido e conhecimento do UUID poderia anexar comprovante a uma parcela de outro cobrador da mesma empresa.
+- Correção: o endpoint agora exige token ativo, cobrador ativo e registro correspondente em `collector_assignments`; a extensão também é derivada do MIME permitido, não do nome enviado.
+- Pendência operacional: publicar `portal-upload-comprovante` quando a conta Supabase tiver permissão de deploy.
+
+### SEC-008 — Médio — URL de retorno do checkout confiava no header Origin (corrigido)
+
+- Evidência: `supabase/functions/mercadopago-create-preference/index.ts` interpolava diretamente `req.headers.get("origin")` nas URLs de retorno.
+- Risco anterior: uma chamada feita com Origin arbitrário criava preferência de pagamento que redirecionava o comprador para domínio não confiável.
+- Correção: `supabase/functions/_shared/trusted_origin.ts` aceita apenas origens configuradas e recua para `https://credmaisapp.com.br`.
+- Teste: `supabase/functions/_shared/trusted_origin_test.ts` cobre origem permitida, phishing, protocolo executável e URL com credenciais enganosas.
+- Pendência operacional: publicar `mercadopago-create-preference` quando a conta Supabase tiver permissão de deploy.
+
 ## Próximas validações prioritárias
 
-1. Publicar o guard e testar webhook válido, inválido e sem segredo.
+1. Publicar as funções corrigidas e testar webhook válido, inválido, upload fora da carteira e retorno do checkout.
 2. Liberar inspeção somente leitura do banco remoto e executar lint/RLS entre tenants distintos.
 3. Instrumentar relatórios de violação CSP antes de ativar bloqueio.
 4. Migrar portais externos para sessão de backend em cookie HttpOnly.

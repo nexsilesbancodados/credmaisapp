@@ -13,6 +13,7 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   // Rate limit: portais anônimos, 10 uploads/min por IP
   const rl = await rateLimit(req, "portal-upload", 10, 10 / 60, corsHeaders);
   if (rl) return rl;
@@ -52,18 +53,50 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid or inactive collector token" }, 401);
     }
 
+    // Revogar/desativar o cobrador também encerra imediatamente seus tokens.
+    const { data: collector } = await admin
+      .from("collectors")
+      .select("id, is_active")
+      .eq("id", tok.collector_id)
+      .eq("user_id", tok.user_id)
+      .maybeSingle();
+    if (!collector || collector.is_active === false) {
+      return json({ error: "Inactive collector" }, 401);
+    }
+
     // 2) Ensure the installment belongs to that owner
     const { data: inst } = await admin
       .from("contract_installments")
-      .select("id, user_id")
+      .select("id, user_id, client_id")
       .eq("id", installmentId)
       .maybeSingle();
     if (!inst || inst.user_id !== tok.user_id) {
       return json({ error: "Installment not found for this collector" }, 403);
     }
 
+
+    // Pertencer à mesma empresa não basta: o cliente deve estar na carteira
+    // explicitamente atribuída a este cobrador.
+    const { data: assignment } = await admin
+      .from("collector_assignments")
+      .select("id")
+      .eq("collector_id", tok.collector_id)
+      .eq("client_id", inst.client_id)
+      .eq("user_id", tok.user_id)
+      .maybeSingle();
+    if (!assignment) {
+      return json({ error: "Client is not assigned to this collector" }, 403);
+    }
+
     // 3) Upload using service role to the owner's namespaced folder
-    const ext = (file.name.split(".").pop() || "bin").toLowerCase().slice(0, 8);
+    const extensions: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/heic": "heic",
+      "application/pdf": "pdf",
+    };
+    const ext = extensions[file.type];
     const path = `${tok.user_id}/comprovantes/${installmentId}-${Date.now()}.${ext}`;
     const bytes = new Uint8Array(await file.arrayBuffer());
 

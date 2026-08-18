@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { guard as rateLimitGuard } from "../_shared/rate_limit.ts";
+import { trustedCheckoutOrigin } from "../_shared/trusted_origin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +34,7 @@ serve(async (req) => {
     const name: string | undefined = body.name;
     const planTier: "essencial" | "completo" = body.planTier === "essencial" ? "essencial" : "completo";
     const PLAN = PLANS[planTier];
-    const origin = req.headers.get("origin") ?? "https://credmaisapp.lovable.app";
+    const origin = trustedCheckoutOrigin(req.headers.get("origin"));
 
     const preference = {
       items: [
