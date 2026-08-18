@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import ErrorState from "@/components/feedback/ErrorState";
 
 type Ticket = {
   id: string;
@@ -77,9 +78,12 @@ const Suporte = () => {
   const { toast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState<unknown>(null);
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -93,22 +97,32 @@ const Suporte = () => {
 
   const fetchTickets = async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("support_tickets")
       .select("*")
       .eq("user_id", user.id)
       .order("last_message_at", { ascending: false });
-    setTickets((data as Ticket[]) || []);
+    if (error) setLoadError(error);
+    else {
+      setLoadError(null);
+      setTickets((data as Ticket[]) || []);
+    }
     setLoading(false);
   };
 
   const fetchMessages = async (ticketId: string) => {
-    const { data } = await supabase
+    setMessagesLoading(true);
+    const { data, error } = await supabase
       .from("support_ticket_messages")
       .select("*")
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
-    setMessages((data as TicketMessage[]) || []);
+    if (error) setMessagesError(error);
+    else {
+      setMessagesError(null);
+      setMessages((data as TicketMessage[]) || []);
+    }
+    setMessagesLoading(false);
   };
 
   useEffect(() => {
@@ -123,11 +137,14 @@ const Suporte = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!activeTicket) return;
+    if (!activeTicket || !user) return;
     fetchMessages(activeTicket.id);
     // mark as read
     if (activeTicket.unread_by_user) {
-      supabase.from("support_tickets").update({ unread_by_user: false }).eq("id", activeTicket.id);
+      supabase.from("support_tickets").update({ unread_by_user: false }).eq("id", activeTicket.id).eq("user_id", user.id)
+        .then(({ error }) => {
+          if (!error) setTickets((prev) => prev.map((ticket) => ticket.id === activeTicket.id ? { ...ticket, unread_by_user: false } : ticket));
+        });
     }
     const ch = supabase
       .channel(`realtime-ticket-messages-${activeTicket.id}`)
@@ -136,7 +153,7 @@ const Suporte = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [activeTicket]);
+  }, [activeTicket, user]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return tickets;
@@ -178,11 +195,13 @@ const Suporte = () => {
       message: newMessage.trim(),
     });
     if (msgError) {
+      await supabase.from("support_tickets").delete().eq("id", ticket.id).eq("user_id", user.id);
       toast({
-        title: "Ticket criado, mas a mensagem não foi enviada",
-        description: "Abra o ticket e escreva novamente para o suporte receber sua descrição.",
+        ...friendlyError(msgError, "Não foi possível enviar o chamado. Seus dados foram mantidos para tentar novamente."),
         variant: "destructive",
       });
+      setCreating(false);
+      return;
     }
     // Triagem IA em background — não bloqueia UX
     supabase.functions.invoke("support-triage", { body: { ticket_id: ticket.id } }).catch(() => {});
@@ -199,16 +218,19 @@ const Suporte = () => {
   const handleSendReply = async () => {
     if (!activeTicket || !reply.trim() || !user) return;
     setSending(true);
-    const { error } = await supabase.from("support_ticket_messages").insert({
-      ticket_id: activeTicket.id,
-      sender_id: user.id,
-      sender_role: "user",
-      sender_name: profile?.name || "Usuário",
-      message: reply.trim(),
-    });
-    if (error) toast({ ...friendlyError(error, "Não foi possível enviar sua mensagem."), variant: "destructive" });
-    else setReply("");
-    setSending(false);
+    try {
+      const { error } = await supabase.from("support_ticket_messages").insert({
+        ticket_id: activeTicket.id,
+        sender_id: user.id,
+        sender_role: "user",
+        sender_name: profile?.name || "Usuário",
+        message: reply.trim(),
+      });
+      if (error) toast({ ...friendlyError(error, "Não foi possível enviar sua mensagem."), variant: "destructive" });
+      else setReply("");
+    } finally {
+      setSending(false);
+    }
   };
 
   // ============ DETAIL VIEW ============
@@ -242,8 +264,12 @@ const Suporte = () => {
           </div>
 
           <div className="p-5 space-y-4 max-h-[55vh] overflow-y-auto">
-            {messages.length === 0 ? (
+            {messagesLoading ? (
               <p className="text-center text-muted-foreground text-sm py-8">Carregando mensagens...</p>
+            ) : messagesError ? (
+              <ErrorState error={messagesError} onRetry={() => fetchMessages(activeTicket.id)} />
+            ) : messages.length === 0 ? (
+              <p className="text-center text-muted-foreground text-sm py-8">Nenhuma mensagem neste ticket.</p>
             ) : (
               messages.map((m) => {
                 const isMe = m.sender_role === "user";
@@ -273,6 +299,7 @@ const Suporte = () => {
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   placeholder="Digite sua resposta..."
+                  maxLength={4000}
                   className="min-h-[60px] resize-none"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSendReply();
@@ -330,6 +357,8 @@ const Suporte = () => {
             <div key={i} className="h-20 rounded-xl bg-muted/30 animate-pulse" />
           ))}
         </div>
+      ) : loadError ? (
+        <ErrorState error={loadError} onRetry={() => { setLoading(true); fetchTickets(); }} />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-border/40 bg-card/30">
           <Inbox className="mx-auto text-muted-foreground/40 mb-3" size={48} />
