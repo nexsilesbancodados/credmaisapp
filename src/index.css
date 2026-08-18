@@ -1651,6 +1651,11 @@ div[style*="Edit with Lovable"],
   to { transform: translateX(-50%); }
 }
 
+/* Topbar intermediária: o atalho só aparece quando a busca tem largura completa. */
+@media (max-width: 1279px) {
+  [data-tour="topbar-search"] kbd { display: none; }
+}
+
 /* Obsidian workspace overrides. Kept last so legacy module styles converge on
    one consistent surface system without changing any business component. */
 .dark .app-shell {

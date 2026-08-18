@@ -99,10 +99,10 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         <button
           data-tour="topbar-search"
           onClick={onSearchClick}
-          className="group flex items-center gap-2.5 px-4 h-11 min-w-[300px] rounded-xl bg-white/[.035] border border-white/10 text-sm text-muted-foreground hover:text-foreground hover:border-white/20 hover:bg-white/[.06] hover:shadow-[0_0_0_4px_hsl(0_0%_100%/.025)] transition-all duration-300"
+          className="group flex min-w-0 w-11 lg:w-[240px] xl:w-[300px] shrink items-center justify-center lg:justify-start gap-2.5 px-3 lg:px-4 h-11 rounded-xl bg-white/[.035] border border-white/10 text-sm text-muted-foreground hover:text-foreground hover:border-white/20 hover:bg-white/[.06] hover:shadow-[0_0_0_4px_hsl(0_0%_100%/.025)] transition-all duration-300"
         >
           <Search size={15} className="text-muted-foreground/60 group-hover:text-primary transition-colors" />
-          <span className="hidden sm:inline text-[13px] flex-1 text-left">Buscar clientes, contratos...</span>
+          <span className="hidden lg:inline truncate text-[13px] flex-1 text-left">Buscar clientes, contratos...</span>
           <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-md bg-background/60 font-mono text-muted-foreground/60 border border-border/40">⌘K</kbd>
         </button>
       )}
@@ -113,7 +113,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
 
       {/* Financial indicators — grupo unificado */}
       {!isMobile && (
-        <div className="hidden md:flex items-center gap-1.5 p-1 rounded-full bg-muted/25 border border-border/30 backdrop-blur-sm">
+        <div className="hidden xl:flex shrink-0 items-center gap-1.5 p-1 rounded-full bg-muted/25 border border-border/30 backdrop-blur-sm">
           <button
             onClick={() => navigate("/carteira")}
             className="group flex items-center gap-2 pl-2 pr-3.5 h-8 rounded-full hover:bg-primary/10 transition-all duration-200"
@@ -122,7 +122,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center ring-1 ring-primary/20 group-hover:scale-110 transition-transform">
               <Wallet size={12} className="text-primary" />
             </span>
-            <span className="text-[12.5px] font-bold tracking-tight text-foreground">R$ {fmt(financials?.carteira ?? 0)}</span>
+            <span className="whitespace-nowrap text-[12.5px] font-bold tracking-tight text-foreground">R$ {fmt(financials?.carteira ?? 0)}</span>
           </button>
           <div className="w-px h-4 bg-border/50" />
           <button
@@ -133,7 +133,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <span className="w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center ring-1 ring-emerald-500/25 group-hover:scale-110 transition-transform">
               <TrendingUp size={12} className="text-emerald-400" />
             </span>
-            <span className="text-[12.5px] font-bold tracking-tight text-emerald-400">R$ {fmt(financials?.lucro ?? 0)}</span>
+            <span className="whitespace-nowrap text-[12.5px] font-bold tracking-tight text-emerald-400">R$ {fmt(financials?.lucro ?? 0)}</span>
           </button>
           {(financials?.overdue ?? 0) > 0 && (
             <>
@@ -160,7 +160,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         <div ref={quickRef} className="relative flex items-center">
           <button
             onClick={() => setQuickOpen(o => !o)}
-            className="flex items-center gap-1.5 pl-3 pr-2.5 h-9 rounded-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground text-[12px] font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 ring-1 ring-primary/40"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap pl-3 pr-2.5 h-9 rounded-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground text-[12px] font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 ring-1 ring-primary/40"
             aria-haspopup="menu"
             aria-expanded={quickOpen}
           >
