@@ -59,13 +59,16 @@ const Tarefas = () => {
 
 
   const handleToggle = async (id: string, current: boolean) => {
-    await supabase.from("todos").update({ is_complete: !current }).eq("id", id);
+    if (!user) return;
+    const { error } = await supabase.from("todos").update({ is_complete: !current }).eq("id", id).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível atualizar a tarefa."), variant: "destructive" });
     fetchTodos();
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) return;
     if (!(await confirm("Excluir esta tarefa?"))) return;
-    const { error } = await supabase.from("todos").delete().eq("id", id);
+    const { error } = await supabase.from("todos").delete().eq("id", id).eq("user_id", user.id);
     if (error) {
       toast({ title: "Não foi possível excluir", description: "Tente novamente em instantes.", variant: "destructive" });
       return;
@@ -75,9 +78,12 @@ const Tarefas = () => {
   };
 
   const handleClearDone = async () => {
+    if (!user) return;
     if (!(await confirm("Limpar todas as tarefas concluídas?"))) return;
     const doneIds = todos.filter(t => t.is_complete).map(t => t.id);
-    for (const id of doneIds) await supabase.from("todos").delete().eq("id", id);
+    if (doneIds.length === 0) return;
+    const { error } = await supabase.from("todos").delete().in("id", doneIds).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível limpar as tarefas concluídas."), variant: "destructive" });
     fetchTodos();
     toast({ title: `${doneIds.length} tarefa(s) removida(s)` });
   };
