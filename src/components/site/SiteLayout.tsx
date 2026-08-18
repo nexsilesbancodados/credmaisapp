@@ -26,8 +26,8 @@ export function Grain() {
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.28em] text-[#5B8FD9]">
-      <span className="h-px w-8 bg-[#1B6EF3]/60" />
+    <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.3em] text-[#c9c1ae]">
+      <span className="h-px w-8 bg-[#c9c1ae]/55" />
       {children}
     </div>
   );
@@ -38,17 +38,17 @@ export function SiteHeader() {
   const { pathname } = useLocation();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#050B18]/80 backdrop-blur-xl transition-all duration-300">
-      <div className="mx-auto flex h-[68px] w-full max-w-[1160px] items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#090908]/85 backdrop-blur-2xl transition-all duration-300">
+      <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between px-4 sm:px-6 lg:px-10">
         <Link to="/" className="group flex items-center gap-3">
           <img
             src={logo}
             alt="CredMais App"
-            className="h-9 w-9 rounded-full ring-1 ring-[#1B6EF3]/40 transition-shadow group-hover:shadow-[0_0_18px_rgba(27,110,243,0.5)]"
+            className="h-8 w-8 rounded-lg object-cover grayscale ring-1 ring-white/15 transition-all group-hover:grayscale-0"
             loading="eager"
           />
           <span className="font-display text-[15px] font-semibold tracking-[-0.01em] text-white">
-            Cred<span className="text-[#3B8DFF]">Mais</span>
+            Cred<span className="text-[#c9c1ae]">Mais</span>
           </span>
         </Link>
 
@@ -63,7 +63,7 @@ export function SiteHeader() {
             >
               {n.label}
               {pathname === n.to && (
-                <span className="absolute inset-x-4 -bottom-[1px] h-px bg-[#3B8DFF]" />
+                <span className="absolute inset-x-4 -bottom-[1px] h-px bg-[#d8d0bd]" />
               )}
             </Link>
           ))}
@@ -73,7 +73,7 @@ export function SiteHeader() {
           </Link>
           <Link
             to="/checkout?plan=completo"
-            className="ml-3 rounded-full bg-white px-5 py-2 text-[13px] font-semibold text-[#050B18] transition-transform hover:-translate-y-[1px] hover:shadow-[0_8px_24px_rgba(255,255,255,0.15)]"
+            className="ml-3 rounded-xl bg-[#ebe5d8] px-5 py-2.5 text-[13px] font-semibold text-[#12110f] transition-all hover:bg-white"
           >
             Assinar
           </Link>
@@ -90,7 +90,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <div className="border-t border-white/[0.07] bg-[#050B18] px-5 py-4 md:hidden">
+        <div className="border-t border-white/[0.07] bg-[#090908]/98 px-5 py-4 backdrop-blur-2xl md:hidden">
           <div className="flex flex-col">
             {[...NAV, { to: "/login", label: "Entrar" }].map((n) => (
               <Link
@@ -100,13 +100,13 @@ export function SiteHeader() {
                 className="flex items-center justify-between border-b border-white/[0.06] py-4 text-[15px] text-white/80"
               >
                 {n.label}
-                <span className="text-[#3B8DFF]">↗</span>
+                <span className="text-[#c9c1ae]">↗</span>
               </Link>
             ))}
             <Link
               to="/checkout?plan=completo"
               onClick={() => setOpen(false)}
-              className="mt-5 rounded-full bg-white px-4 py-3.5 text-center text-sm font-semibold text-[#050B18]"
+              className="mt-5 rounded-xl bg-[#ebe5d8] px-4 py-3.5 text-center text-sm font-semibold text-[#12110f]"
             >
               Assinar agora
             </Link>
@@ -119,11 +119,11 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="relative border-t border-white/[0.07] bg-[#040915] px-5 py-14">
+    <footer className="relative border-t border-white/[0.08] bg-[#070706] px-5 py-14">
       <div className="mx-auto flex w-full max-w-[1160px] flex-col gap-10 md:flex-row md:justify-between">
         <div className="max-w-xs">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="" className="h-9 w-9 rounded-full ring-1 ring-[#1B6EF3]/30" loading="lazy" />
+            <img src={logo} alt="" className="h-9 w-9 rounded-lg object-cover grayscale ring-1 ring-white/15" loading="lazy" />
             <div className="font-display text-sm font-semibold text-white">CredMais App</div>
           </div>
           <p className="mt-4 text-[13px] leading-relaxed text-white/45">
@@ -175,14 +175,14 @@ export function SitePage({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#050B18] font-body text-white">
+    <div className="min-h-screen bg-[#090908] font-body text-white">
       <Grain />
       <SiteHeader />
       <section className="relative overflow-hidden">
         <div
           aria-hidden
           className="pointer-events-none absolute -left-40 -top-40 h-[420px] w-[420px] rounded-full opacity-30 blur-[110px]"
-          style={{ background: "radial-gradient(circle,#1B6EF3 0%,transparent 70%)" }}
+          style={{ background: "radial-gradient(circle,rgba(201,193,174,.22) 0%,transparent 70%)" }}
         />
         <div className="relative mx-auto w-full max-w-[1160px] px-5 pb-14 pt-16 md:pt-24">
           <Eyebrow>{eyebrow}</Eyebrow>
@@ -201,7 +201,7 @@ export function SitePage({
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`relative rounded-[20px] border border-white/[0.08] bg-gradient-to-b from-white/[0.045] to-transparent p-6 transition-colors hover:border-white/20 md:p-8 ${className}`}
+      className={`relative rounded-2xl border border-white/[0.09] bg-white/[0.035] p-6 shadow-[0_24px_70px_rgba(0,0,0,.24)] backdrop-blur-xl transition-colors hover:border-white/20 md:p-8 ${className}`}
     >
       {children}
     </div>

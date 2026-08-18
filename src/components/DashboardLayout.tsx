@@ -87,7 +87,7 @@ const DashboardLayout = () => {
        */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/[0.04] rounded-full blur-[80px]" />
-        <div className="absolute bottom-0 right-0 w-[480px] h-[480px] bg-indigo-500/[0.03] rounded-full blur-[70px]" />
+        <div className="absolute bottom-0 right-0 w-[480px] h-[480px] bg-stone-200/[0.025] rounded-full blur-[70px]" />
       </div>
 
       {/* Desktop: sidebar */}

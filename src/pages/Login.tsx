@@ -273,7 +273,7 @@ const Login = () => {
 
   return (
     <div
-      className="relative min-h-dvh flex flex-col items-center justify-center overflow-x-hidden font-body bg-black bg-cover bg-center bg-no-repeat px-4 py-8"
+      className="relative min-h-dvh flex flex-col items-center justify-center overflow-x-hidden font-body bg-black bg-cover bg-center bg-no-repeat px-4 py-6 sm:py-8"
       style={{ backgroundImage: "url('/login-bg.png')" }}
     >
       <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] backdrop-grayscale z-0" />
@@ -288,8 +288,8 @@ const Login = () => {
       </button>
 
       {/* Logo & Título */}
-      <div className="relative z-10 flex flex-col items-center mb-8 md:mb-10 animate-fade-in">
-        <div className="relative w-[110px] h-[110px] md:w-[120px] md:h-[120px] flex items-center justify-center">
+      <div className="relative z-10 flex flex-col items-center mb-6 md:mb-8 animate-fade-in">
+        <div className="relative w-[78px] h-[78px] md:w-[96px] md:h-[96px] flex items-center justify-center">
           <div className="absolute inset-2 rounded-full gold-glow" />
           <div className="absolute inset-0 rounded-full pointer-events-none">
             <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[hsl(45,90%,60%)] shadow-[0_0_12px_hsl(45,90%,60%)]" />
@@ -297,12 +297,12 @@ const Login = () => {
           <img
             src={logoSrc}
             alt={brandTitle}
-            width={88}
-            height={88}
-            className="relative rounded-full ring-2 ring-white/20"
+            width={72}
+            height={72}
+            className="relative h-[64px] w-[64px] rounded-2xl object-cover grayscale ring-1 ring-white/20 md:h-[76px] md:w-[76px]"
           />
         </div>
-        <h1 className="font-display text-2xl md:text-3xl font-semibold tracking-tight mt-4 text-gradient-gold text-center">
+        <h1 className="font-display max-w-[92vw] text-xl md:text-2xl font-semibold tracking-tight mt-3 text-gradient-gold text-center">
           {brandTitle} — Gestão de Empréstimos
         </h1>
         <p className="text-white/40 text-[10px] md:text-xs mt-1.5 tracking-wider text-center">{brandSubtitle}</p>
@@ -314,7 +314,7 @@ const Login = () => {
           {!isRegister ? (
             <div className="flex flex-col md:flex-row">
               {/* Form de Login */}
-              <div className="flex-1 p-7 md:p-10 glass bg-white/[0.03]">
+              <div className="flex-1 p-5 sm:p-7 md:p-10 glass bg-white/[0.03]">
                 <h2 className="font-display text-xl font-semibold text-white mb-1">Bem-vindo</h2>
                 <p className="text-white/40 text-sm mb-6">Acesse sua conta para continuar</p>
 
@@ -437,7 +437,7 @@ const Login = () => {
                     type="submit"
                     disabled={loading}
                     className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:shadow-lg hover:shadow-white/10 flex items-center justify-center gap-2"
-                    style={{ background: "var(--gradient-button)", color: "white" }}
+                    style={{ background: "var(--gradient-button)", color: "hsl(var(--primary-foreground))" }}
                   >
                     {loading ? (
                       <>
@@ -455,7 +455,7 @@ const Login = () => {
               </div>
 
               {/* Painel direito */}
-              <div className="flex-1 flex flex-col items-center justify-center p-7 md:p-10 glass bg-white/[0.02] border-t md:border-t-0 md:border-l border-white/[0.06]">
+              <div className="flex-1 flex flex-col items-center justify-center p-5 sm:p-7 md:p-10 glass bg-white/[0.02] border-t md:border-t-0 md:border-l border-white/[0.06]">
                 <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-5">
                   <ArrowRight size={28} className="text-white/70" />
                 </div>
