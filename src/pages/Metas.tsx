@@ -7,6 +7,7 @@ import { useConfirm } from "@/components/ConfirmProvider";
 import { friendlyError } from "@/lib/friendlyError";
 import { SkeletonCards } from "@/components/feedback/Skeletons";
 import LoadingButton from "@/components/feedback/LoadingButton";
+import ErrorState from "@/components/feedback/ErrorState";
 
 
 const Metas = () => {
@@ -15,6 +16,7 @@ const Metas = () => {
   const { toast } = useToast();
   const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [desc, setDesc] = useState("");
   const [target, setTarget] = useState("");
@@ -24,11 +26,14 @@ const Metas = () => {
   const [incrementVal, setIncrementVal] = useState("");
 
   const fetchGoals = async () => {
+    if (!user) return;
+    setLoadError(null);
     // Escopo explícito por dono, além da RLS (ver Anotacoes.tsx).
-    const { data } = await supabase.from("goals").select("*")
-      .eq("user_id", user!.id)
+    const { data, error } = await supabase.from("goals").select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    setGoals(data || []);
+    if (error) setLoadError(error.message);
+    else setGoals(data || []);
     setLoading(false);
   };
 
@@ -46,10 +51,15 @@ const Metas = () => {
   const inputCls = "w-full px-4 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm input-enhanced";
 
   const handleAdd = async () => {
-    if (!user || !desc.trim() || !target) return;
+    if (!user || !desc.trim() || !target || saving) return;
+    const parsedTarget = Number(target);
+    if (!Number.isFinite(parsedTarget) || parsedTarget <= 0) {
+      toast({ title: "Valor inválido", description: "Informe um alvo maior que zero.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from("goals").insert({
-      user_id: user.id, description: desc.trim(), target_amount: parseFloat(target), frequency,
+      user_id: user.id, description: desc.trim(), target_amount: parsedTarget, frequency,
     });
     setSaving(false);
     if (error) toast({ ...friendlyError(error), variant: "destructive" });
@@ -57,18 +67,22 @@ const Metas = () => {
   };
 
   const handleIncrement = async (id: string, currentAmount: number) => {
+    if (!user) return;
     const val = parseFloat(incrementVal);
     if (isNaN(val) || val === 0) return;
     const newAmount = Math.max(0, currentAmount + val);
-    await supabase.from("goals").update({ current_amount: newAmount }).eq("id", id);
+    const { error } = await supabase.from("goals").update({ current_amount: newAmount }).eq("id", id).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível atualizar a meta."), variant: "destructive" });
     toast({ title: val > 0 ? `+R$ ${fmt(val)} adicionado!` : `R$ ${fmt(Math.abs(val))} removido` });
     setIncrementId(null); setIncrementVal("");
     fetchGoals();
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) return;
     if (!(await confirm("Excluir esta meta?"))) return;
-    await supabase.from("goals").delete().eq("id", id);
+    const { error } = await supabase.from("goals").delete().eq("id", id).eq("user_id", user.id);
+    if (error) return toast({ ...friendlyError(error, "Não foi possível excluir a meta."), variant: "destructive" });
     toast({ title: "Meta removida" });
     fetchGoals();
   };
@@ -170,7 +184,8 @@ const Metas = () => {
 
       {loading ? (
         <SkeletonCards count={4} height="h-40" className="grid grid-cols-1 sm:grid-cols-2 gap-4" />
-
+      ) : loadError ? (
+        <ErrorState title="Não foi possível carregar as metas" description={loadError} onRetry={() => void fetchGoals()} />
       ) : goals.length === 0 ? (
         <div className="text-center py-16">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
@@ -232,8 +247,10 @@ const Metas = () => {
                     </button>
                     {[100, 500, 1000].map(v => (
                       <button key={v} onClick={async () => {
+                        if (!user) return;
                         const newAmt = Number(g.current_amount) + v;
-                        await supabase.from("goals").update({ current_amount: newAmt }).eq("id", g.id);
+                        const { error } = await supabase.from("goals").update({ current_amount: newAmt }).eq("id", g.id).eq("user_id", user.id);
+                        if (error) return toast({ ...friendlyError(error, "Não foi possível atualizar a meta."), variant: "destructive" });
                         toast({ title: `+R$ ${fmt(v)}` }); fetchGoals();
                       }}
                         className="text-[10px] px-2 py-1 rounded-md bg-accent/50 text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
