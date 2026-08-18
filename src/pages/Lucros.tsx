@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { TrendingUp, Plus, X, Search, Calendar, ArrowUpRight, Edit2, Download, Trash2, MoreVertical, BarChart3, Wallet, SlidersHorizontal, CheckSquare, Square, Trophy, Target, Sparkles, ArrowUpDown } from "lucide-react";
+import { TrendingUp, Plus, X, Search, Calendar, ArrowUpRight, Edit2, Download, Trash2, MoreVertical, BarChart3, Wallet, SlidersHorizontal, CheckSquare, Square, Trophy, Target, Sparkles, ArrowUpDown, AlertTriangle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
@@ -63,7 +63,7 @@ const Lucros = () => {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const { data: profits = [], isLoading: loading } = useQuery({
+  const { data: profits = [], isLoading: loading, error: loadError, refetch } = useQuery({
     queryKey: ["lucros-data", user?.id],
     queryFn: async () => {
       const data = await fetchAll((f, t) => supabase.from("profits").select("*").eq("user_id", user!.id).order("date", { ascending: false }).range(f, t));
@@ -84,18 +84,24 @@ const Lucros = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user || !desc.trim() || !amount) return;
+    if (!user || !desc.trim() || !amount || saving) return;
+    const parsedAmount = Number(amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      toast({ title: "Valor inválido", description: "Informe um valor maior que zero.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     if (editingId) {
       const { error } = await supabase.from("profits")
-        .update({ description: desc.trim(), amount: parseFloat(amount), date: new Date(date).toISOString() })
-        .eq("id", editingId);
+        .update({ description: desc.trim(), amount: parsedAmount, date: new Date(date).toISOString() })
+        .eq("id", editingId)
+        .eq("user_id", user.id);
       setSaving(false);
       if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
       else { toast({ title: "✓ Lucro atualizado!" }); resetForm(); qc.invalidateQueries({ queryKey: ["lucros-data"] }); }
     } else {
       const { error } = await supabase.from("profits")
-        .insert({ user_id: user.id, description: desc.trim(), amount: parseFloat(amount), date: new Date(date).toISOString() });
+        .insert({ user_id: user.id, description: desc.trim(), amount: parsedAmount, date: new Date(date).toISOString() });
       setSaving(false);
       if (error) toast({ ...friendlyError(error), variant: "destructive" });
       else { toast({ title: "✓ Lucro registrado!" }); resetForm(); qc.invalidateQueries({ queryKey: ["lucros-data"] }); }
@@ -121,7 +127,8 @@ const Lucros = () => {
       });
       return;
     }
-    const { error } = await supabase.from("profits").delete().eq("id", id);
+    if (!user) return;
+    const { error } = await supabase.from("profits").delete().eq("id", id).eq("user_id", user.id);
     setDeleteConfirm(null);
     if (error) { toast({ ...friendlyError(error, "Não foi possível excluir."), variant: "destructive" }); return; }
     setSelected(prev => { const n = new Set(prev); n.delete(id); return n; });
@@ -145,7 +152,8 @@ const Lucros = () => {
       return;
     }
 
-    const { error } = await supabase.from("profits").delete().in("id", ids);
+    if (!user) return;
+    const { error } = await supabase.from("profits").delete().in("id", ids).eq("user_id", user.id);
     setSelected(new Set());
     setBulkDeleteOpen(false);
     if (error) { toast({ ...friendlyError(error, "Não foi possível excluir."), variant: "destructive" }); return; }
@@ -552,6 +560,14 @@ const Lucros = () => {
       {/* List grouped by date */}
       {loading ? (
         <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-muted/30 animate-pulse" />)}</div>
+      ) : loadError ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 py-14 text-center">
+          <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+          <p className="mt-3 font-semibold text-foreground">Não foi possível carregar os lucros</p>
+          <Button variant="outline" className="mt-4 gap-2" onClick={() => void refetch()}>
+            <RefreshCw className="h-4 w-4" /> Tentar novamente
+          </Button>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 rounded-2xl border border-dashed border-border bg-card/50">
           <div className="w-20 h-20 mx-auto rounded-2xl bg-muted/30 flex items-center justify-center mb-5">
