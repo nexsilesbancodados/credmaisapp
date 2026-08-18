@@ -26,6 +26,7 @@ import CollectionMetrics from "@/components/cobrancas/CollectionMetrics";
 import { fetchAll } from "@/lib/fetchAll";
 import { renderMessage } from "@/lib/messageTemplate";
 import { useWhiteLabel } from "@/contexts/WhiteLabelContext";
+import { isEmAberto, isEmAtraso } from "../../supabase/functions/_shared/installmentStatus";
 
 const fmt = (v: number) => (Number(v) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const relTime = (iso: string) => {
@@ -42,7 +43,7 @@ const relTime = (iso: string) => {
 
 // Frase humana para a próxima parcela do grupo (ou a mais atrasada)
 const humanDueLabel = (items: any[]): { text: string; tone: "danger" | "warn" | "ok" | "muted" } => {
-  const unpaid = items.filter((i: any) => i.status !== "paid");
+  const unpaid = items.filter((i: any) => isEmAberto(i));
   if (!unpaid.length) return { text: "Tudo em dia", tone: "ok" };
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
@@ -159,8 +160,7 @@ const Cobrancas = () => {
       const today = new Date(); today.setHours(0,0,0,0);
       return (data || []).map((inst: any) => {
         const client = inst.clients;
-        const dueLocal = parseLocalDate(inst.due_date);
-        const isOverdue = inst.status === "pending" && dueLocal !== null && dueLocal < today;
+        const isOverdue = isEmAtraso(inst, today);
         return {
           ...inst,
           status: isOverdue ? "overdue" : inst.status,
@@ -308,7 +308,7 @@ const Cobrancas = () => {
   };
 
   const handleBulkMarkPaid = async () => {
-    const items = installments.filter((i: any) => selected.has(i.id) && i.status !== "paid");
+    const items = installments.filter((i: any) => selected.has(i.id) && isEmAberto(i));
     if (items.length === 0) { toast({ title: "Nada para pagar" }); return; }
     optimisticMarkPaid(items.map((i: any) => i.id));
     setBulkPaying(true);
@@ -403,7 +403,7 @@ const Cobrancas = () => {
   };
 
   const toggleSelectAll = () => {
-    const selectable = filtered.filter((i: any) => i.status !== "paid").map((i: any) => i.id);
+    const selectable = filtered.filter((i: any) => isEmAberto(i)).map((i: any) => i.id);
     const allSelected = selectable.length > 0 && selectable.every((id: string) => selected.has(id));
     setSelected(allSelected ? new Set() : new Set(selectable));
   };
@@ -431,7 +431,7 @@ const Cobrancas = () => {
   };
 
   const handleBulk = (channel: "whatsapp" | "email") => {
-    let items = getSelectedItems().filter((i: any) => i.status !== "paid");
+    let items = getSelectedItems().filter((i: any) => isEmAberto(i));
     if (!items.length) {
       const overdue = filtered.filter((i: any) => i.status === "overdue");
       if (!overdue.length) { toast({ title: "Selecione parcelas ou tenha atrasadas" }); return; }
@@ -516,6 +516,7 @@ const Cobrancas = () => {
     const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
 
     let arr = installments.filter((inst: any) => {
+      if (inst.status === "cancelled") return false;
       if (filter !== "all" && inst.status !== filter) return false;
       if (focoDia) {
         if (inst.status === "paid") return false;
@@ -576,7 +577,7 @@ const Cobrancas = () => {
     const contractHasOpen = new Map<string, boolean>();
     for (const inst of installments as any[]) {
       if (!inst.contract_id) continue;
-      if (inst.status !== "paid") contractHasOpen.set(inst.contract_id, true);
+      if (isEmAberto(inst)) contractHasOpen.set(inst.contract_id, true);
       else if (!contractHasOpen.has(inst.contract_id)) contractHasOpen.set(inst.contract_id, false);
     }
     const m = new Map<string, { loaned: number; totalInstallments: number; grossExpected: number; paidAmount: number; paidCount: number; overdueCount: number; overdueFees: number; overdueAmount: number }>();
@@ -619,7 +620,7 @@ const Cobrancas = () => {
       }
       const g = map.get(inst.client_id)!;
       g.items.push(inst);
-      if (inst.status !== "paid") {
+      if (isEmAberto(inst)) {
         const base = Number(inst.amount) || 0;
         const fee = computeLateFee(inst);
         g.total += base;
@@ -662,8 +663,8 @@ const Cobrancas = () => {
   }, [filtered, sort]);
 
   const stats = useMemo(() => {
-    const pending = installments.filter((i: any) => i.status === "pending");
-    const overdue = installments.filter((i: any) => i.status === "overdue");
+    const pending = installments.filter((i: any) => isEmAberto(i) && !isEmAtraso(i));
+    const overdue = installments.filter((i: any) => isEmAtraso(i));
     const paid = installments.filter((i: any) => i.status === "paid");
     const totalPending = pending.reduce((s: number, i: any) => s + Number(i.amount), 0)
       + overdue.reduce((s: number, i: any) => s + Number(i.amount), 0);
@@ -688,7 +689,7 @@ const Cobrancas = () => {
   const dueTodayStats = useMemo(() => {
     const today = new Date(); today.setHours(0,0,0,0);
     const items = installments.filter((i: any) => {
-      if (i.status === "paid") return false;
+      if (!isEmAberto(i)) return false;
       const d = parseLocalDate(i.due_date);
       return d && d.toDateString() === today.toDateString();
     });
@@ -760,7 +761,7 @@ const Cobrancas = () => {
     if (!phone) { toast({ title: "Sem telefone", variant: "destructive" }); return; }
     const clean = phone.replace(/\D/g, "");
     const num = clean.startsWith("55") ? clean : `55${clean}`;
-    const unpaid = group.items.filter((i: any) => i.status !== "paid");
+    const unpaid = group.items.filter((i: any) => isEmAberto(i));
     let total = 0;
     let totalFees = 0;
     const lines = unpaid.map((i: any) => {
@@ -779,7 +780,7 @@ const Cobrancas = () => {
   };
 
   const toggleGroupSelect = (group: any) => {
-    const ids = group.items.filter((i: any) => i.status !== "paid").map((i: any) => i.id);
+    const ids = group.items.filter((i: any) => isEmAberto(i)).map((i: any) => i.id);
     const allSelected = ids.length > 0 && ids.every((id: string) => selected.has(id));
     setSelected(prev => {
       const next = new Set(prev);
@@ -952,12 +953,12 @@ const Cobrancas = () => {
         const tomorrow0 = new Date(today0); tomorrow0.setDate(tomorrow0.getDate() + 1);
         const in7 = new Date(today0); in7.setDate(in7.getDate() + 7);
         const tomorrowCount = installments.filter((i: any) => {
-          if (i.status === "paid") return false;
+          if (!isEmAberto(i)) return false;
           const d = parseLocalDate(i.due_date); if (!d) return false;
           return d.getFullYear() === tomorrow0.getFullYear() && d.getMonth() === tomorrow0.getMonth() && d.getDate() === tomorrow0.getDate();
         }).length;
         const next7Count = installments.filter((i: any) => {
-          if (i.status === "paid") return false;
+          if (!isEmAberto(i)) return false;
           const d = parseLocalDate(i.due_date); if (!d) return false;
           return d.getTime() >= today0.getTime() && d.getTime() <= in7.getTime();
         }).length;
@@ -1141,7 +1142,7 @@ const Cobrancas = () => {
           {(() => {
             const maxTotalWithFees = Math.max(1, ...grouped.map((g: any) => g.totalWithFees || g.total || 0));
             return grouped.map((group: any) => {
-            const groupSelectable = group.items.filter((i: any) => i.status !== "paid");
+            const groupSelectable = group.items.filter((i: any) => isEmAberto(i));
             const groupSelectedCount = groupSelectable.filter((i: any) => selected.has(i.id)).length;
             const allSelected = groupSelectable.length > 0 && groupSelectedCount === groupSelectable.length;
             const someSelected = groupSelectedCount > 0 && !allSelected;
@@ -1512,7 +1513,7 @@ const Cobrancas = () => {
               <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
                 <Zap size={28} className="text-success" />
               </div>
-              <h3 className="text-lg font-bold text-foreground">Marcar {getSelectedItems().filter((i: any) => i.status !== "paid").length} parcela(s) como pagas?</h3>
+              <h3 className="text-lg font-bold text-foreground">Marcar {getSelectedItems().filter((i: any) => isEmAberto(i)).length} parcela(s) como pagas?</h3>
               <p className="text-sm text-muted-foreground mt-2">Total recebido: <span className="font-bold text-foreground">R$ {fmt(selectedSum)}</span></p>
               <p className="text-[11px] text-muted-foreground mt-1">As receitas e o lucro serão registrados automaticamente.</p>
             </div>
@@ -1531,7 +1532,7 @@ const Cobrancas = () => {
         const limit = parseLocalDate(cobrarAteDate);
         if (limit) limit.setHours(23, 59, 59, 999);
         const items = installments
-          .filter((i: any) => i.status !== "paid")
+          .filter((i: any) => isEmAberto(i))
           .filter((i: any) => {
             const d = parseLocalDate(i.due_date);
             return d && limit && d <= limit;
