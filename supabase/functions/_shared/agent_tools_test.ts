@@ -75,8 +75,10 @@ Deno.test("listar_parcelas_em_aberto calcula multa + juros", async () => {
           paid_amount: 0,
           due_date: "2026-07-15", // 10 dias de atraso
           status: "pending",
-          late_fee_percent: 2, // 2% => 20
-          daily_interest_percent: 0.1, // 0.1% * 10 dias = 1% => 10
+          contracts: {
+            late_fee_percent: 2, // 2% => 20
+            daily_interest_percent: 0.1, // 0.1% * 10 dias = 1% => 10
+          },
         },
       ],
       error: null,

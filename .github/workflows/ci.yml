@@ -49,6 +49,9 @@ jobs:
       - name: Tipos das funções de servidor
         run: node scripts/checar-funcoes.mjs
 
+      - name: Testes das funções e do bot
+        run: deno test supabase/functions/_shared/*_test.ts --allow-env --allow-net
+
       - name: Testes
         run: npx vitest run
 

@@ -1,6 +1,7 @@
 import { isEmAtraso, isEmAberto, venceHoje } from "../_shared/installmentStatus.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkSharedSecret } from "../_shared/guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +20,7 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   // SEGURANÇA (M4): cron protegido por segredo obrigatório.
-  const cronSecret = Deno.env.get("CRON_SECRET");
-  const providedSecret = req.headers.get("x-cron-secret") ?? new URL(req.url).searchParams.get("secret") ?? "";
-  if (!cronSecret || providedSecret !== cronSecret) {
+  if (!checkSharedSecret(req, "CRON_SECRET")) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

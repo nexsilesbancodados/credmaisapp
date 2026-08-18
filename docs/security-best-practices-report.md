@@ -61,6 +61,12 @@ A verificação estrutural do banco remoto continua pendente porque `supabase db
 - Teste: `supabase/functions/_shared/trusted_origin_test.ts` cobre origem permitida, phishing, protocolo executável e URL com credenciais enganosas.
 - Pendência operacional: publicar `mercadopago-create-preference` quando a conta Supabase tiver permissão de deploy.
 
+### SEC-009 — Médio — testes Deno não bloqueavam regressões no CI (corrigido)
+
+- Evidência anterior: o CI verificava os tipos das Edge Functions, mas não executava os arquivos `*_test.ts`.
+- Efeito observado: ao ativar a suíte completa, um fixture desatualizado no cálculo de multa e juros falhou; os testes de guardrail do bot também não eram uma barreira de publicação.
+- Correção: `npm run check` e `.github/workflows/ci.yml` agora executam os 96 testes Deno. Os 12 cron jobs foram padronizados no guard compartilhado, com comportamento fechado e comparação em tempo constante.
+
 ## Próximas validações prioritárias
 
 1. Publicar as funções corrigidas e testar webhook válido, inválido, upload fora da carteira e retorno do checkout.
