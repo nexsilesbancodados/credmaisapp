@@ -16,6 +16,8 @@ import {
   Receipt,
   Sparkles,
   Activity,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,19 +61,19 @@ const Carteira = () => {
     ],
   );
 
-  const { data: profits = [], isLoading: loadingProfits } = useQuery({
+  const { data: profits = [], isLoading: loadingProfits, error: profitsError } = useQuery({
     queryKey: ["carteira-profits", user?.id],
     queryFn: async () => fetchAll((f, t) => supabase.from("profits").select("*").eq("user_id", user!.id).order("date", { ascending: false }).range(f, t)),
     enabled: !!user,
   });
 
-  const { data: expenses = [], isLoading: loadingExpenses } = useQuery({
+  const { data: expenses = [], isLoading: loadingExpenses, error: expensesError } = useQuery({
     queryKey: ["carteira-expenses", user?.id],
     queryFn: async () => fetchAll((f, t) => supabase.from("expenses").select("*").eq("user_id", user!.id).order("date", { ascending: false }).range(f, t)),
     enabled: !!user,
   });
 
-  const { data: installments = [], isLoading: loadingInst } = useQuery({
+  const { data: installments = [], isLoading: loadingInst, error: installmentsError } = useQuery({
     queryKey: ["carteira-installments-recebidas", user?.id],
     queryFn: async () =>
       // TODAS as parcelas recebidas, não só as de contrato ativo.
@@ -92,22 +94,23 @@ const Carteira = () => {
     enabled: !!user,
   });
 
-  const { data: capital = [], isLoading: loadingCapital } = useQuery({
+  const { data: capital = [], isLoading: loadingCapital, error: capitalError } = useQuery({
     queryKey: ["carteira-capital", user?.id],
     queryFn: async () => fetchAll((f, t) => supabase.from("transactions").select("*").eq("user_id", user!.id).eq("type", "capital_injection").order("date", { ascending: false }).range(f, t)),
     enabled: !!user,
   });
 
-  const { data: withdrawals = [], isLoading: loadingWithdraw } = useQuery({
+  const { data: withdrawals = [], isLoading: loadingWithdraw, error: withdrawalsError } = useQuery({
     queryKey: ["carteira-withdrawals", user?.id],
     queryFn: async () => fetchAll((f, t) => supabase.from("transactions").select("*").eq("user_id", user!.id).eq("type", "capital_withdrawal").order("date", { ascending: false }).range(f, t)),
     enabled: !!user,
   });
 
   const loading = loadingProfits || loadingExpenses || loadingInst || loadingCapital || loadingWithdraw;
+  const loadError = profitsError || expensesError || installmentsError || capitalError || withdrawalsError;
 
   const handleSave = async () => {
-    if (!user || !amount || !description) return;
+    if (!user || !amount || !description || saving) return;
     setSaving(true);
     const now = new Date().toISOString();
     const val = parseFloat(amount);
@@ -144,7 +147,8 @@ const Carteira = () => {
 
   const handleDeleteCapital = async (id: string) => {
     if (!(await confirm("Remover este lançamento de capital?"))) return;
-    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    if (!user) return;
+    const { error } = await supabase.from("transactions").delete().eq("id", id).eq("user_id", user.id);
     if (error) { toast({ title: "Erro ao remover", variant: "destructive" }); return; }
     toast({ title: "✓ Lançamento removido" });
     qc.invalidateQueries({ queryKey: ["carteira-capital"] });
@@ -234,11 +238,28 @@ const Carteira = () => {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/5 px-6 py-14 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+        <h2 className="mt-3 font-semibold text-foreground">Não foi possível carregar a carteira</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Confira sua conexão e tente novamente.</p>
+        <button
+          onClick={() => void qc.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).startsWith("carteira-") })}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted"
+        >
+          <RefreshCw className="h-4 w-4" /> Tentar novamente
+        </button>
+      </div>
+    );
+  }
+
   // === Composição de entradas (para barra segmentada) ===
-  const entradasTotal = totalCapital + totalLucros + totalParcelas || 1;
+  const principalRecebido = Math.max(0, totalParcelas - totalLucros);
+  const entradasTotal = totalCapital + totalParcelas || 1;
   const capitalPct = (totalCapital / entradasTotal) * 100;
   const lucrosPct = (totalLucros / entradasTotal) * 100;
-  const parcelasPct = (totalParcelas / entradasTotal) * 100;
+  const parcelasPct = (principalRecebido / entradasTotal) * 100;
 
   const saidasTotal = totalGastos + totalWithdrawals || 1;
   const gastosPct = (totalGastos / saidasTotal) * 100;
@@ -494,12 +515,12 @@ const Carteira = () => {
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
             <div className="h-full bg-primary transition-all duration-700" style={{ width: `${capitalPct}%` }} title="Aportes" />
             <div className="h-full bg-success transition-all duration-700" style={{ width: `${lucrosPct}%` }} title="Lucros" />
-            <div className="h-full bg-info transition-all duration-700" style={{ width: `${parcelasPct}%` }} title="Parcelas" />
+            <div className="h-full bg-info transition-all duration-700" style={{ width: `${parcelasPct}%` }} title="Principal recebido" />
           </div>
           <div className="grid grid-cols-3 gap-2 mt-3 text-[11px]">
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary" /><span className="text-muted-foreground">Aportes</span><span className="ml-auto font-semibold text-foreground">{capitalPct.toFixed(0)}%</span></div>
             <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-success" /><span className="text-muted-foreground">Lucros</span><span className="ml-auto font-semibold text-foreground">{lucrosPct.toFixed(0)}%</span></div>
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-info" /><span className="text-muted-foreground">Parcelas</span><span className="ml-auto font-semibold text-foreground">{parcelasPct.toFixed(0)}%</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-info" /><span className="text-muted-foreground">Principal</span><span className="ml-auto font-semibold text-foreground">{parcelasPct.toFixed(0)}%</span></div>
           </div>
         </div>
 
