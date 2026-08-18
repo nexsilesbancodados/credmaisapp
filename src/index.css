@@ -1459,6 +1459,23 @@ div[style*="Edit with Lovable"],
 
   /* Diminui gaps default de grades muito densas em telas estreitas */
   .grid { gap: max(0.5rem, var(--grid-gap, 0.75rem)); }
+
+  /* Grids financeiros precisam priorizar leitura em aparelhos estreitos. */
+  .collection-metrics-grid,
+  .payment-mode-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Filhos de grids/flex não podem impor sua largura intrínseca ao container. */
+  .grid > *,
+  [role="dialog"] > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 400px) and (max-width: 640px) {
+  .payment-mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Tablets — melhor uso do espaço horizontal */
@@ -1765,6 +1782,18 @@ div[style*="Edit with Lovable"],
 .collection-tabs {
   border-color: hsl(40 10% 70% / .1);
   background: hsl(0 0% 0% / .2);
+  min-width: 0;
+}
+
+@media (min-width: 640px) and (max-width: 1279px) {
+  .collection-tabs {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+  }
+
+  .collection-tabs > button { flex: 1 0 auto; justify-content: center; }
+  .collection-sort-actions { width: 100%; }
 }
 
 .collection-tabs .is-active {

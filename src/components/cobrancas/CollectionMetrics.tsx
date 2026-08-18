@@ -72,7 +72,7 @@ const CollectionMetrics = () => {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+      <div className="collection-metrics-grid grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-24 rounded-xl bg-card/40 border border-border/40 animate-pulse" />
         ))}

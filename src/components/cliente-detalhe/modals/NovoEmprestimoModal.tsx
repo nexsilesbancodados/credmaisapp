@@ -126,10 +126,10 @@ export default function NovoEmprestimoModal(p: Props) {
           )}
           <div className="col-span-2">
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Frequência</label>
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-5 gap-1.5">
               {Object.entries(FREQ).map(([v, l]) => (
                 <button key={v} onClick={() => p.setLoanFreq(v)}
-                  className={`px-2 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${p.loanFreq === v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
+                  className={`min-w-0 px-2 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${p.loanFreq === v ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground hover:bg-accent"}`}>
                   {l}
                 </button>
               ))}

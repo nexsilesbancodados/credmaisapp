@@ -1604,7 +1604,7 @@ const NovoCliente = () => {
               {/* Garantia / Aval */}
               <div className="space-y-3 pt-3 border-t border-border">
                 <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Garantia / Aval</h3>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-5 gap-2">
                   {([
                     { v: "none", label: "Nenhuma" },
                     { v: "aval", label: "Avalista" },
@@ -1613,7 +1613,7 @@ const NovoCliente = () => {
                     { v: "other", label: "Outra" },
                   ] as const).map(g => (
                     <button key={g.v} type="button" onClick={() => setGuaranteeType(g.v)}
-                      className={`p-2 rounded-lg border text-[10px] font-semibold transition-colors ${guaranteeType === g.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
+                      className={`min-w-0 p-2 rounded-lg border text-[10px] font-semibold transition-colors ${guaranteeType === g.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
                       {g.label}
                     </button>
                   ))}

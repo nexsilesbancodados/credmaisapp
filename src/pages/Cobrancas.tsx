@@ -973,7 +973,7 @@ const Cobrancas = () => {
         const sortLabel = sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
         return (
           <div className="collection-toolbar relative rounded-[22px] border p-2 sm:p-2.5 animate-fade-in">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-2">
+            <div className="flex flex-col xl:flex-row xl:items-center gap-2">
               {/* Search */}
               <div className="relative flex-1 min-w-0 group">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -1020,7 +1020,7 @@ const Cobrancas = () => {
 
               {/* Sort + selection */}
               <div className="collection-sort-actions flex items-center gap-2">
-                <div className="relative min-w-0 flex-1 lg:flex-none">
+                <div className="relative min-w-0 flex-1 xl:flex-none">
                   <ArrowUpDown size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                   <select
                     value={sort}
