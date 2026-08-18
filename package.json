@@ -12,7 +12,7 @@
     "check:functions": "node scripts/checar-funcoes.mjs",
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
-    "deploy:cloudflare": "npm run build && wrangler pages deploy dist --project-name credmaisapp",
+    "deploy:cloudflare": "npm run build && npx wrangler pages deploy dist --project-name credmaisapp",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
