@@ -1094,13 +1094,13 @@ const Cobrancas = () => {
 
       {/* Sticky bulk action bar */}
       {selected.size > 0 && (
-        <div className="collection-bulk-bar sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-2xl border backdrop-blur-xl animate-fade-in">
-          <div className="flex items-center gap-3">
+        <div className="collection-bulk-bar sticky bottom-3 z-30 grid gap-3 rounded-2xl border px-4 py-3 backdrop-blur-xl animate-fade-in md:grid-cols-[1fr_auto] md:items-center">
+          <div className="collection-bulk-summary flex min-w-0 items-center gap-3">
             <span className="text-sm font-semibold text-primary">{selected.size} selecionada(s)</span>
             <span className="text-xs text-foreground/80">Total: <span className="font-bold text-foreground">R$ {fmt(selectedSum)}</span></span>
             <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">Limpar</button>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="collection-bulk-actions grid grid-cols-3 gap-2">
             <button onClick={() => handleBulk("whatsapp")} className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-success/15 hover:bg-success/25 text-success border border-success/30 flex items-center gap-1.5">
               <MessageSquare size={13} /> WhatsApp
             </button>
@@ -1253,6 +1253,7 @@ const Cobrancas = () => {
                         onClick={(e) => { e.stopPropagation(); toggleGroupCollapse(group.client_id); }}
                         className="min-w-0 flex-1 text-left focus-ring rounded-lg"
                         title={isCollapsed ? "Mostrar parcelas" : "Ocultar parcelas"}
+                        aria-expanded={!isCollapsed}
                       >
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-[15px] font-bold text-foreground truncate max-w-[260px] tracking-tight">{group.client_name}</p>
@@ -1299,7 +1300,7 @@ const Cobrancas = () => {
                     </div>
 
                     {/* KPIs - richer with icons */}
-                    {agg && (() => {
+                    {agg && !isCollapsed && (() => {
                       const expectedProfit = Math.max(0, (agg.grossExpected || 0) - (agg.loaned || 0));
                       const realizedProfit = agg.grossExpected > 0
                         ? Math.max(0, ((agg.paidAmount || 0) / agg.grossExpected) * expectedProfit)
@@ -1346,7 +1347,7 @@ const Cobrancas = () => {
                     })()}
 
                     {/* Progress bar with milestones */}
-                    <div className="space-y-1">
+                    {!isCollapsed && <div className="space-y-1">
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span className="font-semibold inline-flex items-center gap-1"><Percent size={10} /> Progresso do contrato</span>
                         <span className="tabular-nums font-semibold text-foreground">{paidCount}/{totalActiveInst} · {progressPct}%</span>
@@ -1360,7 +1361,7 @@ const Cobrancas = () => {
                           <span key={m} className="absolute top-0 h-full w-px bg-background/60" style={{ left: `${m}%` }} />
                         ))}
                       </div>
-                    </div>
+                    </div>}
 
                     {/* Actions */}
                     <div className="collection-card-actions grid grid-cols-4 gap-2 pt-0.5">
@@ -1380,7 +1381,7 @@ const Cobrancas = () => {
                         className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-ring"
                         title={unpaidCount === 1 ? "Marcar como paga" : "Ver parcelas"}
                       >
-                        <Check size={15} /> {unpaidCount === 1 ? "Pagar" : "Parcelas"}
+                        <Check size={15} /> {unpaidCount === 1 ? "Pagar" : isCollapsed ? "Ver parcelas" : "Ocultar"}
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); copyPhone(); }}
