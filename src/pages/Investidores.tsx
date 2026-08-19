@@ -129,10 +129,14 @@ export default function Investidores() {
     return { total: totalDue, capital, paid: paidActive, saldo, pct, prox, proxDays, count: active.length, allCount: all.length, overdueCount: overdue.length, state };
   };
 
-  const copyPortal = (token: string) => {
+  const copyPortal = async (token: string) => {
     const url = `${window.location.origin}/investidor/${token}`;
-    navigator.clipboard.writeText(url);
-    toast({ title: "Link copiado!", description: url });
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: "Link copiado!", description: url });
+    } catch {
+      toast({ title: "Não foi possível copiar", description: "Abra o portal e copie o endereço do navegador.", variant: "destructive" });
+    }
   };
 
   /** Dar baixa: abre o pagamento do empréstimo aberto mais próximo do vencimento. */
@@ -149,12 +153,13 @@ export default function Investidores() {
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Novo link gerado" });
     void load();
-    if (data) copyPortal(data as string);
+    if (data) void copyPortal(data as string);
   };
 
   const deleteInvestor = async (id: string) => {
     if (!confirm("Excluir este investidor e todos os empréstimos vinculados?")) return;
-    const { error } = await supabase.from("investors" as never).delete().eq("id", id);
+    if (!user?.id) return;
+    const { error } = await supabase.from("investors" as never).delete().eq("id", id).eq("user_id", user.id);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Investidor excluído" });
     setSelectedId(null);
@@ -164,7 +169,8 @@ export default function Investidores() {
   /** Remove um empréstimo do investidor e os pagamentos vinculados. */
   const deleteLoan = async (loanId: string) => {
     if (!confirm("Excluir este empréstimo e os pagamentos registrados nele?")) return;
-    const { error } = await supabase.from("investor_loans" as never).delete().eq("id", loanId);
+    if (!user?.id) return;
+    const { error } = await supabase.from("investor_loans" as never).delete().eq("id", loanId).eq("user_id", user.id);
     if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Empréstimo excluído" });
     void load();
@@ -231,13 +237,13 @@ export default function Investidores() {
 
   return (
     <>
-      <div className="space-y-6 p-4 md:p-6">
+      <div className="space-y-5 p-3 sm:p-4 md:p-6">
 
         {/* Header */}
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-3 font-heading text-3xl font-bold text-foreground tracking-tight">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 ring-1 ring-primary/30">
+        <header className="rounded-2xl border border-border/60 bg-card/65 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 backdrop-blur-xl">
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-3 font-heading text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+              <span className="hidden sm:inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/25">
                 <Landmark className="h-6 w-6 text-primary" />
               </span>
               Carteira de Investidores
@@ -246,13 +252,13 @@ export default function Investidores() {
               Capital captado, contratos ativos e portal exclusivo de cada investidor.
             </p>
           </div>
-          <Button size="lg" onClick={() => setNewOpen(true)} className="gap-2 shadow-lg shadow-primary/20">
+          <Button size="lg" onClick={() => setNewOpen(true)} className="w-full sm:w-auto gap-2">
             <Plus className="h-4 w-4" /> Novo investidor
           </Button>
         </header>
 
         {/* KPIs */}
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <section className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
           <KpiCard icon={Users} label="Investidores ativos" value={String(totals.contagem)} tone="primary" hint={`${investors.length} no total`} />
           <KpiCard icon={Wallet} label="Capital captado" value={brl(totals.captado)} tone="emerald" hint="em contratos ativos" />
           <KpiCard icon={TrendingUp} label="Total a pagar" value={brl(totals.devido)} tone="amber" hint={overdueCount ? `${overdueCount} c/ atraso` : "todos em dia"} />
@@ -354,12 +360,12 @@ export default function Investidores() {
               return (
                 <article
                   key={inv.id}
-                  className={`group relative overflow-hidden rounded-2xl border bg-card/70 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10 ${
+                  className={`group relative min-w-0 overflow-hidden rounded-2xl border bg-card/70 backdrop-blur-sm transition-colors ${
                     s.state === "overdue" ? "border-destructive/30" : "border-border/70"
                   }`}
                 >
                   <div className={`h-[3px] w-full bg-gradient-to-r ${accentGrad}`} />
-                  <div className="p-5 space-y-4">
+                  <div className="p-4 sm:p-5 space-y-4">
                     {/* Head — avatar + identity */}
                     <div className="flex items-start gap-3">
                       <button
@@ -404,7 +410,7 @@ export default function Investidores() {
                       <div className="flex items-end justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Saldo a receber</p>
-                          <p className={`text-2xl font-black tabular-nums leading-tight mt-0.5 ${s.state === "overdue" ? "text-destructive" : "text-foreground"}`}>
+                          <p className={`text-xl sm:text-2xl font-black tabular-nums leading-tight mt-0.5 break-words ${s.state === "overdue" ? "text-destructive" : "text-foreground"}`}>
                             {brl(s.saldo)}
                           </p>
                         </div>
@@ -464,7 +470,7 @@ export default function Investidores() {
                         <Pencil size={14} />
                       </button>
                       <button
-                        onClick={() => copyPortal(inv.access_token)}
+                        onClick={() => void copyPortal(inv.access_token)}
                         title="Copiar link do portal"
                         className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-border bg-accent/40 text-foreground transition-all hover:bg-accent active:scale-[0.98] focus-ring"
                       >
@@ -668,11 +674,11 @@ export function KpiCard({ icon: Icon, label, value, tone, hint }: { icon: any; l
     violet: "from-violet-500/20 to-violet-500/5 text-violet-300",
   };
   return (
-    <div className={`glass-card rounded-2xl bg-gradient-to-br ${tones[tone]} p-4`}>
+    <div className={`min-w-0 rounded-xl border border-white/10 bg-gradient-to-br ${tones[tone]} p-3 sm:p-4`}>
       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-80">
         <Icon className="h-3.5 w-3.5" /> {label}
       </div>
-      <p className="mt-2 font-mono text-2xl font-bold text-foreground">{value}</p>
+      <p className="mt-2 font-mono text-base sm:text-xl font-bold leading-tight text-foreground break-words">{value}</p>
       {hint && <p className="mt-1 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );
@@ -697,15 +703,15 @@ function NewInvestorDialog({ open, onOpenChange, onCreated }: { open: boolean; o
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader><DialogTitle>Novo investidor</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
             <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div><Label>Telefone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           </div>
@@ -756,14 +762,14 @@ export function NewLoanDialog({ open, onOpenChange, investor, onCreated }: { ope
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[90dvh] max-w-md overflow-y-auto">
         <DialogHeader><DialogTitle>Novo empréstimo — {investor.name}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>Valor recebido (R$) *</Label><Input inputMode="decimal" value={principal} onChange={(e) => setPrincipal(e.target.value)} placeholder="10000" /></div>
             <div><Label>Juros (%) *</Label><Input inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>Vencimento *</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
             <div>
               <Label>Modalidade</Label>
@@ -811,7 +817,7 @@ export function PayLoanDialog({ loanId, loan, onClose, onPaid }: { loanId: strin
   };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-sm">
         <DialogHeader><DialogTitle>Registrar pagamento</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center">
@@ -864,15 +870,15 @@ export function EditInvestorDialog({ investor, onClose, onSaved }: { investor: I
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader><DialogTitle>Editar perfil — {investor.name}</DialogTitle></DialogHeader>
         <div className="grid gap-3">
           <div><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>CPF/CNPJ</Label><Input value={form.cpf_cnpj} onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })} /></div>
             <div><Label>WhatsApp</Label><Input value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>E-mail</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
             <div><Label>Telefone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           </div>
@@ -938,21 +944,21 @@ export function EditLoanDialog({ loan, onClose, onSaved }: { loan: Loan; onClose
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader><DialogTitle>Editar empréstimo</DialogTitle></DialogHeader>
         <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>Capital (R$) *</Label><Input inputMode="decimal" value={principal} onChange={(e) => setPrincipal(e.target.value)} /></div>
             <div><Label>Juros (%)</Label><Input inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>Total a pagar (R$) *</Label><Input inputMode="decimal" value={totalDue} onChange={(e) => setTotalDue(e.target.value)} /></div>
             <div><Label>Já pago (R$)</Label><Input inputMode="decimal" value={paid} onChange={(e) => setPaid(e.target.value)} /></div>
           </div>
           <Button type="button" size="sm" variant="outline" className="justify-self-start gap-1.5" onClick={recalcTotal}>
             <RefreshCw size={13} /> Recalcular total pelo juros
           </Button>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div><Label>Vencimento *</Label><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></div>
             <div>
               <Label>Modalidade</Label>
