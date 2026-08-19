@@ -106,6 +106,17 @@ const Cobradores = () => {
 
   const inv = (key: string) => queryClient.invalidateQueries({ queryKey: [key] });
 
+  const copyText = async (value: string, successTitle = "Copiado!") => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast({ title: successTitle });
+      return true;
+    } catch {
+      toast({ title: "Não foi possível copiar", description: "Selecione e copie o código manualmente.", variant: "destructive" });
+      return false;
+    }
+  };
+
   const resetForm = () => {
     setName(""); setPhone(""); setEmail(""); setCity(""); setState("");
     setEditingId(null); setShowForm(false);
@@ -172,8 +183,8 @@ const Cobradores = () => {
       .insert({ user_id: user.id, collector_id: collectorId, token });
     if (error) toast({ ...friendlyError(error), variant: "destructive" });
     else {
-      navigator.clipboard.writeText(token);
-      toast({ title: "Token gerado e copiado!", description: token });
+      const copied = await copyText(token, "Token gerado e copiado!");
+      if (!copied) toast({ title: "Token gerado", description: token });
       inv("collector-tokens");
       setTokenVisibility(prev => ({ ...prev, [collectorId]: true }));
     }
@@ -249,34 +260,34 @@ const Cobradores = () => {
   const fichaTotalPaid = fichaPaid.reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount), 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="page-hero">
+      <div className="rounded-2xl border border-border/60 bg-card/65 p-4 sm:p-5 shadow-[0_18px_50px_-40px_rgba(0,0,0,.9)] backdrop-blur-xl">
         <div className="page-hero-content flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="page-hero-icon">
+          <div className="min-w-0 flex items-center gap-3">
+            <div className="hidden sm:flex w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 items-center justify-center text-primary">
               <Shield size={22} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-shimmer">Cobradores</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Cobradores</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Gestão completa de cobradores externos</p>
             </div>
           </div>
-          <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-premium">
+          <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-premium w-full sm:w-auto justify-center">
             <Plus size={16} /> Novo Cobrador
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {[
           { label: "Total", value: stats.total, icon: Users, color: "text-foreground", bg: "bg-accent/30" },
           { label: "Ativos", value: stats.active, icon: UserCheck, color: "text-success", bg: "bg-success/10" },
           { label: "Inativos", value: stats.inactive, icon: UserX, color: "text-destructive", bg: "bg-destructive/10" },
           { label: "Clientes Atribuídos", value: stats.totalAssignments, icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
         ].map(s => (
-          <div key={s.label} className="rounded-2xl border border-border bg-card p-4 card-shine hover:shadow-md transition-shadow">
+          <div key={s.label} className="min-w-0 rounded-xl border border-border bg-card/60 p-3 sm:p-4 transition-colors hover:border-primary/20">
             <div className="flex items-center justify-between mb-2">
               <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center`}>
                 <s.icon size={14} className={s.color} />
@@ -309,7 +320,7 @@ const Cobradores = () => {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-primary/20 bg-card p-6 space-y-5 animate-scale-in shadow-lg">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-primary/20 bg-card p-4 sm:p-6 space-y-5 animate-scale-in shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -402,16 +413,16 @@ const Cobradores = () => {
 
             return (
               <div key={c.id}
-                className={`rounded-2xl border bg-card overflow-hidden transition-all duration-300 hover:shadow-lg ${
+                className={`min-w-0 rounded-2xl border bg-card/70 overflow-hidden transition-colors ${
                   isActive ? "border-border hover:border-primary/20" : "border-border/50 opacity-75"
                 }`}>
                 {/* Top accent bar */}
                 <div className={`h-1 w-full ${isActive ? "bg-gradient-to-r from-primary/60 to-primary/20" : "bg-muted"}`} />
 
-                <div className="p-5 space-y-4">
+                <div className="p-4 sm:p-5 space-y-4">
                   {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => setFichaCollector(c.id)}>
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3 cursor-pointer" onClick={() => setFichaCollector(c.id)}>
                       <div className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold shadow-sm ${
                         isActive
                           ? "bg-gradient-to-br from-primary/20 to-primary/5 text-primary border border-primary/10"
@@ -422,8 +433,8 @@ const Cobradores = () => {
                           isActive ? "bg-success" : "bg-muted-foreground"
                         }`} />
                       </div>
-                      <div>
-                        <p className="font-semibold text-foreground text-base hover:text-primary transition-colors">{c.name}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground text-base hover:text-primary transition-colors truncate">{c.name}</p>
                         <div className="flex items-center gap-3 mt-1">
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Phone size={10} /> {c.phone}
@@ -485,7 +496,7 @@ const Cobradores = () => {
                   </div>
 
                   {/* Quick stats */}
-                  <div className="flex items-center gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <div className="flex-1 flex items-center gap-2 p-2.5 rounded-xl bg-accent/20">
                       <Users size={12} className="text-primary shrink-0" />
                       <span className="text-xs text-foreground font-medium">{cAssignments.length}</span>
@@ -516,7 +527,7 @@ const Cobradores = () => {
                             className="p-1 rounded hover:bg-accent text-muted-foreground" title={showToken ? "Ocultar" : "Mostrar"}>
                             {showToken ? <EyeOff size={12} /> : <Eye size={12} />}
                           </button>
-                          <button onClick={() => { navigator.clipboard.writeText(t.token); toast({ title: "Token copiado!" }); }}
+                          <button onClick={() => void copyText(t.token, "Token copiado!")}
                             className="p-1 rounded hover:bg-accent text-muted-foreground" title="Copiar">
                             <Copy size={12} />
                           </button>
@@ -575,7 +586,7 @@ const Cobradores = () => {
 
       {/* ============ FICHA DO COBRADOR ============ */}
       <Dialog open={!!fichaCollector} onOpenChange={() => setFichaCollector(null)}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
           {fichaData && (
             <>
               <DialogHeader>
@@ -624,15 +635,15 @@ const Cobradores = () => {
                   </div>
                   <div className="p-3 rounded-xl border border-border bg-card">
                     <p className="text-[10px] text-muted-foreground uppercase">A Receber</p>
-                    <p className="text-xl font-bold text-amber-500">R$ {fmt(fichaTotalPending)}</p>
+                    <p className="text-base sm:text-lg font-bold leading-tight text-amber-500 break-words">R$ {fmt(fichaTotalPending)}</p>
                   </div>
                   <div className="p-3 rounded-xl border border-border bg-card">
                     <p className="text-[10px] text-muted-foreground uppercase">Atrasado</p>
-                    <p className="text-xl font-bold text-destructive">R$ {fmt(fichaTotalOverdue)}</p>
+                    <p className="text-base sm:text-lg font-bold leading-tight text-destructive break-words">R$ {fmt(fichaTotalOverdue)}</p>
                   </div>
                   <div className="p-3 rounded-xl border border-border bg-card">
                     <p className="text-[10px] text-muted-foreground uppercase">Recebido</p>
-                    <p className="text-xl font-bold text-success">R$ {fmt(fichaTotalPaid)}</p>
+                    <p className="text-base sm:text-lg font-bold leading-tight text-success break-words">R$ {fmt(fichaTotalPaid)}</p>
                   </div>
                 </div>
 
@@ -649,7 +660,7 @@ const Cobradores = () => {
                           <Badge variant="outline" className={`text-[10px] ${t.is_active ? "bg-success/10 text-success border-success/20" : "bg-destructive/10 text-destructive border-destructive/20"}`}>
                             {t.is_active ? "Ativo" : "Revogado"}
                           </Badge>
-                          <button onClick={() => { navigator.clipboard.writeText(t.token); toast({ title: "Copiado!" }); }}
+                          <button onClick={() => void copyText(t.token)}
                             className="p-1 rounded hover:bg-accent text-muted-foreground"><Copy size={12} /></button>
                         </div>
                       ))}
