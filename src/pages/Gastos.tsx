@@ -77,7 +77,7 @@ const Gastos = () => {
 
   const handleEdit = (e: any) => {
     setDesc(e.description); setAmount(String(e.amount));
-    setCategory(e.category || ""); setDate(new Date(e.date).toISOString().slice(0, 10));
+    setCategory(e.category || ""); setDate(String(e.date || "").slice(0, 10));
     setEditingId(e.id); setShowForm(true);
   };
 
@@ -123,11 +123,12 @@ const Gastos = () => {
   const handleExportCSV = () => {
     const header = "Data,Descrição,Categoria,Valor\n";
     const rows = filtered.map((e: any) =>
-      `${formatBR(e.date)},"${e.description}","${e.category || ""}",${Number(e.amount).toFixed(2)}`
+      `${formatBR(e.date)},"${String(e.description || "").replace(/"/g, '""')}","${String(e.category || "").replace(/"/g, '""')}",${Number(e.amount).toFixed(2)}`
     ).join("\n");
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "gastos.csv"; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = `gastos_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
     toast({ title: "CSV exportado!" });
   };
 
@@ -197,25 +198,25 @@ const Gastos = () => {
   const inputCls = "w-full px-4 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 outline-none transition-all";
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      <div className="page-hero">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in">
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/65 p-4 sm:p-6 shadow-[0_18px_50px_-40px_rgba(0,0,0,.9)] backdrop-blur-xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-destructive/15 flex items-center justify-center shadow-[0_0_20px_hsl(var(--destructive)/0.2)]">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="hidden sm:flex w-11 h-11 rounded-xl bg-destructive/15 items-center justify-center border border-destructive/20">
               <TrendingDown size={22} className="text-destructive" />
             </div>
-            <div>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Gastos</h1>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Gastos</h1>
               <p className="text-muted-foreground text-sm mt-1">Controle suas despesas por categoria</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
             {filtered.length > 0 && (
-              <button onClick={handleExportCSV} className="btn-ghost">
+              <button onClick={handleExportCSV} className="btn-ghost justify-center">
                 <Download size={14} /> CSV
               </button>
             )}
-            <button onClick={() => { resetForm(); setShowForm(true); }} className="btn-premium">
+            <button onClick={() => { resetForm(); setShowForm(true); }} className="btn-premium justify-center">
               <Plus size={16} /> Novo Gasto
             </button>
           </div>
@@ -223,23 +224,23 @@ const Gastos = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-2xl border border-border bg-card p-4 card-shine">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="min-w-0 rounded-xl border border-border bg-card/60 p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
               <TrendingDown size={14} className="text-destructive" />
             </div>
           </div>
-          <p className="text-xl font-bold text-destructive">R$ {fmt(totalAll)}</p>
+          <p className="text-base sm:text-lg font-bold leading-tight text-destructive tabular-nums break-words">R$ {fmt(totalAll)}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Total Geral</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="min-w-0 rounded-xl border border-border bg-card/60 p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Calendar size={14} className="text-primary" />
             </div>
           </div>
-          <p className="text-xl font-bold text-foreground">R$ {fmt(currentMonthTotal)}</p>
+          <p className="text-base sm:text-lg font-bold leading-tight text-foreground tabular-nums break-words">R$ {fmt(currentMonthTotal)}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Este Mês</p>
             {prevMonthTotal > 0 && (
@@ -251,16 +252,16 @@ const Gastos = () => {
             )}
           </div>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="min-w-0 rounded-xl border border-border bg-card/60 p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center">
               <Receipt size={14} className="text-foreground" />
             </div>
           </div>
-          <p className="text-xl font-bold text-foreground">R$ {fmt(todayTotal)}</p>
+          <p className="text-base sm:text-lg font-bold leading-tight text-foreground tabular-nums break-words">R$ {fmt(todayTotal)}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Hoje</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="min-w-0 rounded-xl border border-border bg-card/60 p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-accent/50 flex items-center justify-center">
               <Tag size={14} className="text-foreground" />
@@ -419,7 +420,7 @@ const Gastos = () => {
                 </div>
                 <div className="divide-y divide-border/30">
                   {items.map((e: any) => (
-                    <div key={e.id} className="flex items-center gap-3 px-4 py-3 group hover:bg-accent/20 transition-colors">
+                    <div key={e.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-2.5 sm:gap-x-3 gap-y-2 px-3 sm:px-4 py-3 group hover:bg-accent/20 transition-colors">
                       <div className="w-10 h-10 rounded-xl bg-destructive/10 border border-destructive/10 flex items-center justify-center shrink-0">
                         <ArrowDownRight size={16} className="text-destructive" />
                       </div>
@@ -436,10 +437,10 @@ const Gastos = () => {
                           )}
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-destructive shrink-0">−R$ {fmt(Number(e.amount))}</span>
+                      <span className="col-span-2 sm:col-span-1 col-start-2 sm:col-start-auto text-sm font-bold text-destructive whitespace-nowrap">−R$ {fmt(Number(e.amount))}</span>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 opacity-0 group-hover:opacity-100 transition-all">
+                          <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 sm:opacity-0 sm:group-hover:opacity-100 transition-all" aria-label={`Ações para ${e.description}`}>
                             <MoreVertical size={14} />
                           </button>
                         </DropdownMenuTrigger>
