@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
 import { toast } from "sonner";
 import { Download, FileSpreadsheet, Users, FileSignature, Receipt, Wallet, TrendingUp, Loader2 } from "lucide-react";
-import { formatBR } from "@/lib/dateUtils";
+import type { LucideIcon } from "lucide-react";
 
 type EntityKey = "clients" | "contracts" | "contract_installments" | "transactions" | "profits" | "expenses";
 
@@ -12,7 +12,7 @@ interface EntityDef {
   key: EntityKey;
   label: string;
   hint: string;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   dated: boolean; // filter by date range
   dateField?: string;
@@ -32,9 +32,10 @@ const ENTITIES: EntityDef[] = [
 const toCSV = (rows: any[]): string => {
   if (!rows.length) return "";
   const headers = Object.keys(rows[0]);
-  const escape = (v: any) => {
+  const escape = (v: unknown) => {
     if (v === null || v === undefined) return "";
-    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    const raw = typeof v === "object" ? JSON.stringify(v) : String(v);
+    const s = /^[=+\-@]/.test(raw.trimStart()) ? `'${raw}` : raw;
     return `"${s.replace(/"/g, '""')}"`;
   };
   return [headers.join(","), ...rows.map((r) => headers.map((h) => escape(r[h])).join(","))].join("\n");
@@ -46,7 +47,9 @@ const download = (name: string, content: string, type = "text/csv;charset=utf-8;
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 };
 
@@ -67,11 +70,15 @@ const ExportCenter = () => {
   };
 
   const fetchEntity = async (def: EntityDef) => {
+    if (!from || !to || from > to) throw new Error("Informe um período válido para exportação.");
     const startISO = new Date(from + "T00:00:00").toISOString();
-    const endISO = new Date(to + "T23:59:59").toISOString();
+    const endISO = new Date(to + "T23:59:59.999").toISOString();
     return fetchAll((f, t) => {
       let q = supabase.from(def.key).select("*").eq("user_id", user!.id).range(f, t);
-      if (def.dated && def.dateField) q = q.gte(def.dateField, startISO).lte(def.dateField, endISO);
+      if (def.dated && def.dateField) {
+        const isDateOnly = def.dateField === "date" || def.dateField === "due_date";
+        q = q.gte(def.dateField, isDateOnly ? from : startISO).lte(def.dateField, isDateOnly ? to : endISO);
+      }
       return q;
     });
   };
@@ -124,8 +131,8 @@ const ExportCenter = () => {
   };
 
   return (
-    <section className="rounded-[2rem] border border-border/10 bg-card/30 backdrop-blur-xl overflow-hidden shadow-2xl animate-fade-in">
-      <div className="px-5 py-4 border-b border-border/40 bg-gradient-to-r from-emerald-500/5 to-transparent flex items-center justify-between flex-wrap gap-3">
+    <section className="overflow-hidden rounded-2xl border border-border/60 bg-card/65 animate-fade-in">
+      <div className="flex flex-col gap-4 border-b border-border/40 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
           <FileSpreadsheet size={16} className="text-emerald-500" />
           <div>
@@ -133,18 +140,18 @@ const ExportCenter = () => {
             <p className="text-[11px] text-muted-foreground">Baixe dados brutos em CSV (abre no Excel/Google Sheets)</p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card/60 border border-border/30">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+          <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/40 bg-background/40 px-3 py-2">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">De</label>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}
-              className="bg-transparent text-xs font-semibold focus:outline-none [color-scheme:dark]" />
+              aria-label="Data inicial da exportação" className="min-w-0 flex-1 bg-transparent text-xs font-semibold focus:outline-none [color-scheme:dark]" />
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-card/60 border border-border/30">
+          <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border/40 bg-background/40 px-3 py-2">
             <label className="text-[10px] font-bold text-muted-foreground uppercase">Até</label>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)}
-              className="bg-transparent text-xs font-semibold focus:outline-none [color-scheme:dark]" />
+              min={from} aria-label="Data final da exportação" className="min-w-0 flex-1 bg-transparent text-xs font-semibold focus:outline-none [color-scheme:dark]" />
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 sm:col-span-2">
             {[
               { label: "7d", d: 7 },
               { label: "30d", d: 30 },
@@ -191,12 +198,12 @@ const ExportCenter = () => {
           })}
         </div>
 
-        <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/30">
+        <div className="flex flex-col gap-3 border-t border-border/30 pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[11px] text-muted-foreground">
             {selected.size === 0 ? "Selecione pelo menos uma entidade" : `${selected.size} entidade(s) selecionada(s)`}
           </p>
           <button onClick={exportSelected} disabled={selected.size === 0 || busy === "all"}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active:scale-95 disabled:opacity-50">
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 sm:w-auto">
             {busy === "all" ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             Exportar selecionadas
           </button>

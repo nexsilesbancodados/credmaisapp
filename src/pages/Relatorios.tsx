@@ -1,17 +1,21 @@
 import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useState, useEffect } from "react";
 import ExportCenter from "@/components/relatorios/ExportCenter";
-import { FileText, Download, Calendar, TrendingUp, ArrowDownRight, Wallet, Users, Receipt, CheckCircle, AlertTriangle, Clock, BarChart3, FileDown, Sparkles, Loader2, Lightbulb, ShieldCheck, Activity } from "lucide-react";
+import { Download, Calendar, TrendingUp, ArrowDownRight, Wallet, Users, Receipt, CheckCircle, AlertTriangle, Clock, BarChart3, FileDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { toast as sonnerToast } from "sonner";
 import { formatBR } from "@/lib/dateUtils";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const csvCell = (value: unknown) => {
+  const raw = value == null ? "" : String(value);
+  const safe = /^[=+\-@]/.test(raw.trimStart()) ? `'${raw}` : raw;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
 
 const Relatorios = () => {
   const { user, profile } = useAuth();
@@ -36,16 +40,18 @@ const Relatorios = () => {
     setLoading(true);
     setReportError(null);
     const [year, mon] = month.split("-").map(Number);
-    const startDate = new Date(year, mon - 1, 1).toISOString();
-    const endDate = new Date(year, mon, 0, 23, 59, 59).toISOString();
+    const startDay = `${year}-${String(mon).padStart(2, "0")}-01`;
+    const endDay = `${year}-${String(mon).padStart(2, "0")}-${String(new Date(year, mon, 0).getDate()).padStart(2, "0")}`;
+    const startDateTime = new Date(`${startDay}T00:00:00`).toISOString();
+    const endDateTime = new Date(`${endDay}T23:59:59.999`).toISOString();
 
     try {
     const [profitData, expenseData, clientData, installmentDataRaw, receivedInstallments, activeContractsRaw] = await Promise.all([
-      fetchAll((f, t) => supabase.from("profits").select("*").eq("user_id", user.id).gte("date", startDate).lte("date", endDate).range(f, t)),
-      fetchAll((f, t) => supabase.from("expenses").select("*").eq("user_id", user.id).gte("date", startDate).lte("date", endDate).range(f, t)),
+      fetchAll((f, t) => supabase.from("profits").select("*").eq("user_id", user.id).gte("date", startDay).lte("date", endDay).range(f, t)),
+      fetchAll((f, t) => supabase.from("expenses").select("*").eq("user_id", user.id).gte("date", startDay).lte("date", endDay).range(f, t)),
       fetchAll((f, t) => supabase.from("clients").select("*").eq("user_id", user.id).range(f, t)),
-      fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user.id).gte("due_date", startDate).lte("due_date", endDate).range(f, t)),
-      fetchAll((f, t) => supabase.from("contract_installments").select("id,amount,paid_amount,paid_at,status").eq("user_id", user.id).eq("status", "paid").gte("paid_at", startDate).lte("paid_at", endDate).range(f, t)),
+      fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user.id).gte("due_date", startDay).lte("due_date", endDay).range(f, t)),
+      fetchAll((f, t) => supabase.from("contract_installments").select("id,amount,paid_amount,paid_at,status").eq("user_id", user.id).eq("status", "paid").gte("paid_at", startDateTime).lte("paid_at", endDateTime).range(f, t)),
       fetchAll((f, t) => supabase.from("contracts").select("id,status").eq("user_id", user.id).in("status", ["active","overdue"]).range(f, t)),
     ]);
 
@@ -103,26 +109,31 @@ const Relatorios = () => {
 
   const handleExportCSV = () => {
     if (!data) return;
-    let csv = "RELATÓRIO MENSAL - " + monthLabel.toUpperCase() + "\n\n";
-    csv += "RESUMO\n";
-    csv += `Lucro Total,R$ ${data.totalProfit.toFixed(2)}\n`;
-    csv += `Gastos Total,R$ ${data.totalExpense.toFixed(2)}\n`;
-    csv += `Saldo,R$ ${data.balance.toFixed(2)}\n`;
-    csv += `Recebido (parcelas),R$ ${data.totalReceived.toFixed(2)}\n`;
-    csv += `Em atraso,R$ ${data.totalOverdue.toFixed(2)}\n\n`;
+    let csv = "RELATÓRIO MENSAL;" + csvCell(monthLabel.toUpperCase()) + "\r\n\r\n";
+    csv += "RESUMO\r\n";
+    csv += `Lucro Total;${data.totalProfit.toFixed(2).replace(".", ",")}\r\n`;
+    csv += `Gastos Total;${data.totalExpense.toFixed(2).replace(".", ",")}\r\n`;
+    csv += `Saldo;${data.balance.toFixed(2).replace(".", ",")}\r\n`;
+    csv += `Recebido (parcelas);${data.totalReceived.toFixed(2).replace(".", ",")}\r\n`;
+    csv += `Em atraso;${data.totalOverdue.toFixed(2).replace(".", ",")}\r\n\r\n`;
 
-    csv += "LUCROS\nData,Descrição,Valor\n";
+    csv += "LUCROS\r\nData;Descrição;Valor\r\n";
     data.profitData.forEach((p: any) => {
-      csv += `${formatBR(p.date)},"${p.description}",R$ ${Number(p.amount).toFixed(2)}\n`;
+      csv += `${csvCell(formatBR(p.date))};${csvCell(p.description)};${Number(p.amount).toFixed(2).replace(".", ",")}\r\n`;
     });
-    csv += "\nGASTOS\nData,Descrição,Categoria,Valor\n";
+    csv += "\r\nGASTOS\r\nData;Descrição;Categoria;Valor\r\n";
     data.expenseData.forEach((e: any) => {
-      csv += `${formatBR(e.date)},"${e.description}","${e.category || "-"}",R$ ${Number(e.amount).toFixed(2)}\n`;
+      csv += `${csvCell(formatBR(e.date))};${csvCell(e.description)};${csvCell(e.category || "-")};${Number(e.amount).toFixed(2).replace(".", ",")}\r\n`;
     });
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const blob = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `relatorio-${month}.csv`; a.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `relatorio-${month}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     URL.revokeObjectURL(url);
     toast({ title: "✓ Relatório exportado!" });
   };
@@ -251,29 +262,29 @@ const Relatorios = () => {
     <div className="space-y-5">
       <div className="page-hero animate-fade-in relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
-        <div className="page-hero-content flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-3xl bg-primary/10 flex items-center justify-center shadow-2xl shadow-primary/20 ring-1 ring-primary/20 transition-transform group-hover:scale-110">
+        <div className="page-hero-content flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 relative z-10">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20 sm:h-14 sm:w-14">
               <BarChart3 size={28} className="text-primary" />
             </div>
-            <div>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Relatórios BI</h1>
-              <p className="text-muted-foreground text-sm font-medium opacity-70">Business Intelligence & Análise de Performance</p>
+            <div className="min-w-0">
+              <h1 className="text-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground tracking-tight">Relatórios BI</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm font-medium opacity-70">Indicadores e desempenho financeiro</p>
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-card/40 border border-border/10 backdrop-blur-md shadow-inner">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-3">
+            <div className="col-span-2 flex min-w-0 items-center gap-3 rounded-xl border border-border/40 bg-card/60 px-3 py-2.5 sm:col-span-1">
               <Calendar size={16} className="text-primary shrink-0" />
               <input type="month" value={month} onChange={(e) => setMonth(e.target.value)}
-                className="bg-transparent text-sm font-bold text-foreground focus:outline-none [color-scheme:dark]" />
+                aria-label="Mês do relatório" className="min-w-0 flex-1 bg-transparent text-sm font-bold text-foreground focus:outline-none [color-scheme:dark]" />
             </div>
             <div className="h-10 w-px bg-border/20 hidden sm:block mx-1" />
-            <div className="flex items-center gap-2">
-              <button onClick={handleExportCSV} disabled={!data} className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-muted/40 border border-border/20 text-xs font-bold hover:bg-muted/60 transition-all active:scale-95 disabled:opacity-50">
+            <div className="contents sm:flex sm:items-center sm:gap-2">
+              <button onClick={handleExportCSV} disabled={!data || loading} className="flex items-center justify-center gap-2 rounded-xl border border-border/40 bg-muted/40 px-4 py-2.5 text-xs font-bold hover:bg-muted/60 disabled:opacity-50">
                 <Download size={15} /> CSV
               </button>
-              <button onClick={handleExportPDF} disabled={!data} className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary text-white text-xs font-bold shadow-lg shadow-primary/25 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50">
+              <button onClick={handleExportPDF} disabled={!data || loading} className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
                 <FileDown size={15} /> PDF
               </button>
             </div>
@@ -305,7 +316,7 @@ const Relatorios = () => {
 
 
           {/* Main stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 stagger-fade-in">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-fade-in">
             {[
               { label: "Lucros", value: `R$ ${fmt(data.totalProfit)}`, icon: TrendingUp, color: "text-success", bg: "bg-success/8", glow: data.totalProfit > 0 ? "success-glow" : "" },
               { label: "Gastos", value: `R$ ${fmt(data.totalExpense)}`, icon: ArrowDownRight, color: "text-destructive", bg: "bg-destructive/8", glow: "" },
@@ -314,14 +325,14 @@ const Relatorios = () => {
               { label: "Em Atraso", value: `R$ ${fmt(data.totalOverdue)}`, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/8", glow: data.totalOverdue > 0 ? "danger-glow" : "" },
               { label: "Clientes Ativos", value: String(data.activeClients), icon: Users, color: "text-primary", bg: "bg-primary/8", glow: "" },
             ].map((s) => (
-              <div key={s.label} className={`rounded-2xl border border-border bg-card p-4 card-shine ${s.glow}`}>
+              <div key={s.label} className={`min-w-0 rounded-2xl border border-border/60 bg-card/65 p-4 ${s.glow}`}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center`}>
                     <s.icon size={16} className={s.color} />
                   </div>
                   <p className="text-label">{s.label}</p>
                 </div>
-                <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                <p className={`break-words text-lg font-bold tabular-nums sm:text-xl ${s.color}`}>{s.value}</p>
               </div>
             ))}
           </div>
@@ -332,7 +343,7 @@ const Relatorios = () => {
               <Receipt size={16} className="text-primary" />
               <h2 className="text-sm font-semibold text-foreground">Parcelas do Mês</h2>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
                 { label: "Pagas", value: data.paidCount, icon: CheckCircle, color: "text-success", bg: "bg-success/10", border: "border-success/20" },
                 { label: "Atrasadas", value: data.overdueCount, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10", border: "border-destructive/20" },
@@ -383,7 +394,7 @@ const Relatorios = () => {
                       <p className="text-sm text-foreground truncate">{p.description}</p>
                       <p className="text-[10px] text-muted-foreground">{formatBR(p.date)}</p>
                     </div>
-                    <span className="text-sm font-semibold text-success">+R$ {fmt(Number(p.amount))}</span>
+                    <span className="shrink-0 text-right text-xs font-semibold tabular-nums text-success sm:text-sm">+R$ {fmt(Number(p.amount))}</span>
                   </div>
                 ))}
               </div>
@@ -412,7 +423,7 @@ const Relatorios = () => {
                       <p className="text-sm text-foreground truncate">{e.description}</p>
                       <p className="text-[10px] text-muted-foreground">{e.category || "Sem categoria"} · {formatBR(e.date)}</p>
                     </div>
-                    <span className="text-sm font-semibold text-destructive">−R$ {fmt(Number(e.amount))}</span>
+                    <span className="shrink-0 text-right text-xs font-semibold tabular-nums text-destructive sm:text-sm">−R$ {fmt(Number(e.amount))}</span>
                   </div>
                 ))}
               </div>
