@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -121,9 +121,9 @@
 
     --radius: 0.875rem;
 
-    --font-display: 'Space Grotesk', sans-serif;
+    --font-display: 'Manrope', sans-serif;
     --font-body: 'Inter', sans-serif;
-    --font-heading: 'Space Grotesk', sans-serif;
+    --font-heading: 'Manrope', sans-serif;
 
     --gradient-gold: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 32%), hsl(0 0% 8%));
     --gradient-button: linear-gradient(135deg, hsl(0 0% 7%), hsl(0 0% 24%));
@@ -163,39 +163,39 @@
 
   .dark {
     /* Midnight Indigo — refined */
-    --background: 30 8% 3%;
-    --foreground: 42 24% 94%;
+    --background: 40 4% 3%;
+    --foreground: 43 27% 93%;
 
-    --card: 30 7% 7%;
-    --card-foreground: 42 20% 94%;
+    --card: 40 4% 8%;
+    --card-foreground: 43 25% 93%;
 
-    --popover: 30 8% 6%;
-    --popover-foreground: 42 20% 94%;
+    --popover: 40 4% 7%;
+    --popover-foreground: 43 25% 93%;
 
-    --primary: 42 32% 88%;
-    --primary-foreground: 30 10% 6%;
-    --primary-glow: 39 18% 64%;
+    --primary: 42 62% 58%;
+    --primary-foreground: 40 8% 5%;
+    --primary-glow: 43 72% 70%;
 
-    --secondary: 30 6% 12%;
-    --secondary-foreground: 38 12% 82%;
+    --secondary: 40 4% 12%;
+    --secondary-foreground: 40 12% 82%;
 
-    --muted: 30 5% 11%;
-    --muted-foreground: 35 7% 62%;
+    --muted: 40 4% 11%;
+    --muted-foreground: 38 6% 64%;
 
-    --accent: 35 8% 15%;
-    --accent-foreground: 42 24% 94%;
+    --accent: 40 6% 15%;
+    --accent-foreground: 43 27% 93%;
 
     --destructive: 0 84% 62%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 7% 18%;
-    --input: 30 6% 12%;
-    --ring: 42 24% 78%;
+    --border: 40 5% 19%;
+    --input: 40 4% 12%;
+    --ring: 42 62% 58%;
 
     --gradient-gold: linear-gradient(135deg, hsl(0 0% 72%), hsl(0 0% 100%), hsl(0 0% 72%));
-    --gradient-button: linear-gradient(135deg, hsl(0 0% 92%), hsl(0 0% 68%), hsl(0 0% 92%));
-    --gradient-card: linear-gradient(145deg, hsl(40 12% 13% / .76), hsl(30 8% 6% / .88));
-    --gradient-glass: linear-gradient(145deg, hsl(42 20% 98% / 0.075), hsl(35 12% 60% / 0.018));
+    --gradient-button: linear-gradient(135deg, hsl(42 62% 58%), hsl(43 72% 70%));
+    --gradient-card: linear-gradient(145deg, hsl(40 5% 10% / .88), hsl(40 4% 6% / .94));
+    --gradient-glass: linear-gradient(145deg, hsl(43 20% 98% / 0.055), hsl(40 10% 60% / 0.012));
     --gradient-accent: linear-gradient(135deg, hsl(0 0% 100% / 0.12), hsl(0 0% 100% / 0.03));
     --gradient-mesh:
       radial-gradient(at 12% 0%, hsl(42 20% 80% / 0.055) 0px, transparent 42%),
@@ -204,8 +204,8 @@
     --shadow-card: 0 1px 2px hsl(240 60% 2% / 0.5), 0 6px 20px hsl(240 60% 2% / 0.35);
     --shadow-elevated: 0 10px 34px hsl(240 60% 2% / 0.55), 0 20px 60px hsl(240 60% 2% / 0.35);
     --shadow-glass: 0 10px 40px hsl(240 60% 2% / 0.45);
-    --shadow-glow: 0 0 28px hsl(244 75% 62% / 0.35), 0 0 80px hsl(244 75% 62% / 0.15);
-    --shadow-premium: 0 24px 70px -12px hsl(244 75% 62% / 0.45);
+    --shadow-glow: 0 0 24px hsl(42 62% 58% / 0.18);
+    --shadow-premium: 0 24px 70px -16px hsl(0 0% 0% / 0.7);
 
     --success: 152 68% 52%;
     --success-foreground: 0 0% 100%;
@@ -215,7 +215,7 @@
     --info-foreground: 0 0% 100%;
 
     /* Vivid action tokens — dark */
-    --primary-vivid: 0 0% 92%;
+    --primary-vivid: 42 62% 58%;
     --success-vivid: 152 76% 52%;
     --warning-vivid: 32 96% 60%;
     --destructive-vivid: 0 88% 65%;
@@ -1674,20 +1674,20 @@ div[style*="Edit with Lovable"],
    one consistent surface system without changing any business component. */
 .dark .app-shell {
   background:
-    radial-gradient(800px 520px at 82% -8%, hsl(42 18% 75% / .045), transparent 62%),
-    linear-gradient(180deg, hsl(30 8% 3%), hsl(30 7% 4%));
+    radial-gradient(860px 500px at 78% -12%, hsl(var(--primary) / .045), transparent 64%),
+    linear-gradient(180deg, hsl(40 4% 3%), hsl(40 4% 4%));
 }
 
 .dark .app-content :where(.glass-card, .surface-card, .premium-card) {
-  border-color: hsl(38 10% 70% / .11);
-  background: linear-gradient(145deg, hsl(40 12% 13% / .68), hsl(30 8% 6% / .82));
-  box-shadow: 0 18px 55px hsl(0 0% 0% / .24);
-  backdrop-filter: blur(20px) saturate(115%);
+  border-color: hsl(40 10% 80% / .085);
+  background: linear-gradient(145deg, hsl(40 5% 10% / .82), hsl(40 4% 6% / .9));
+  box-shadow: 0 16px 46px hsl(0 0% 0% / .22);
+  backdrop-filter: blur(18px) saturate(108%);
 }
 
 .dark .app-content :where(.glass-card, .surface-card, .premium-card):hover {
-  border-color: hsl(40 15% 80% / .2);
-  box-shadow: 0 22px 65px hsl(0 0% 0% / .32);
+  border-color: hsl(40 12% 82% / .15);
+  box-shadow: 0 18px 52px hsl(0 0% 0% / .28);
 }
 
 .dark .app-content :where(input, textarea, select) {
@@ -1696,8 +1696,27 @@ div[style*="Edit with Lovable"],
 }
 
 .dark .app-content :where(input, textarea, select):focus {
-  border-color: hsl(42 20% 78% / .38);
-  box-shadow: 0 0 0 3px hsl(42 20% 78% / .07);
+  border-color: hsl(var(--primary) / .55);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / .09);
+}
+
+.app-content :where(h1, h2, h3, .kpi-value) {
+  font-family: var(--font-heading);
+}
+
+.app-content :where(.tabular-nums, [class*="font-mono"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+.app-content :where(table) {
+  font-size: .875rem;
+}
+
+.app-content :where(th) {
+  color: hsl(var(--muted-foreground));
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .045em;
 }
 
 @media (max-width: 359px) {

@@ -73,7 +73,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
 
   return (
     <header
-      className="sticky top-0 z-40 border-b border-white/10 bg-black/60 backdrop-blur-2xl shadow-[0_1px_0_hsl(0_0%_100%/.04),0_18px_40px_-24px_hsl(0_0%_0%/.85)]"
+      className="sticky top-0 z-40 border-b border-white/[.08] bg-background/85 backdrop-blur-2xl shadow-[0_12px_35px_-28px_rgba(0,0,0,.9)]"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       <div className="h-16 lg:h-[72px] flex items-center justify-between px-3 lg:px-7 gap-2 lg:gap-4">
@@ -160,7 +160,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         <div ref={quickRef} className="relative flex items-center">
           <button
             onClick={() => setQuickOpen(o => !o)}
-            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap pl-3 pr-2.5 h-9 rounded-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground text-[12px] font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 ring-1 ring-primary/40"
+            className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-3.5 text-[12px] font-bold text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/.18)] transition-all duration-200 hover:bg-primary/90 hover:shadow-[0_10px_28px_hsl(var(--primary)/.24)] active:scale-[.98]"
             aria-haspopup="menu"
             aria-expanded={quickOpen}
           >

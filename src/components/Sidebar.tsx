@@ -196,22 +196,21 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         className={`
           group relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13.5px] font-medium
           transition-all duration-200 ease-out will-change-transform
-          hover:translate-x-0.5
           ${active
-            ? "text-foreground shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.25)]"
+            ? "text-foreground"
             : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
           }
-          ${collapsed ? "justify-center px-2 hover:translate-x-0" : ""}
+          ${collapsed ? "justify-center px-2" : ""}
         `}
         style={active ? {
-          background: "linear-gradient(90deg, hsl(var(--primary)/0.18), hsl(var(--primary)/0.04))",
+          background: "linear-gradient(90deg, hsl(var(--primary)/0.11), hsl(var(--primary)/0.025))",
         } : undefined}
       >
         {active && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-8 rounded-r-full bg-gradient-to-b from-primary to-primary-glow shadow-[0_0_10px_hsl(var(--primary)/0.6)] animate-fade-in" />
+          <div className="absolute bottom-2 left-0 top-2 w-[2px] rounded-r-full bg-primary animate-fade-in" />
         )}
 
-        <div className={`relative shrink-0 transition-all duration-200 ${active ? "text-primary scale-[1.12]" : "group-hover:scale-110 group-hover:text-foreground"}`}>
+        <div className={`relative shrink-0 transition-colors duration-200 ${active ? "text-primary" : "group-hover:text-foreground"}`}>
           <Icon size={19} strokeWidth={active ? 2.4 : 1.9} />
           {item.highlight && !active && !collapsed && (
             <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_hsl(45_95%_55%/0.8)]" />
@@ -309,8 +308,8 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }: SidebarProps) => {
         ${collapsed ? "w-[84px]" : "w-[280px]"}
       `}
       style={{
-        background: sidebarBg || "linear-gradient(180deg, hsl(0 0% 7% / .94), hsl(0 0% 3% / .97))",
-        backdropFilter: "blur(40px)",
+        background: sidebarBg || "linear-gradient(180deg, hsl(40 4% 7% / .97), hsl(40 4% 4% / .99))",
+        backdropFilter: "blur(24px)",
       }}
     >
       {/* Logo */}
