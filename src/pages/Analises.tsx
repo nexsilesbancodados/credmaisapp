@@ -97,7 +97,7 @@ function StatCard({ s, onClick }: { s: Stat; onClick?: () => void }) {
       disabled={!clickable}
       onClick={onClick}
       className={cn(
-        "glass-card rounded-2xl p-4 flex flex-col gap-2 text-left w-full",
+        "min-w-0 rounded-xl border border-white/10 bg-card/55 p-3 sm:p-4 flex flex-col gap-2 text-left w-full backdrop-blur-xl",
         tone.border,
         clickable && "hover:border-primary/40 hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40",
         !clickable && "cursor-default"
@@ -111,7 +111,7 @@ function StatCard({ s, onClick }: { s: Stat; onClick?: () => void }) {
           </div>
         ) : null}
       </div>
-      <p className={cn("text-2xl font-bold tabular-nums", tone.value)}>{s.value}</p>
+      <p className={cn("text-lg sm:text-xl xl:text-2xl font-bold tabular-nums leading-tight break-words", tone.value)}>{s.value}</p>
       {showDelta ? (
         <p className={cn("text-[11px] font-semibold flex items-center gap-1", good ? "text-success" : "text-destructive")}>
           {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
@@ -128,7 +128,7 @@ function DetailModal({ payload, onClose }: { payload: DetailPayload; onClose: ()
   const open = !!payload;
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-3xl max-h-[90dvh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{payload?.title}</DialogTitle>
           <DialogDescription>{payload?.criteria}</DialogDescription>
@@ -180,9 +180,9 @@ function DetailModal({ payload, onClose }: { payload: DetailPayload; onClose: ()
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3">
+    <section className="space-y-3 sm:space-y-4">
       <div>
-        <h2 className="text-base font-bold text-foreground">{title}</h2>
+        <h2 className="text-sm sm:text-base font-bold text-foreground">{title}</h2>
         {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
       </div>
       {children}
@@ -593,22 +593,21 @@ const Analises = () => {
   const heroUp = heroDelta >= 0;
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-5 sm:space-y-6 pb-8">
       {/* HERO Premium */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 md:p-8 animate-fade-in">
-        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-success/10 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/65 p-4 sm:p-6 animate-fade-in shadow-[0_18px_50px_-40px_rgba(0,0,0,.9)] backdrop-blur-xl">
+        <div className="absolute -top-24 -right-16 w-64 h-64 rounded-full bg-primary/[.07] blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.25)]">
+          <div className="min-w-0 flex items-start gap-3 sm:gap-4">
+            <div className="hidden sm:flex w-11 h-11 rounded-xl bg-primary/15 border border-primary/20 items-center justify-center">
               <BarChart3 size={26} className="text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Análises · {periodLabel}</p>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Recebido no período</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Recebido no período</h1>
               <div className="flex items-baseline gap-3 mt-1 flex-wrap">
-                <span className="text-4xl md:text-5xl font-bold text-success tracking-tight tabular-nums">{fmtBRL(m.totalReceived)}</span>
+                <span className="max-w-full text-3xl sm:text-4xl font-bold text-success tracking-tight tabular-nums break-words">{fmtBRL(m.totalReceived)}</span>
                 {isFinite(heroDelta) && (
                   <span className={cn("text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1", heroUp ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive")}>
                     {heroUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
@@ -628,11 +627,11 @@ const Analises = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => refetch()} disabled={isFetching} title={dataUpdatedAt ? `Atualizado às ${new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Atualizar análises"} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-white/[.035] border border-white/10 text-xs font-semibold hover:bg-white/[.07] disabled:opacity-60 transition-colors">
+          <div className="grid w-full grid-cols-2 gap-2 lg:w-auto">
+            <button onClick={() => refetch()} disabled={isFetching} title={dataUpdatedAt ? `Atualizado às ${new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}` : "Atualizar análises"} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/[.035] border border-white/10 text-xs font-semibold hover:bg-white/[.07] disabled:opacity-60 transition-colors">
               <RefreshCw size={13} className={isFetching ? "animate-spin" : ""} /> {isFetching ? "Atualizando" : "Atualizar"}
             </button>
-            <button onClick={handleExport} className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-card/70 backdrop-blur border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring">
+            <button onClick={handleExport} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-card/70 border border-border text-xs font-semibold text-foreground hover:bg-accent transition-colors focus-ring">
               <Download size={13} className="text-primary" /> Exportar CSV
             </button>
           </div>
@@ -640,18 +639,18 @@ const Analises = () => {
       </div>
 
       <Tabs defaultValue="classic" className="w-full">
-        <TabsContent value="classic" className="space-y-8">
+        <TabsContent value="classic" className="space-y-7">
           {/* ─── Período ─── */}
-          <div className="glass-card rounded-2xl p-4">
+          <div className="rounded-2xl border border-white/10 bg-card/55 p-3 sm:p-4 backdrop-blur-xl">
             <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
               <span className="text-label shrink-0">Período</span>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex max-w-full flex-wrap items-center gap-1.5 sm:gap-2">
                 {presets.map((p) => (
                   <button
                     key={p.key}
                     onClick={() => handlePreset(p.key)}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                      "px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
                       activePreset === p.key
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -661,28 +660,28 @@ const Analises = () => {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2 lg:ml-auto">
+              <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 lg:ml-auto lg:w-auto">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5">
+                    <Button variant="outline" size="sm" className="w-full min-w-0 text-xs h-9 gap-1.5">
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {format(dateFrom, "dd/MM/yy")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar mode="single" selected={dateFrom} onSelect={(d) => { if (d) { setDateFrom(d); setActivePreset("custom"); } }} initialFocus className="p-3 pointer-events-auto" />
+                    <Calendar mode="single" selected={dateFrom} disabled={{ after: dateTo }} onSelect={(d) => { if (d) { setDateFrom(d); setActivePreset("custom"); } }} initialFocus className="p-3 pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
                 <span className="text-xs text-muted-foreground">até</span>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-xs h-8 gap-1.5">
+                    <Button variant="outline" size="sm" className="w-full min-w-0 text-xs h-9 gap-1.5">
                       <CalendarIcon className="h-3.5 w-3.5" />
                       {format(dateTo, "dd/MM/yy")}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar mode="single" selected={dateTo} onSelect={(d) => { if (d) { setDateTo(d); setActivePreset("custom"); } }} initialFocus className="p-3 pointer-events-auto" />
+                    <Calendar mode="single" selected={dateTo} disabled={{ before: dateFrom, after: new Date() }} onSelect={(d) => { if (d) { setDateTo(d); setActivePreset("custom"); } }} initialFocus className="p-3 pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
               </div>
