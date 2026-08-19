@@ -678,7 +678,7 @@ const AgenteIA = () => {
   const saveConfig = async () => {
     if (!user) return;
     try {
-      await supabase.from("settings").update({
+      const { error } = await supabase.from("settings").update({
         bot_enabled: agentConfig.chatbotEnabled,
         bot_auto_send: agentConfig.autoCollections,
         bot_send_pix: agentConfig.sendPix,
@@ -690,10 +690,11 @@ const AgenteIA = () => {
         bot_negotiation_enabled: agentConfig.negotiationEnabled,
         bot_send_audio: agentConfig.sendAudio,
       }).eq("user_id", user.id);
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["settings-agent"] });
       toast({ title: "Configurações salvas!" });
-    } catch {
-      toast({ title: "Erro ao salvar", variant: "destructive" });
+    } catch (error) {
+      toast({ title: "Erro ao salvar", description: error instanceof Error ? error.message : "Tente novamente.", variant: "destructive" });
     }
   };
 

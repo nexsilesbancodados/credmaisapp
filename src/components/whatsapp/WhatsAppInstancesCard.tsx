@@ -80,10 +80,27 @@ export const WhatsAppInstancesCard = () => {
   };
 
   const handleSetDefault = async (id: string) => {
-    await supabase.from("whatsapp_instances").update({ is_default: false }).eq("user_id", user!.id);
+    const previousDefault = items.find((item) => item.is_default)?.id;
+    const { error: clearError } = await supabase
+      .from("whatsapp_instances")
+      .update({ is_default: false })
+      .eq("user_id", user!.id);
+    if (clearError) {
+      toast({ title: "Não foi possível trocar a instância padrão", description: clearError.message, variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("whatsapp_instances").update({ is_default: true }).eq("id", id);
-    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
-    else fetchData();
+    if (error) {
+      // Recompõe o estado anterior quando a segunda escrita falha.
+      if (previousDefault) {
+        await supabase.from("whatsapp_instances").update({ is_default: true }).eq("id", previousDefault).eq("user_id", user!.id);
+      }
+      toast({ title: "Não foi possível trocar a instância padrão", description: error.message, variant: "destructive" });
+      await fetchData();
+      return;
+    }
+    await fetchData();
+    toast({ title: "Instância padrão atualizada" });
   };
 
   const handleToggleActive = async (item: Instance) => {

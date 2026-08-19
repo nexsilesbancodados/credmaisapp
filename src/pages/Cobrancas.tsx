@@ -727,9 +727,13 @@ const Cobrancas = () => {
 
   const saveReminderTime = async (hour: number, minute: number, auto: boolean) => {
     if (!user) return;
-    await supabase.from("settings").update({
+    const { error } = await supabase.from("settings").update({
       bot_send_hour: hour, bot_send_minute: minute, bot_auto_send: auto,
     }).eq("user_id", user.id);
+    if (error) {
+      toast({ title: "Não foi possível atualizar os lembretes", description: error.message, variant: "destructive" });
+      return;
+    }
     await refetchSettings();
     toast({ title: "✓ Lembretes atualizados" });
   };
