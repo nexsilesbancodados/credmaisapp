@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import {
   QrCode,
@@ -94,8 +94,16 @@ const QRCodePage = () => {
   const handleDownload = () => {
     if (!qrRef.current) return;
     try {
+      const source = qrRef.current;
+      const output = document.createElement("canvas");
+      output.width = size;
+      output.height = size;
+      const context = output.getContext("2d");
+      if (!context) throw new Error("canvas");
+      context.imageSmoothingEnabled = false;
+      context.drawImage(source, 0, 0, size, size);
       const a = document.createElement("a");
-      a.href = qrRef.current.toDataURL("image/png");
+      a.href = output.toDataURL("image/png");
       a.download = `qrcode-${size}.png`;
       document.body.appendChild(a);
       a.click();
@@ -141,11 +149,11 @@ const QRCodePage = () => {
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-10 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg shadow-primary/30">
               <QrCode size={26} className="text-primary-foreground" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/60 backdrop-blur-sm border border-border/50 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                 <Sparkles size={11} className="text-primary" />
                 QR Studio
@@ -229,7 +237,7 @@ const QRCodePage = () => {
               URL Personalizada
             </p>
             <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="flex items-center gap-2 flex-1 px-3.5 py-2.5 rounded-xl bg-muted/40 border border-border/50 focus-within:border-primary/40 focus-within:bg-muted/60 transition-colors">
                   <Link2 size={15} className="text-muted-foreground shrink-0" />
                   <input
@@ -237,13 +245,14 @@ const QRCodePage = () => {
                     onChange={(e) => setInputUrl(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && inputUrl && setUrl(inputUrl)}
                     placeholder="https://exemplo.com/pagina"
-                    className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    aria-label="URL para gerar o QR Code"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
                   />
                 </div>
                 <button
                   onClick={() => inputUrl && setUrl(inputUrl)}
                   disabled={!inputUrl}
-                  className="px-5 py-2.5 rounded-xl text-sm font-bold text-primary-foreground shrink-0 disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  className="w-full px-5 py-2.5 rounded-xl text-sm font-bold text-primary-foreground disabled:opacity-40 transition-all hover:shadow-lg hover:shadow-primary/30 sm:w-auto"
                   style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}
                 >
                   Gerar

@@ -15,7 +15,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BusinessHoursCard } from "@/components/whatsapp/BusinessHoursCard";
-import { WhatsAppInstancesCard } from "@/components/whatsapp/WhatsAppInstancesCard";
 
 const WhatsAppConfig = () => {
   const { user } = useAuth();
@@ -25,10 +24,6 @@ const WhatsAppConfig = () => {
   const [status, setStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
   const [instanceData, setInstanceData] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
-
-  // Pre-populated data from user
-  const EVOLUTION_URL = "https://credmiasapp-evolution-api.fqr8ne.easypanel.host/";
-  const EVOLUTION_KEY = "429683C4C977415CAAFCCE10F7D57E11";
 
   useEffect(() => {
     if (user) {
@@ -87,39 +82,14 @@ const WhatsAppConfig = () => {
   }, [qrCode, status, settings?.whatsapp_instance]);
 
   const fetchSettings = async () => {
-    let { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from("settings_safe")
       .select("*")
       .eq("user_id", user!.id)
       .maybeSingle();
-
-    // Ensure defaults exist (URL/instance via direct update; API key via edge function)
-    const needsCreds = !data || !data.whatsapp_api_url || !data.whatsapp_api_key_configured;
-    if (needsCreds) {
-      const baseDefaults = {
-        user_id: user!.id,
-        whatsapp_api_url: EVOLUTION_URL,
-        whatsapp_instance: data?.whatsapp_instance || `instancia-${user!.id.split("-")[0]}`,
-      };
-      const { error: upErr } = await supabase
-        .from("settings")
-        .upsert(baseDefaults, { onConflict: "user_id" });
-      if (upErr) {
-        toast({ title: "Erro ao inicializar configurações", description: upErr.message, variant: "destructive" });
-        return;
-      }
-
-      // Set the API key via dedicated edge function (column is server-only)
-      if (!data?.whatsapp_api_key_configured) {
-        await supabase.functions.invoke("settings-set-secret", {
-          body: { whatsapp_api_key: EVOLUTION_KEY },
-        });
-      }
-
-      // Re-fetch the safe view
-      const { data: refreshed } = await (supabase as any)
-        .from("settings_safe").select("*").eq("user_id", user!.id).single();
-      data = refreshed;
+    if (error) {
+      toast({ ...friendlyError(error, "Não foi possível carregar as configurações."), variant: "destructive" });
+      return;
     }
 
     setSettings(data);
@@ -136,8 +106,10 @@ const WhatsAppConfig = () => {
     
     if (error) {
       toast({ ...friendlyError(error, "Não foi possível salvar as configurações."), variant: "destructive" });
+      return false;
     } else {
       setSettings((prev: any) => ({ ...prev, ...updates }));
+      return true;
     }
   };
 
@@ -167,19 +139,18 @@ const WhatsAppConfig = () => {
   };
 
   const handleCreateInstance = async () => {
+    if (!settings?.whatsapp_api_url || !settings?.whatsapp_api_key_configured) {
+      toast({
+        title: "Credenciais não configuradas",
+        description: "Informe a URL e a chave da Evolution API em Configurações → WhatsApp antes de conectar.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     try {
-      // First ensure the settings have the URL and Key
       const instanceName = settings?.whatsapp_instance || `instancia-${user!.id.split("-")[0]}`;
-      
-      await updateSettings({
-        whatsapp_api_url: EVOLUTION_URL,
-        whatsapp_instance: instanceName,
-      });
-      // API key is stored server-side via dedicated edge function
-      await supabase.functions.invoke("settings-set-secret", {
-        body: { whatsapp_api_key: EVOLUTION_KEY },
-      });
+      if (!(await updateSettings({ whatsapp_instance: instanceName }))) return;
 
       const { data, error } = await supabase.functions.invoke("evolution-api", {
         body: { action: "createInstance", instanceName }
@@ -214,10 +185,9 @@ const WhatsAppConfig = () => {
         setStatus("connected");
         toast({ title: "Conectado!", description: "WhatsApp pronto para uso." });
       } else {
-        console.warn("No QR code or open status in response", data);
+        throw new Error("A API não retornou um QR Code válido. Tente novamente.");
       }
     } catch (err: any) {
-      console.error("Connection error:", err);
       toast({ title: "Erro de conexão", description: err.message, variant: "destructive" });
       setStatus("disconnected");
     }
@@ -274,11 +244,11 @@ const WhatsAppConfig = () => {
         <div className="absolute -bottom-20 -left-16 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
         <div className="relative flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_30px_rgb(16_185_129/0.25)]">
               <MessageCircle size={24} className="text-emerald-500" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium">Integração</p>
               <h1 className="text-display text-2xl md:text-3xl font-bold text-foreground tracking-tight">WhatsApp Business</h1>
               <p className="text-xs text-muted-foreground mt-1">Conecte sua conta via Evolution API e ative o agente SDR.</p>
@@ -327,7 +297,7 @@ const WhatsAppConfig = () => {
                   <h4 className="font-medium">Nenhuma instância ativa</h4>
                   <p className="text-sm text-muted-foreground mt-1">Clique abaixo para criar e gerar o QR Code.</p>
                 </div>
-                <Button onClick={handleCreateInstance} disabled={loading} className="btn-premium">
+                <Button onClick={handleCreateInstance} disabled={loading || !settings} className="btn-premium">
                   {loading ? <Loader2 className="animate-spin mr-2" size={16} /> : <Zap size={16} className="mr-2" />}
                   Gerar QR Code de Conexão
                 </Button>
@@ -337,7 +307,7 @@ const WhatsAppConfig = () => {
             {qrCode && status !== "connected" && (
               <div className="py-4 text-center space-y-4">
                 <div className="p-4 bg-white rounded-2xl inline-block shadow-xl border-4 border-primary/20">
-                  <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
+                  <img src={qrCode} alt="WhatsApp QR Code" className="h-auto w-full max-w-64" />
                 </div>
                 <div className="max-w-xs mx-auto">
                   <p className="text-sm font-medium">Aponte a câmera do seu WhatsApp</p>
@@ -364,7 +334,7 @@ const WhatsAppConfig = () => {
                   <h4 className="font-bold text-lg">Bot de WhatsApp Ativo</h4>
                   <p className="text-sm text-muted-foreground mt-1">Sua instância <span className="text-primary font-mono">{settings?.whatsapp_instance}</span> está pronta.</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+                <div className="grid grid-cols-1 gap-3 max-w-sm mx-auto sm:grid-cols-2">
                   <div className="p-3 rounded-xl bg-muted/30 text-left">
                     <p className="text-[10px] text-muted-foreground uppercase font-bold">Instância</p>
                     <p className="text-sm font-medium truncate">{settings?.whatsapp_instance}</p>
@@ -447,8 +417,8 @@ const WhatsAppConfig = () => {
               Após conectar, o bot monitorará as mensagens recebidas. Ele pode transcrever áudios, identificar pagamentos via comprovante e responder dúvidas básicas de seus clientes usando inteligência artificial avançada.
             </p>
           </div>
-          <Button variant="outline" className="rounded-xl border-primary/30 text-primary hover:bg-primary/5">
-            Ver Tutorial
+          <Button asChild variant="outline" className="rounded-xl border-primary/30 text-primary hover:bg-primary/5">
+            <a href="https://doc.evolution-api.com/" target="_blank" rel="noreferrer">Ver documentação</a>
           </Button>
         </div>
       </Card>
