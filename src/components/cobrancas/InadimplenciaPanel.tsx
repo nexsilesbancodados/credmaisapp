@@ -191,7 +191,7 @@ const InadimplenciaPanel = () => {
       </div>
 
       {/* Aging buckets */}
-      <Card className="p-5">
+      <Card className="collection-analysis-card p-5">
         <h2 className="font-semibold mb-4 flex items-center gap-2">
           <Clock size={16} className="text-primary" /> Aging — distribuição por dias de atraso
         </h2>
@@ -220,7 +220,7 @@ const InadimplenciaPanel = () => {
       </Card>
 
       {/* Top devedores */}
-      <Card className="p-5">
+      <Card className="collection-analysis-card p-5">
         <h2 className="font-semibold mb-4 flex items-center gap-2">
           <Users size={16} className="text-primary" /> Top devedores
         </h2>

@@ -68,15 +68,15 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
         </button>
       </div>
 
-      <div className="bg-card border border-border rounded-2xl p-3 overflow-x-auto">
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 min-w-[560px]">
+      <div className="collection-calendar bg-card border border-border rounded-2xl p-3">
+        <div className="collection-calendar-weekdays grid grid-cols-7 gap-1 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-            <div key={d} className="py-1">{d}</div>
+            <div key={d} className="py-1"><span className="sm:hidden">{d.slice(0, 1)}</span><span className="hidden sm:inline">{d}</span></div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1 min-w-[560px]">
+        <div className="collection-calendar-grid grid grid-cols-7 gap-1">
           {days.map((d, idx) => {
-            if (!d) return <div key={idx} className="h-20 rounded-lg bg-muted/10" />;
+            if (!d) return <div key={idx} className="collection-calendar-day h-20 rounded-lg bg-muted/10" />;
             const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             const items = byDay.get(key) || [];
             // Vencidas e em aberto pela regra do painel: contar por status
@@ -92,7 +92,7 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
               <button
                 key={idx}
                 onClick={() => setSelectedDay(items.length > 0 ? key : null)}
-                className={`h-20 rounded-lg border p-1.5 text-left transition-all focus-ring ${
+                className={`collection-calendar-day h-20 min-w-0 overflow-hidden rounded-lg border p-1.5 text-left transition-all focus-ring ${
                   isSelected
                     ? "border-primary ring-1 ring-primary/30 bg-primary/5"
                     : isToday
@@ -106,7 +106,7 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
                   {d.getDate()}
                 </div>
                 {items.length > 0 && (
-                  <div className="space-y-0.5">
+                  <div className="collection-calendar-counts space-y-0.5">
                     {overdueCount > 0 && (
                       <div className="text-[9px] px-1 rounded bg-destructive/15 text-destructive font-semibold">
                         {overdueCount} atras.
@@ -122,7 +122,7 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
                         {paidCount} pagas
                       </div>
                     )}
-                    <div className="text-[9px] text-muted-foreground truncate">R$ {fmt(total)}</div>
+                    <div className="collection-calendar-total text-[9px] text-muted-foreground truncate">R$ {fmt(total)}</div>
                   </div>
                 )}
               </button>
@@ -133,7 +133,7 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
 
       {selectedDay && selectedItems.length > 0 && (
         <div className="bg-card border border-border rounded-2xl p-4 animate-fade-in">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-3">
             <h4 className="text-sm font-semibold text-foreground">
               Parcelas — {formatBR(selectedItems[0].due_date)}
             </h4>
