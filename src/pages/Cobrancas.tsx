@@ -282,27 +282,32 @@ const Cobrancas = () => {
 
     const isFull = value + 0.005 >= remaining;
 
-    setConfirmPayId(null);
-
     if (isFull) {
       const snapshot = optimisticMarkPaid([id]);
-      toast({ title: "✓ Parcela quitada!" });
       try {
         await markPaidOne(inst, alreadyPaid + value, waiveFee);
+        setConfirmPayId(null);
         qc.invalidateQueries({ queryKey: ["cobrancas-installments"] });
         qc.invalidateQueries({ queryKey: ["dashboard-data"] });
+        toast({
+          title: waiveFee ? "✓ Parcela quitada sem encargos" : "✓ Parcela quitada!",
+          description: waiveFee ? `Foram perdoados R$ ${fmt(Math.max(0, withFees - base))} de multa/juros.` : undefined,
+        });
       } catch (e: any) {
         qc.setQueryData(["cobrancas-installments", user?.id], snapshot);
-        toast({ title: "Erro ao registrar pagamento", description: e.message, variant: "destructive" });
+        toast({ title: waiveFee ? "Não foi possível aplicar o desconto" : "Erro ao registrar pagamento", description: e.message, variant: "destructive" });
+        throw e;
       }
     } else {
       try {
         await markPaidPartial(inst, value);
+        setConfirmPayId(null);
         qc.invalidateQueries({ queryKey: ["cobrancas-installments"] });
         qc.invalidateQueries({ queryKey: ["dashboard-data"] });
         toast({ title: "✓ Pagamento parcial registrado", description: `Restam R$ ${fmt(remaining - value)}` });
       } catch (e: any) {
         toast({ title: "Erro ao registrar pagamento parcial", description: e.message, variant: "destructive" });
+        throw e;
       }
     }
   };

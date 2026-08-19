@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { ModalPortal } from "@/components/ui/modal-portal";
-import { CheckCircle, CalendarDays, AlertTriangle } from "lucide-react";
+import { CheckCircle, CalendarDays, AlertTriangle, Loader2 } from "lucide-react";
 import { formatBR } from "@/lib/dateUtils";
 import type { LateFeeBreakdown } from "@/lib/lateFee";
 import { interestOnlyAmount } from "@/lib/interestOnly";
@@ -14,12 +14,13 @@ interface Props {
   remaining: number;
   daysLate: number;
   onCancel: () => void;
-  onConfirm: (value: number, waiveFee?: boolean) => void;
+  onConfirm: (value: number, waiveFee?: boolean) => void | Promise<void>;
 }
 
 const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onConfirm }: Props) => {
   const [mode, setMode] = useState<"full" | "partial" | "interest_only" | "no_fee">("full");
   const [raw, setRaw] = useState<string>(remaining.toFixed(2).replace(".", ","));
+  const [saving, setSaving] = useState(false);
 
   const value = useMemo(() => {
     const n = Number(String(raw).replace(/\./g, "").replace(",", "."));
@@ -43,6 +44,16 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
 
 
   const restAfter = Math.max(0, Math.round((remaining - finalValue) * 100) / 100);
+
+  const confirm = async () => {
+    if (saving || finalValue <= 0) return;
+    setSaving(true);
+    try {
+      await onConfirm(finalValue, mode === "no_fee");
+    } finally {
+      setSaving(false);
+    }
+  };
 
 
   return (
@@ -199,13 +210,14 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
         )}
 
         <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-2xl border border-border text-sm text-muted-foreground hover:bg-accent transition-colors">Cancelar</button>
+          <button disabled={saving} onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-2xl border border-border text-sm text-muted-foreground hover:bg-accent transition-colors disabled:opacity-50">Cancelar</button>
           <button
-            onClick={() => onConfirm(finalValue, mode === "no_fee")}
-            disabled={finalValue <= 0}
-            className="flex-1 px-4 py-3.5 rounded-xl text-sm font-bold bg-success text-success-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+            onClick={confirm}
+            disabled={saving || finalValue <= 0}
+            className="flex-1 px-4 py-3.5 rounded-xl text-sm font-bold bg-success text-success-foreground hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] inline-flex items-center justify-center gap-2"
           >
-            Confirmar R$ {fmt(finalValue)}
+            {saving && <Loader2 size={15} className="animate-spin" />}
+            {saving ? "Registrando..." : `Confirmar R$ ${fmt(finalValue)}`}
           </button>
         </div>
       </div>
