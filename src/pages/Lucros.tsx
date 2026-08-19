@@ -79,7 +79,7 @@ const Lucros = () => {
 
   const handleEdit = (p: any) => {
     setDesc(p.description); setAmount(String(p.amount));
-    setDate(new Date(p.date).toISOString().slice(0, 10));
+    setDate(String(p.date || "").slice(0, 10));
     setEditingId(p.id); setShowForm(true);
   };
 
@@ -290,27 +290,32 @@ const Lucros = () => {
 
   const activeFilterCount = (timeFilter !== "all" ? 1 : 0) + (sourceFilter !== "all" ? 1 : 0) + (sortKey !== "date_desc" ? 1 : 0);
 
+  // Evita ações em massa sobre itens que deixaram de estar visíveis após uma
+  // busca ou troca de filtro.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [debouncedSearch, timeFilter, sourceFilter, sortKey]);
+
   const bestMonth = monthlyData.reduce((best, m) => (m.amount > best.amount ? m : best), monthlyData[0] || { month: "-", amount: 0 });
   const avgMonthly = monthlyData.reduce((s, m) => s + m.amount, 0) / (monthlyData.length || 1);
   const progressToBest = bestMonth.amount > 0 ? (currentMonthTotal / bestMonth.amount) * 100 : 0;
 
   return (
-    <div className="space-y-5 animate-fade-in pb-24">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in pb-24">
       {/* HERO Premium */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-success/10 via-card to-card p-6 md:p-8">
-        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-success/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/65 p-4 sm:p-6 shadow-[0_18px_50px_-40px_rgba(0,0,0,.9)] backdrop-blur-xl">
+        <div className="absolute -top-24 -right-16 w-64 h-64 rounded-full bg-success/[.07] blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-success/20 border border-success/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--success)/0.25)]">
+          <div className="min-w-0 flex items-start gap-3 sm:gap-4">
+            <div className="hidden sm:flex w-11 h-11 rounded-xl bg-success/15 border border-success/20 items-center justify-center">
               <TrendingUp size={26} className="text-success" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Lucros</p>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Total Acumulado</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Total acumulado</h1>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl md:text-5xl font-bold text-success tracking-tight tabular-nums">R$ {fmt(totalAll)}</span>
+                <span className="max-w-full text-3xl sm:text-4xl font-bold text-success tracking-tight tabular-nums break-words">R$ {fmt(totalAll)}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="flex items-center gap-1"><Sparkles size={12} className="text-success" /> {profits.length} lançamento(s)</span>
@@ -321,13 +326,13 @@ const Lucros = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 lg:w-auto">
             {filtered.length > 0 && (
-              <button onClick={handleExportCSV} className="btn-ghost">
+              <button onClick={handleExportCSV} className="btn-ghost justify-center">
                 <Download size={14} /> CSV
               </button>
             )}
-            <button onClick={() => { resetForm(); setShowForm(true); }} className="btn-premium">
+            <button onClick={() => { resetForm(); setShowForm(true); }} className="btn-premium justify-center">
               <Plus size={16} /> Novo Lucro
             </button>
           </div>
@@ -335,7 +340,7 @@ const Lucros = () => {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 stagger-fade-in">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 stagger-fade-in">
         {[
           { icon: Calendar, label: "Este Mês", value: currentMonthTotal, color: "text-success", bg: "bg-success/10", ring: "border-success/20",
             delta: prevMonthTotal > 0 ? Number(monthlyChange) : null, hint: "vs mês anterior" },
@@ -346,7 +351,7 @@ const Lucros = () => {
           { icon: Trophy, label: "Melhor Mês", value: bestMonth.amount, color: "text-warning", bg: "bg-warning/10", ring: "border-warning/20",
             hint: bestMonth.month || "-" },
         ].map((s, idx) => (
-          <div key={s.label} className={`rounded-2xl border ${s.ring} bg-card p-4 card-shine hover:border-primary/30 transition-colors`} style={{ animationDelay: `${idx * 60}ms` }}>
+          <div key={s.label} className={`min-w-0 rounded-xl border ${s.ring} bg-card/60 p-3 sm:p-4 hover:border-primary/30 transition-colors`} style={{ animationDelay: `${idx * 60}ms` }}>
             <div className="flex items-center justify-between mb-2">
               <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center`}>
                 <s.icon size={15} className={s.color} />
@@ -358,7 +363,7 @@ const Lucros = () => {
               )}
             </div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
-            <p className={`text-xl font-bold mt-0.5 tabular-nums ${s.color}`}>R$ {fmt(s.value)}</p>
+            <p className={`text-base sm:text-lg font-bold mt-1 leading-tight tabular-nums break-words ${s.color}`}>R$ {fmt(s.value)}</p>
             <p className="text-[10px] text-muted-foreground mt-0.5">{s.hint}</p>
           </div>
         ))}
@@ -465,14 +470,14 @@ const Lucros = () => {
             <div className="h-full bg-success transition-all duration-700" style={{ width: `${total > 0 ? (opTotal/total)*100 : 0}%` }} />
             <div className="h-full bg-primary transition-all duration-700" style={{ width: `${total > 0 ? (manualTotal/total)*100 : 0}%` }} />
           </div>
-          <div className="grid grid-cols-2 gap-3 text-[11px]">
-            <div className="flex items-center gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-[11px]">
+            <div className="flex min-w-0 items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-success" />
               <span className="text-muted-foreground">Operacional</span>
               <span className="ml-auto font-semibold text-foreground tabular-nums">R$ {fmt(opTotal)}</span>
               <span className="text-[10px] text-muted-foreground">({total > 0 ? ((opTotal/total)*100).toFixed(0) : 0}%)</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex min-w-0 items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-primary" />
               <span className="text-muted-foreground">Manual</span>
               <span className="ml-auto font-semibold text-foreground tabular-nums">R$ {fmt(manualTotal)}</span>
@@ -606,7 +611,7 @@ const Lucros = () => {
                   {items.map((p: any) => {
                     const isSel = selected.has(p.id);
                     return (
-                      <div key={p.id} className={`flex items-center gap-3 px-4 py-3 group transition-colors ${isSel ? "bg-primary/5" : "hover:bg-accent/20"}`}>
+                      <div key={p.id} className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-x-2.5 sm:gap-x-3 gap-y-2 px-3 sm:px-4 py-3 group transition-colors ${isSel ? "bg-primary/5" : "hover:bg-accent/20"}`}>
                         <button onClick={() => toggleOne(p.id)} className="shrink-0 text-muted-foreground hover:text-primary">
                           {isSel ? <CheckSquare size={16} className="text-primary"/> : <Square size={16}/>}
                         </button>
@@ -624,10 +629,10 @@ const Lucros = () => {
                             {formatBR(p.date, { day: "2-digit", month: "long", year: "numeric" })}
                           </p>
                         </div>
-                        <span className="text-sm font-bold text-success shrink-0">+R$ {fmt(Number(p.amount))}</span>
+                        <span className="col-span-2 sm:col-span-1 col-start-3 sm:col-start-auto text-sm font-bold text-success whitespace-nowrap">+R$ {fmt(Number(p.amount))}</span>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 opacity-0 group-hover:opacity-100 transition-all">
+                            <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/50 sm:opacity-0 sm:group-hover:opacity-100 transition-all" aria-label={`Ações para ${p.description}`}>
                               <MoreVertical size={14} />
                             </button>
                           </DropdownMenuTrigger>
@@ -653,7 +658,7 @@ const Lucros = () => {
 
       {/* Sticky bulk bar */}
       {selected.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl bg-popover border border-border shadow-2xl animate-fade-in">
+        <div className="fixed bottom-3 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-2xl bg-popover border border-border shadow-2xl animate-fade-in">
           <span className="text-xs font-semibold text-foreground">{selected.size} selecionado(s)</span>
           <span className="text-xs text-success font-bold">R$ {fmt(selectedTotal)}</span>
           <div className="h-5 w-px bg-border" />
