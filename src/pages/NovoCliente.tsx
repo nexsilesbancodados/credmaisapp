@@ -803,7 +803,7 @@ const NovoCliente = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-10">
+    <div className="mx-auto max-w-3xl space-y-5 pb-10 md:space-y-6">
       {/* Header */}
       <div className="page-hero animate-fade-in">
         {/* `flex-wrap`: numa tela de 360px o botão Express disputava a linha com
@@ -829,7 +829,7 @@ const NovoCliente = () => {
             <User size={22} />
           </div>
           <div className="flex-1 min-w-[9rem]">
-            <h1 className="text-lg sm:text-xl font-bold text-shimmer">
+            <h1 className="text-lg font-bold text-foreground sm:text-xl">
               {isNewContractOnly ? `Novo Contrato${existingClient?.name ? ` — ${existingClient.name}` : ""}` : "Cadastrar Novo Cliente"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -842,7 +842,7 @@ const NovoCliente = () => {
             <button
               type="button"
               onClick={() => setExpressMode(!expressMode)}
-              className={`flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors sm:w-auto sm:justify-start ${expressMode ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
+              className={`flex w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors sm:w-auto sm:justify-start ${expressMode ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}
               title="Reduz o formulário aos campos essenciais"
             >
               ⚡ {expressMode ? "Express ON" : "Modo Express"}
@@ -882,7 +882,7 @@ const NovoCliente = () => {
       {step === 1 && (
         <div className="space-y-6">
           {/* Identificação */}
-          <section className="rounded-2xl border border-border bg-card/50 p-6 space-y-4">
+          <section className="space-y-4 rounded-2xl border border-border/50 bg-card/45 p-4 sm:p-6">
             <div className="flex items-center gap-2.5 mb-1">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <User size={16} className="text-primary" />
@@ -894,7 +894,7 @@ const NovoCliente = () => {
                 <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground bg-muted/30 overflow-hidden">
                   {avatarPreview ? <img src={avatarPreview} alt="" className="w-16 h-16 object-cover" /> : <User size={24} />}
                 </div>
-                <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform" style={{ background: "var(--gradient-button)" }}>
+                <label className="absolute -bottom-1 -right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg bg-primary">
                   <Camera size={12} className="text-primary-foreground" />
                   <input type="file" accept="image/*" onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -926,7 +926,7 @@ const NovoCliente = () => {
           </section>
 
           {/* Contato */}
-          <section className="rounded-2xl border border-border bg-card/50 p-6 space-y-4">
+          <section className="space-y-4 rounded-2xl border border-border/50 bg-card/45 p-4 sm:p-6">
             <div className="flex items-center gap-2.5 mb-1">
               <div className="w-8 h-8 rounded-lg bg-info/10 flex items-center justify-center">
                 <Phone size={16} className="text-info" />
@@ -959,7 +959,7 @@ const NovoCliente = () => {
           </section>
 
           {/* Endereço */}
-          <section className="rounded-2xl border border-border bg-card/50 p-6 space-y-4">
+          <section className="space-y-4 rounded-2xl border border-border/50 bg-card/45 p-4 sm:p-6">
             <div className="flex items-center gap-2.5 mb-1">
               <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
                 <MapPin size={16} className="text-warning" />
@@ -972,7 +972,7 @@ const NovoCliente = () => {
                 <label className="text-xs font-semibold text-foreground mb-1.5 block">CEP</label>
                 <input type="text" placeholder="00000-000" value={cep} onChange={(e) => handleCepChange(e.target.value)} className={INPUT} inputMode="numeric" />
               </div>
-              <button onClick={() => buscarCep()} disabled={cepLoading} className="self-end px-4 py-2.5 rounded-2xl bg-accent border border-border text-foreground hover:bg-accent/70 transition-all disabled:opacity-50">
+              <button onClick={() => buscarCep()} disabled={cepLoading} className="self-end rounded-xl border border-border bg-accent px-4 py-2.5 text-foreground transition-colors hover:bg-accent/70 disabled:opacity-50">
                 {cepLoading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
               </button>
             </div>
@@ -1026,9 +1026,8 @@ const NovoCliente = () => {
           {/* Modo & Frequência */}
           {/* Duplicate from previous */}
           {pastContracts.length > 0 && (
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-card/80 to-card/30 backdrop-blur-xl p-5">
-              <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl bg-primary/10" />
-              <div className="relative flex items-center gap-2.5 mb-4">
+            <div className="rounded-2xl border border-white/[.08] bg-card/45 p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
                   <History size={14} className="text-primary" />
                 </div>
@@ -1037,12 +1036,12 @@ const NovoCliente = () => {
                   <p className="text-[10px] text-muted-foreground">Clique para replicar os termos</p>
                 </div>
               </div>
-              <div className="relative flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+              <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
                 {pastContracts.map((c: any) => (
                   <button
                     key={c.id}
                     onClick={() => duplicateFrom(c)}
-                    className="group shrink-0 text-left px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] hover:border-primary/50 hover:bg-primary/10 hover:-translate-y-0.5 transition-all duration-200"
+                    className="group shrink-0 rounded-xl border border-white/[.08] bg-white/[0.025] px-3.5 py-2.5 text-left transition-colors hover:border-primary/35 hover:bg-primary/[.06]"
                   >
                     <p className="text-[11px] font-bold text-foreground truncate max-w-[150px] group-hover:text-primary transition-colors">{(c.clients as any)?.name || "—"}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">R$ {Number(c.capital).toLocaleString("pt-BR")} · {c.num_installments}x · {c.interest_rate}%</p>
@@ -1055,7 +1054,7 @@ const NovoCliente = () => {
 
 
           {/* Loan Mode */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="space-y-4 rounded-2xl border border-white/[.08] bg-card/45 p-4 sm:p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
@@ -1096,8 +1095,7 @@ const NovoCliente = () => {
                       setLoanMode(m.v);
                       setValueMode(m.v === "installments" ? "installment" : "rate");
                     }}
-                      className={`group relative overflow-hidden flex items-start gap-2.5 p-3.5 rounded-2xl border-2 transition-all duration-200 text-left ${active ? "border-primary bg-primary/10 shadow-lg shadow-primary/10 -translate-y-0.5" : "border-white/10 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/5"}`}>
-                      {active && <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />}
+                      className={`group flex items-start gap-2.5 rounded-xl border p-3.5 text-left transition-colors ${active ? "border-primary/45 bg-primary/[.07]" : "border-white/[.08] bg-white/[0.02] hover:border-primary/30 hover:bg-primary/[.04]"}`}>
                       <div className={`relative w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all ${active ? "bg-primary/25 border border-primary/40" : "bg-muted/40 border border-white/5 group-hover:bg-primary/10"}`}>
                         <m.Icon size={16} className={active ? "text-primary" : "text-muted-foreground group-hover:text-primary"} />
                       </div>
@@ -1134,7 +1132,7 @@ const NovoCliente = () => {
 
 
           {/* Frequency */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="space-y-4 rounded-2xl border border-white/[.08] bg-card/45 p-4 sm:p-5">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
                 <Repeat size={14} className="text-primary" />
@@ -1155,8 +1153,7 @@ const NovoCliente = () => {
                 const active = frequency === f.v;
                 return (
                   <button key={f.v} onClick={() => setFrequency(f.v)}
-                    className={`group relative overflow-hidden flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 transition-all duration-200 ${active ? "border-primary bg-primary/10 shadow-lg shadow-primary/10 -translate-y-0.5" : "border-white/10 bg-white/[0.02] hover:border-primary/40 hover:bg-primary/5"}`}>
-                    {active && <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />}
+                    className={`group flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-colors ${active ? "border-primary/45 bg-primary/[.07]" : "border-white/[.08] bg-white/[0.02] hover:border-primary/30 hover:bg-primary/[.04]"}`}>
                     <div className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-all ${active ? "bg-primary/25 border border-primary/40" : "bg-muted/40 border border-white/5 group-hover:bg-primary/10"}`}>
                       <f.Icon size={16} className={active ? "text-primary" : "text-muted-foreground group-hover:text-primary"} />
                     </div>
@@ -1175,7 +1172,7 @@ const NovoCliente = () => {
                   const active = dailyMode === d.v;
                   return (
                     <button key={d.v} onClick={() => setDailyMode(d.v)}
-                      className={`p-2.5 rounded-xl border-2 text-xs font-bold transition-all ${active ? "border-primary bg-primary/15 text-primary shadow-md shadow-primary/10" : "border-white/10 bg-white/[0.02] text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}>
+                      className={`rounded-xl border p-2.5 text-xs font-bold transition-colors ${active ? "border-primary/45 bg-primary/[.08] text-primary" : "border-white/[.08] bg-white/[0.02] text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}>
                       {d.label}
                     </button>
                   );
@@ -1185,16 +1182,12 @@ const NovoCliente = () => {
           </div>
 
           {/* Valores & Datas */}
-          {/* Values — Metallic glow */}
-          <div className="relative overflow-hidden bg-card/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-8 space-y-8 shadow-2xl">
-            {/* Metallic radial background */}
-            <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[100px] bg-primary/10" />
-            <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 w-64 h-64 rounded-full blur-[100px] bg-blue-500/10" />
+          <div className="space-y-7 rounded-2xl border border-white/[.08] bg-card/45 p-4 sm:p-6">
 
             {/* Header */}
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
               <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-foreground tracking-tight font-display">Valores</h2>
+                <h2 className="text-xl font-bold tracking-tight text-foreground font-display">Valores e condições</h2>
                 <span className="block text-[10px] font-medium text-muted-foreground uppercase tracking-[0.2em]">
                   {loanMode === "installments" && "Capital • Parcela • Prazo"}
                   {loanMode === "percentage" && "Capital • Taxa"}
@@ -1205,7 +1198,7 @@ const NovoCliente = () => {
               </div>
             </div>
 
-            <div className="relative z-10 space-y-8">
+            <div className="space-y-7">
               {/* Capital em destaque */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-foreground/90 ml-1">
@@ -1219,7 +1212,7 @@ const NovoCliente = () => {
                     onChange={(e) => handleCapitalChange(e.target.value)}
                     onBlur={() => markTouched("capital")}
                     placeholder="0,00"
-                    className={`w-full bg-white/5 border rounded-2xl py-5 pl-16 pr-6 text-3xl font-bold text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all font-display ${touched.capital && loanErrors.capital ? "border-destructive/60" : "border-white/10"}`}
+                    className={`w-full rounded-xl border bg-white/[.035] py-4 pl-16 pr-6 text-2xl font-bold text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 font-display sm:text-3xl ${touched.capital && loanErrors.capital ? "border-destructive/60" : "border-white/10"}`}
                     inputMode="numeric"
                     aria-invalid={!!(touched.capital && loanErrors.capital)}
                   />
@@ -1227,7 +1220,7 @@ const NovoCliente = () => {
                 <div className="flex flex-wrap gap-2">
                   {[500, 1000, 2000, 5000, 10000, 20000].map(v => (
                     <button key={v} type="button" onClick={() => { handleCapitalChange(String(v * 100)); markTouched("capital"); }}
-                      className={`px-4 py-2 rounded-lg border text-xs font-medium transition-all ${capital === String(v) ? "bg-primary/15 border-primary/30 text-primary" : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10 hover:border-white/20 hover:text-foreground"}`}>
+                      className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors sm:px-4 ${capital === String(v) ? "bg-primary/15 border-primary/30 text-primary" : "bg-white/[.035] border-white/[.07] text-muted-foreground hover:bg-white/[.07] hover:text-foreground"}`}>
                       R$ {v >= 1000 ? `${v / 1000}k` : v}
                     </button>
                   ))}
@@ -1698,8 +1691,8 @@ const NovoCliente = () => {
 
       {/* Sticky live summary on step 2 */}
       {step === 2 && calc && parseFloat(capital) > 0 && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-20 z-20 hidden md:block">
-          <div className="flex items-center gap-4 px-5 py-3 rounded-2xl bg-card/95 backdrop-blur border border-border shadow-lg shadow-primary/10">
+        <div className="fixed bottom-24 left-1/2 z-20 hidden -translate-x-1/2 md:block">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-card/95 px-5 py-3 backdrop-blur">
             <div className="text-center">
               <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Parcela</p>
               <p className="text-sm font-bold text-foreground">R$ {fmt(calc.installmentAmount)}</p>
@@ -1727,7 +1720,7 @@ const NovoCliente = () => {
       {/* ═══ STEP 3: REVIEW ═══ */}
       {step === 3 && calc && (
         <div className="space-y-4">
-          <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
+          <div className="space-y-5 rounded-2xl border border-border/50 bg-card/45 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
               <FileText size={18} className="text-primary" /> Revisão Final
             </h2>
@@ -1797,7 +1790,7 @@ const NovoCliente = () => {
       )}
 
       {/* ═══ NAV BAR ═══ */}
-      <div className="sticky bottom-4 z-10 flex items-center justify-between p-4 rounded-2xl bg-card/95 backdrop-blur border border-border">
+      <div className="sticky bottom-3 z-10 flex items-center justify-between gap-2 rounded-2xl border border-border bg-card/95 p-3 backdrop-blur sm:p-4">
         <button
           onClick={() => {
             if (isNewContractOnly) {
@@ -1808,21 +1801,19 @@ const NovoCliente = () => {
               else navigate("/clientes");
             }
           }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:px-4"
         >
           <ArrowLeft size={16} />{" "}
           {isNewContractOnly ? (step > 2 ? "Voltar" : "Cancelar") : step > 1 ? "Voltar" : "Cancelar"}
         </button>
         {step < 3 ? (
           <button onClick={goNext}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground transition-opacity"
-            style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}>
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 sm:px-6">
             Próximo <ArrowRight size={16} />
           </button>
         ) : (
           <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground disabled:opacity-50 transition-opacity"
-            style={{ background: "var(--gradient-button, hsl(var(--primary)))" }}>
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 sm:px-6">
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {saving ? "Criando..." : isNewContractOnly ? "Criar Contrato" : "Criar Cliente e Contrato"}
           </button>
