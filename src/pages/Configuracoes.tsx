@@ -103,7 +103,6 @@ const Configuracoes = () => {
     portal_logo_url: "",
     portal_contact_phone: "",
     portal_contact_email: "",
-    portal_require_birth_date: false,
     custom_contract_template: "",
     modules_enabled: { ...DEFAULT_MODULES } as Record<ModuleKey, boolean>,
   });
@@ -169,7 +168,6 @@ const Configuracoes = () => {
         portal_logo_url: s.portal_logo_url || "",
         portal_contact_phone: s.portal_contact_phone || "",
         portal_contact_email: s.portal_contact_email || "",
-        portal_require_birth_date: !!s.portal_require_birth_date,
         custom_contract_template: s.custom_contract_template || "",
         modules_enabled: { ...DEFAULT_MODULES, ...(s.modules_enabled || {}) },
       }));
@@ -293,7 +291,6 @@ const Configuracoes = () => {
       portal_logo_url: form.portal_logo_url,
       portal_contact_phone: form.portal_contact_phone,
       portal_contact_email: form.portal_contact_email,
-      portal_require_birth_date: form.portal_require_birth_date,
       custom_contract_template: form.custom_contract_template?.trim() || null,
       // Nada de hubla_* aqui: a view `settings_safe` não expõe essas colunas, então
       // o form as lia como "" e o save gravava NULL — apagando o link de checkout

@@ -61,7 +61,6 @@ export interface SettingsForm {
   portal_logo_url: string;
   portal_contact_phone: string;
   portal_contact_email: string;
-  portal_require_birth_date: boolean;
   custom_contract_template: string;
   modules_enabled: Record<ModuleKey, boolean>;
 }

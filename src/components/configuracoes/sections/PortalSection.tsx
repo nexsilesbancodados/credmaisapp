@@ -16,6 +16,18 @@ const PortalSection = ({ ctx }: SectionProps) => {
     uploadingLogo, uploadingFavicon, uploadingPortalLogo,
     notify,
   } = ctx;
+  const portalColor = /^#[0-9a-f]{6}$/i.test(form.portal_primary_color)
+    ? form.portal_primary_color
+    : /^#[0-9a-f]{6}$/i.test(form.primary_color) ? form.primary_color : "#f59e0b";
+
+  const copyPortalLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/portal-cliente`);
+      notify("Link copiado!");
+    } catch {
+      notify("Não foi possível copiar. Selecione o link manualmente.");
+    }
+  };
 
   return (
     <>
@@ -34,11 +46,7 @@ const PortalSection = ({ ctx }: SectionProps) => {
                 <p className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
                   <Zap size={12} /> Link de Acesso ao Portal
                 </p>
-                <button onClick={() => {
-                  const url = `${window.location.origin}/portal-cliente`;
-                  navigator.clipboard.writeText(url);
-                  notify("Link copiado!");
-                }} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
+                <button onClick={() => void copyPortalLink()} className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1">
                   <Copy size={10} /> Copiar Link
                 </button>
               </div>
@@ -55,28 +63,13 @@ const PortalSection = ({ ctx }: SectionProps) => {
               </p>
             </div>
 
-            {/* Segurança do acesso ao portal */}
-            <div className="space-y-2 p-4 rounded-2xl border border-border bg-accent/5">
+            <div className="space-y-2 rounded-2xl border border-success/20 bg-success/5 p-4">
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                <Shield size={12} /> Segurança do acesso
+                <Shield size={12} className="text-success" /> Acesso simplificado
               </p>
               <p className="text-[10px] text-muted-foreground leading-relaxed">
-                Escolha se o cliente também deve confirmar a data de nascimento além do CPF.
+                Seus clientes entram somente com o CPF. O acesso é protegido por limite de tentativas e cada cliente visualiza apenas os próprios dados.
               </p>
-              <label className="flex items-center justify-between gap-4 pt-2 cursor-pointer">
-                <span>
-                  <span className="block text-xs font-medium text-foreground">Exigir data de nascimento</span>
-                  <span className="block text-[10px] text-muted-foreground mt-0.5">
-                    Recomendado para reduzir tentativas de acesso usando apenas um CPF conhecido.
-                  </span>
-                </span>
-                <input
-                  type="checkbox"
-                  checked={form.portal_require_birth_date}
-                  onChange={(e) => setForm({ ...form, portal_require_birth_date: e.target.checked })}
-                  className="h-4 w-4 shrink-0 accent-primary"
-                />
-              </label>
             </div>
 
 
@@ -116,8 +109,8 @@ const PortalSection = ({ ctx }: SectionProps) => {
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Cor Primária do Portal</label>
                   <div className="flex gap-2">
-                    <input type="color" value={form.portal_primary_color || form.primary_color} onChange={(e) => setForm({ ...form, portal_primary_color: e.target.value })} className="h-10 w-10 rounded-lg border border-border bg-transparent cursor-pointer" />
-                    <input value={form.portal_primary_color || form.primary_color} onChange={(e) => setForm({ ...form, portal_primary_color: e.target.value })} className={inputCls} />
+                    <input type="color" value={portalColor} onChange={(e) => setForm({ ...form, portal_primary_color: e.target.value })} aria-label="Cor primária do portal" className="h-10 w-10 shrink-0 rounded-lg border border-border bg-transparent cursor-pointer" />
+                    <input value={form.portal_primary_color || form.primary_color} onChange={(e) => setForm({ ...form, portal_primary_color: e.target.value })} placeholder="#f59e0b" aria-label="Cor primária em hexadecimal" className={inputCls} />
                   </div>
                 </div>
               </div>
@@ -127,7 +120,7 @@ const PortalSection = ({ ctx }: SectionProps) => {
               <p className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <Image size={12} className="text-primary" /> Logo Exclusiva do Portal (opcional)
               </p>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="w-16 h-16 rounded-xl bg-muted/30 border-2 border-dashed border-border flex items-center justify-center overflow-hidden shrink-0">
                   {form.portal_logo_url ? (
                     <img src={form.portal_logo_url} alt="Logo Portal" className="w-full h-full object-cover" />
@@ -139,9 +132,9 @@ const PortalSection = ({ ctx }: SectionProps) => {
                 </div>
                 <div className="flex-1 space-y-1.5">
                   <input ref={portalLogoInputRef} type="file" accept="image/*" onChange={onUploadPortalLogo} className="hidden" />
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <button onClick={() => portalLogoInputRef.current?.click()} disabled={uploadingPortalLogo}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:bg-accent/30 transition-colors disabled:opacity-50">
+                      className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border border-border hover:bg-accent/30 transition-colors disabled:opacity-50">
                       <Upload size={12} /> {uploadingPortalLogo ? "Enviando..." : "Enviar logo do portal"}
                     </button>
                     {form.portal_logo_url && (
