@@ -11,6 +11,7 @@ import { TrendingDown, Users, DollarSign, Clock, Phone, Sparkles } from "lucide-
 import EmptyState from "@/components/EmptyState";
 import { differenceInDays } from "date-fns";
 import { computeLateFee } from "@/lib/lateFee";
+import ErrorState from "@/components/feedback/ErrorState";
 
 interface Installment {
   id: string;
@@ -50,12 +51,15 @@ const InadimplenciaPanel = () => {
   const [loading, setLoading] = useState(true);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [clients, setClients] = useState<Record<string, Client>>({});
+  const [loadError, setLoadError] = useState<unknown>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const today = new Date().toISOString();
-    const insts = await fetchAll((f, t) => supabase
+    setLoadError(null);
+    try {
+      const today = new Date().toISOString();
+      const insts = await fetchAll((f, t) => supabase
       .from("contract_installments")
       .select("id, client_id, contract_id, amount, due_date, status, late_fee")
       .eq("user_id", user.id)
@@ -63,44 +67,48 @@ const InadimplenciaPanel = () => {
       .lt("due_date", today)
       .range(f, t));
 
-    const ids = Array.from(new Set(insts.map((i: any) => i.client_id)));
-    const contractIds = Array.from(new Set(insts.map((i: any) => i.contract_id)));
+      const ids = Array.from(new Set(insts.map((i: any) => i.client_id)));
+      const contractIds = Array.from(new Set(insts.map((i: any) => i.contract_id)));
 
-    let cmap: Record<string, Client> = {};
-    if (ids.length) {
-      const cs = await fetchAll((f, t) => supabase
+      let cmap: Record<string, Client> = {};
+      if (ids.length) {
+        const cs = await fetchAll((f, t) => supabase
         .from("clients")
         .select("id, name, whatsapp, phone, credit_score")
         .in("id", ids)
         .range(f, t));
-      cmap = Object.fromEntries(cs.map((c: any) => [c.id, c]));
-    }
+        cmap = Object.fromEntries(cs.map((c: any) => [c.id, c]));
+      }
 
-    let feeMap: Record<string, { late_fee_percent: number; daily_interest_percent: number; max_interest_cap_percent: number | null }> = {};
-    if (contractIds.length) {
-      const contracts = await fetchAll((f, t) => supabase
+      let feeMap: Record<string, { late_fee_percent: number; daily_interest_percent: number; max_interest_cap_percent: number | null }> = {};
+      if (contractIds.length) {
+        const contracts = await fetchAll((f, t) => supabase
         .from("contracts")
         .select("id, late_fee_percent, daily_interest_percent, max_interest_cap_percent")
         .in("id", contractIds)
         .range(f, t));
-      feeMap = Object.fromEntries(contracts.map((c: any) => [c.id, {
-        late_fee_percent: Number(c.late_fee_percent) || 0,
-        daily_interest_percent: Number(c.daily_interest_percent) || 0,
-        max_interest_cap_percent: c.max_interest_cap_percent == null ? null : Number(c.max_interest_cap_percent),
-      }]));
+        feeMap = Object.fromEntries(contracts.map((c: any) => [c.id, {
+          late_fee_percent: Number(c.late_fee_percent) || 0,
+          daily_interest_percent: Number(c.daily_interest_percent) || 0,
+          max_interest_cap_percent: c.max_interest_cap_percent == null ? null : Number(c.max_interest_cap_percent),
+        }]));
+      }
+
+      const enriched = insts.map((i: any) => ({
+        ...i,
+        late_fee_percent: feeMap[i.contract_id]?.late_fee_percent ?? 0,
+        daily_interest_percent: feeMap[i.contract_id]?.daily_interest_percent ?? 0,
+        // Sem o teto do contrato aqui, computeLateFee acumula sem limite.
+        max_interest_cap_percent: feeMap[i.contract_id]?.max_interest_cap_percent ?? null,
+      }));
+
+      setInstallments(enriched);
+      setClients(cmap);
+    } catch (error) {
+      setLoadError(error);
+    } finally {
+      setLoading(false);
     }
-
-    const enriched = insts.map((i: any) => ({
-      ...i,
-      late_fee_percent: feeMap[i.contract_id]?.late_fee_percent ?? 0,
-      daily_interest_percent: feeMap[i.contract_id]?.daily_interest_percent ?? 0,
-      // Sem o teto do contrato aqui, computeLateFee acumula sem limite.
-      max_interest_cap_percent: feeMap[i.contract_id]?.max_interest_cap_percent ?? null,
-    }));
-
-    setInstallments(enriched);
-    setClients(cmap);
-    setLoading(false);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
@@ -169,6 +177,18 @@ const InadimplenciaPanel = () => {
   };
 
   const maxBucket = Math.max(...Object.values(byBucket), 1);
+
+  if (loadError && !loading) {
+    return (
+      <ErrorState
+        error={loadError}
+        title="Não foi possível carregar a análise de inadimplência"
+        description="Nenhum dado foi alterado. Verifique a conexão e tente novamente."
+        onRetry={() => { void load(); }}
+        compact
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -56,6 +56,7 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
         <button
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
           className="p-2 rounded-lg hover:bg-accent focus-ring"
+          aria-label="Mês anterior"
         >
           <ChevronLeft size={16} />
         </button>
@@ -63,6 +64,7 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
         <button
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
           className="p-2 rounded-lg hover:bg-accent focus-ring"
+          aria-label="Próximo mês"
         >
           <ChevronRight size={16} />
         </button>
@@ -92,6 +94,8 @@ const CalendarView = ({ installments, onWhatsApp, onMarkPaid, onClickInstallment
               <button
                 key={idx}
                 onClick={() => setSelectedDay(items.length > 0 ? key : null)}
+                aria-label={`${d.toLocaleDateString("pt-BR")}: ${items.length} parcela${items.length === 1 ? "" : "s"}`}
+                aria-pressed={isSelected}
                 className={`collection-calendar-day h-20 min-w-0 overflow-hidden rounded-lg border p-1.5 text-left transition-all focus-ring ${
                   isSelected
                     ? "border-primary ring-1 ring-primary/30 bg-primary/5"

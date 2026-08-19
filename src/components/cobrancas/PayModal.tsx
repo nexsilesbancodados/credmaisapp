@@ -65,13 +65,16 @@ const PayModal = ({ inst, fee, alreadyPaid, remaining, daysLate, onCancel, onCon
       <div
         className="w-full sm:max-w-md bg-card border border-border rounded-t-3xl sm:rounded-2xl p-6 space-y-5 shadow-2xl max-h-[92dvh] overflow-y-auto animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 pb-[max(2rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="payment-dialog-title"
       >
         <div className="sm:hidden mx-auto -mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
         <div className="text-center">
           <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
             <CheckCircle size={28} className="text-success" />
           </div>
-          <h3 className="text-lg font-bold text-foreground">Registrar Pagamento</h3>
+          <h3 id="payment-dialog-title" className="text-lg font-bold text-foreground">Registrar Pagamento</h3>
           <p className="text-sm font-medium text-foreground mt-2">{inst.client_name}</p>
           <p className="text-xs text-muted-foreground">Parcela #{inst.installment_number}</p>
         </div>

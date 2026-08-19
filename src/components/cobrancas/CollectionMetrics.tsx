@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
 import { TrendingUp, MessageSquare, Mail, Target, Sparkles, Activity } from "lucide-react";
+import ErrorState from "@/components/feedback/ErrorState";
 
 const fmtPct = (n: number) => `${n.toFixed(1)}%`;
 
 const CollectionMetrics = () => {
   const { user } = useAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["collection-metrics", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -70,12 +71,26 @@ const CollectionMetrics = () => {
     staleTime: 60_000,
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="collection-metrics-grid grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-24 rounded-xl bg-card/40 border border-border/40 animate-pulse" />
         ))}
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="mb-4">
+        <ErrorState
+          error={error}
+          title="Não foi possível carregar a performance"
+          description="As cobranças continuam disponíveis. Tente atualizar apenas estes indicadores."
+          onRetry={() => { void refetch(); }}
+          compact
+        />
       </div>
     );
   }

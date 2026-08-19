@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import InstallmentRow from "@/components/cobrancas/InstallmentRow";
 import PayModal from "@/components/cobrancas/PayModal";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import InadimplenciaPanel from "@/components/cobrancas/InadimplenciaPanel";
 import {
   Receipt, Check, MessageSquare, Search, X, AlertTriangle, Clock, CheckCircle,
@@ -80,18 +80,9 @@ const Cobrancas = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab: "parcelas" | "aging" = searchParams.get("tab") === "aging" ? "aging" : "parcelas";
-  const setActiveTab = (t: "parcelas" | "aging") => {
-    const next = new URLSearchParams(searchParams);
-    if (t === "aging") next.set("tab", "aging"); else next.delete("tab");
-    setSearchParams(next, { replace: true });
-  };
-
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [period, setPeriod] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<SortKey>("amount_desc");
-  const [showFilters, setShowFilters] = useState(false);
   const [search, setSearch] = useState("");
   const dSearch = useDebounced(search, 180);
   const [confirmPayId, setConfirmPayId] = useState<string | null>(null);
@@ -107,10 +98,6 @@ const Cobrancas = () => {
   const [cobrarAteDate, setCobrarAteDate] = useState<string>(todayISO);
   const [cobrarAteSelected, setCobrarAteSelected] = useState<Set<string>>(new Set());
   const [focoDia, setFocoDia] = useState(false);
-  const [simpleMode, setSimpleMode] = useState<boolean>(() => {
-    try { const v = localStorage.getItem("cobrancas_simple_mode"); return v === null ? true : v === "1"; } catch { return true; }
-  });
-  useEffect(() => { try { localStorage.setItem("cobrancas_simple_mode", simpleMode ? "1" : "0"); } catch {} }, [simpleMode]);
   const [bucket, setBucket] = useState<"all" | "today" | "1-7" | "8-30" | "30+">("all");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [groupMode, setGroupMode] = useState<"expanded" | "collapsed">("collapsed");
@@ -1442,7 +1429,7 @@ const Cobrancas = () => {
       {/* Bulk WhatsApp preview modal */}
       {bulkPreview && (
         <div className="modal-backdrop" onClick={() => !bulkSending && (setBulkPreview(null), setPreviewEditIdx(null))}>
-          <div className="modal-content collection-modal-shell max-w-2xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content collection-modal-shell max-w-2xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Pré-visualizar cobrança em lote">
             <div className="collection-modal-header px-5 py-4 border-b border-border flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold flex items-center gap-2"><MessageSquare size={16} className="text-success" /> Pré-visualizar cobrança em lote</h3>
@@ -1517,7 +1504,7 @@ const Cobrancas = () => {
       {/* Bulk pay modal */}
       {bulkPayOpen && (
         <div className="modal-backdrop" onClick={() => !bulkPaying && setBulkPayOpen(false)}>
-          <div className="modal-content max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="modal-content max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Confirmar pagamento em lote">
             <div className="text-center">
               <div className="w-14 h-14 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
                 <Zap size={28} className="text-success" />
@@ -1595,7 +1582,7 @@ const Cobrancas = () => {
 
         return (
           <div className="modal-backdrop" onClick={() => setCobrarAteOpen(false)}>
-            <div className="modal-content collection-modal-shell w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="modal-content collection-modal-shell w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Cobrar até a data selecionada">
               {/* Header */}
               <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
