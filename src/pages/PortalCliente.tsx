@@ -102,9 +102,6 @@ const PortalCliente = () => {
   const [cpf, setCpf] = useState("");
   const [cpfError, setCpfError] = useState<string | null>(null);
   const [cpfTouched, setCpfTouched] = useState(false);
-  const [birthDate, setBirthDate] = useState("");
-  const [birthError, setBirthError] = useState<string | null>(null);
-  const [birthTouched, setBirthTouched] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [portalData, setPortalData] = useState<PortalData | null>(null);
@@ -126,7 +123,7 @@ const PortalCliente = () => {
     setHelpContactLoading(true);
     (async () => {
       try {
-        const { data } = await (supabase as any).rpc("portal_lookup_creditor_contact", { _cpf: clean, _birth_date: birthDate || null });
+        const { data } = await (supabase as any).rpc("portal_lookup_creditor_contact", { _cpf: clean, _birth_date: null });
         if (!cancelled) setHelpContact(data || null);
       } catch {
         if (!cancelled) setHelpContact(null);
@@ -135,9 +132,9 @@ const PortalCliente = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [helpOpen, cpf, birthDate, portalData]);
+  }, [helpOpen, cpf, portalData]);
 
-  // Retoma apenas pelo token temporário; CPF e nascimento não ficam armazenados.
+  // Retoma apenas pelo token temporário; o CPF não fica armazenado.
   useEffect(() => {
     // Se houver uma sessão do credor no mesmo navegador, deslogar imediatamente.
     // Portal do cliente e app do credor NÃO podem coexistir na mesma sessão.
@@ -251,7 +248,7 @@ const PortalCliente = () => {
     };
   }, [portalData]);
 
-  const doLogin = async (cleanCpf: string, birthDateInput: string, silent = false) => {
+  const doLogin = async (cleanCpf: string, silent = false) => {
     if (!silent) {
       const block = isPortalLoginBlocked();
       if (block.blocked) {
@@ -269,12 +266,12 @@ const PortalCliente = () => {
       const { data, error } = ownerId && /^[0-9a-f-]{36}$/i.test(ownerId)
         ? await supabase.rpc("portal_client_login_for_owner", {
             _cpf: cleanCpf,
-            _birth_date: birthDateInput,
+            _birth_date: null,
             _owner_id: ownerId,
           })
         : await supabase.rpc("portal_client_login", {
             _cpf: cleanCpf,
-            _birth_date: birthDateInput,
+            _birth_date: null,
           });
 
       if (error) {
@@ -291,7 +288,7 @@ const PortalCliente = () => {
           recordPortalLoginAttempt(false);
           // Mensagem única de propósito: se ela distinguisse "CPF não existe"
           // de "faltou a data", viraria um jeito de descobrir quem é cliente.
-          toast({ title: "Não foi possível acessar", description: "Confira o CPF e a data de nascimento informados.", variant: "destructive" });
+          toast({ title: "Não foi possível acessar", description: "Confira o CPF informado ou solicite ao credor o link correto do portal.", variant: "destructive" });
         }
         sessionStorage.removeItem(SESSION_KEY);
         return;
@@ -317,7 +314,6 @@ const PortalCliente = () => {
   const handleAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     setCpfTouched(true);
-    setBirthTouched(true);
     const cleanCpf = onlyDigits(cpf);
     if (!cleanCpf) {
       setCpfError("Informe seu CPF para continuar.");
@@ -335,13 +331,7 @@ const PortalCliente = () => {
       return;
     }
     setCpfError(null);
-    if (!birthDate) {
-      setBirthError("Informe sua data de nascimento.");
-      toast({ title: "Data de nascimento obrigatória", description: "Ela protege o acesso aos seus contratos.", variant: "destructive" });
-      return;
-    }
-    setBirthError(null);
-    await doLogin(cleanCpf, birthDate, false);
+    await doLogin(cleanCpf, false);
 
   };
 
@@ -349,7 +339,6 @@ const PortalCliente = () => {
     // Limpa estado local do React primeiro para UI responsiva
     setPortalData(null);
     setCpf("");
-    setBirthDate("");
     setSelectedInstallment(null);
     setPaymentOpen(false);
     // Limpeza completa: supabase signOut + storage + cookies + caches
@@ -460,7 +449,7 @@ const PortalCliente = () => {
                   </p>
                   <p className="flex items-start gap-2">
                     <Shield className="mt-0.5 shrink-0 text-primary" size={14} />
-                    <span>Para consultar seus contratos novamente, entre com seu CPF e data de nascimento.</span>
+                    <span>Para consultar seus contratos novamente, entre apenas com seu CPF.</span>
                   </p>
                 </div>
                 <button onClick={dismissLogoutScreen} className="portal-btn-primary flex w-full items-center justify-center gap-2 py-4 text-base">
@@ -536,37 +525,9 @@ const PortalCliente = () => {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="ml-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
-                      <CalendarDays size={11} /> Data de nascimento
-                    </label>
-                    <input
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => {
-                        setBirthDate(e.target.value);
-                        if (birthTouched) setBirthError(e.target.value ? null : "Informe sua data de nascimento.");
-                      }}
-                      onBlur={() => {
-                        setBirthTouched(true);
-                        setBirthError(birthDate ? null : "Informe sua data de nascimento.");
-                      }}
-                      required
-                      max={new Date().toISOString().slice(0, 10)}
-                      aria-invalid={!!birthError}
-                      aria-describedby={birthError ? "birth-error" : undefined}
-                      className={`portal-input w-full rounded-2xl px-5 py-4 text-center ${birthError ? "border-red-500/60 focus:border-red-500" : ""}`}
-                    />
-                    {birthError && (
-                      <p id="birth-error" className="ml-1 flex items-center gap-1.5 text-xs text-red-400">
-                        <AlertTriangle size={12} /> {birthError}
-                      </p>
-                    )}
-                  </div>
-
                   <button
                     type="submit"
-                    disabled={loading || !birthDate || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf))}
+                    disabled={loading || onlyDigits(cpf).length !== 11 || !isValidCPF(onlyDigits(cpf))}
                     className="portal-btn-primary flex w-full items-center justify-center gap-2 py-5 text-base disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? <Clock className="animate-spin" size={18} /> : <ArrowRight size={18} />}
@@ -1002,8 +963,7 @@ const PortalCliente = () => {
                 <ol className="ml-4 list-decimal space-y-1.5 text-sm text-white/75">
                   <li>Digite seu <strong className="text-white">CPF completo</strong> (11 dígitos).</li>
                   <li>Use o mesmo CPF cadastrado com o credor.</li>
-                  <li>Alguns credores também pedem a <strong className="text-white">data de nascimento</strong>. Se o acesso não abrir só com o CPF, preencha o campo de data.</li>
-                  <li>Se ainda assim não abrir, confirme os dados com o credor.</li>
+                  <li>Se não abrir, confirme o CPF cadastrado e peça o link correto ao credor.</li>
                   <li>Após muitas tentativas, aguarde alguns minutos e tente de novo.</li>
                 </ol>
               </div>
