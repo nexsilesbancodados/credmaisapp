@@ -122,12 +122,12 @@ const Dashboard = () => {
   const firstName = profile?.name?.split(" ")[0] || "Usuário";
 
   const quickActions = [
-    { label: "Novo cliente",    icon: Users,    path: "/clientes/novo", tone: "from-primary/25 to-primary/5",       ring: "ring-primary/30",    iconColor: "text-primary" },
-    { label: "Nova cobrança",   icon: Receipt,  path: "/cobrancas",     tone: "from-success/25 to-success/5",       ring: "ring-success/30",    iconColor: "text-success" },
-    { label: "Ver carteira",    icon: Wallet,   path: "/carteira",      tone: "from-white/10 to-white/[.02]", ring: "ring-white/15", iconColor: "text-zinc-200" },
+    { label: "Novo cliente",    icon: Users,    path: "/clientes/novo", iconColor: "text-primary" },
+    { label: "Nova cobrança",   icon: Receipt,  path: "/cobrancas",     iconColor: "text-success" },
+    { label: "Ver carteira",    icon: Wallet,   path: "/carteira",      iconColor: "text-foreground" },
     ...(hasAutomations
-      ? [{ label: "Agente IA", icon: Bot, path: "/agente-ia", tone: "from-white/10 to-white/[.02]", ring: "ring-white/15", iconColor: "text-zinc-200" }]
-      : [{ label: "Relatórios", icon: Receipt, path: "/relatorios", tone: "from-violet-500/25 to-violet-500/5", ring: "ring-violet-500/30", iconColor: "text-violet-400" }]),
+      ? [{ label: "Agente IA", icon: Bot, path: "/agente-ia", iconColor: "text-foreground" }]
+      : [{ label: "Relatórios", icon: Receipt, path: "/relatorios", iconColor: "text-foreground" }]),
   ];
 
   const urgencyCards = [
@@ -136,21 +136,17 @@ const Dashboard = () => {
     { count: metrics.proximos7,    label: "Próximos 7 dias",    sub: "Vencimentos da semana",        icon: Clock,       tone: "info",    path: "/cobrancas" },
   ];
 
-  const toneMap: Record<string, { text: string; bg: string; border: string; glow: string }> = {
-    danger:  { text: "text-destructive", bg: "bg-destructive/10", border: "border-destructive/25", glow: "shadow-[0_0_40px_-15px_hsl(var(--destructive)/0.5)]" },
-    warning: { text: "text-warning",     bg: "bg-warning/10",     border: "border-warning/25",     glow: "shadow-[0_0_40px_-15px_hsl(var(--warning)/0.4)]" },
-    info:    { text: "text-info",        bg: "bg-info/10",        border: "border-info/25",        glow: "" },
+  const toneMap: Record<string, { text: string; bg: string; border: string }> = {
+    danger:  { text: "text-destructive", bg: "bg-destructive/[.06]", border: "border-destructive/20" },
+    warning: { text: "text-warning",     bg: "bg-warning/[.06]",     border: "border-warning/20" },
+    info:    { text: "text-info",        bg: "bg-info/[.06]",        border: "border-info/20" },
   };
 
   return (
-    <div className="relative space-y-6 md:space-y-7 pb-8 max-w-[1400px] mx-auto animate-fade-in">
+    <div className="relative space-y-5 md:space-y-6 pb-8 max-w-[1400px] mx-auto animate-fade-in">
       {/* ─── HERO — saudação + ações principais ─── */}
-      <section className="relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-card/80 via-card/40 to-card/20 backdrop-blur-xl p-6 md:p-8 shadow-2xl">
-        {/* aurora glow */}
-        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/20 blur-3xl opacity-60" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-success/10 blur-3xl opacity-50" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <section className="rounded-2xl border border-white/[.08] bg-card/70 p-5 shadow-[0_18px_50px_-36px_rgba(0,0,0,.9)] backdrop-blur-xl md:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2 min-w-0">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
@@ -160,9 +156,9 @@ const Dashboard = () => {
               <span className="opacity-30">·</span>
               <span>{timeStr}</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-none">
-              <span className="opacity-70 font-normal">{greeting},</span>{" "}
-              <span className="bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">{firstName}</span>
+            <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+              <span className="font-normal text-muted-foreground">{greeting},</span>{" "}
+              <span className="text-foreground">{firstName}</span>
             </h1>
             <p className="text-sm text-muted-foreground capitalize">{dateStr}</p>
           </div>
@@ -187,14 +183,14 @@ const Dashboard = () => {
             )}
             <button
               onClick={() => navigate("/tv")}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-card/60 border border-border/40 hover:bg-card/90 hover:border-primary/40 transition text-xs font-medium"
+              className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.035] px-3.5 py-2 text-xs font-medium transition-colors hover:bg-white/[.07]"
             >
               <Activity size={13} className="text-primary" />
               Modo TV
             </button>
             <button
               onClick={() => navigate("/clientes/novo")}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.02] active:scale-95 transition text-xs font-bold"
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <Plus size={14} strokeWidth={2.5} />
               Novo
@@ -203,15 +199,15 @@ const Dashboard = () => {
         </div>
 
         {/* Quick actions inline */}
-        <div className="relative z-10 mt-7 grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+        <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-white/[.06] pt-5 md:grid-cols-4 md:gap-3">
           {quickActions.map((a, i) => (
             <button
               key={a.label}
               onClick={() => navigate(a.path)}
-              className={`group relative overflow-hidden flex items-center gap-2.5 p-3 md:p-4 rounded-2xl bg-gradient-to-br ${a.tone} border border-border/40 hover:border-border/70 ring-1 ring-transparent hover:${a.ring} transition-all duration-300 hover:-translate-y-0.5 text-left`}
+              className="group flex min-w-0 items-center gap-2.5 rounded-xl border border-white/[.07] bg-white/[.025] p-3 text-left transition-colors hover:border-primary/25 hover:bg-white/[.05] md:p-3.5"
               style={{ animationDelay: `${i * 50}ms` }}
             >
-              <div className={`w-9 h-9 md:w-10 md:h-10 rounded-xl bg-background/40 backdrop-blur flex items-center justify-center ${a.iconColor} shrink-0 group-hover:scale-110 transition`}>
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background/60 ${a.iconColor}`}>
                 <a.icon size={16} strokeWidth={2.2} />
               </div>
               <div className="min-w-0 flex-1">
@@ -262,12 +258,12 @@ const Dashboard = () => {
             <button
               key={c.label}
               onClick={() => navigate(c.path)}
-              className={`group text-left rounded-2xl border p-5 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 ${active ? `${t.border} ${t.bg} ${t.glow}` : "border-border/30 bg-card/30 hover:bg-card/50"}`}
+              className={`group rounded-2xl border p-4 text-left transition-colors md:p-5 ${active ? `${t.border} ${t.bg}` : "border-border/30 bg-card/30 hover:bg-card/50"}`}
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${active ? t.bg : "bg-muted/40"}`}>
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? t.bg : "bg-muted/40"}`}>
                     <c.icon size={19} className={active ? t.text : "text-muted-foreground"} />
                   </div>
                   <div className="min-w-0">
@@ -289,10 +285,10 @@ const Dashboard = () => {
 
       {/* ─── Tabs: Visão Geral / Análises / Listas ─── */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-3 rounded-2xl p-1 bg-card/40 backdrop-blur border border-border/30">
-          <TabsTrigger value="overview" className="rounded-xl text-xs font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Visão geral</TabsTrigger>
-          <TabsTrigger value="analytics" className="rounded-xl text-xs font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Análises</TabsTrigger>
-          <TabsTrigger value="lists" className="rounded-xl text-xs font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-primary-foreground data-[state=active]:shadow-md">Listas</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 rounded-xl border border-border/30 bg-card/50 p-1 md:inline-flex md:w-auto">
+          <TabsTrigger value="overview" className="rounded-lg text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Visão geral</TabsTrigger>
+          <TabsTrigger value="analytics" className="rounded-lg text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Análises</TabsTrigger>
+          <TabsTrigger value="lists" className="rounded-lg text-xs font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Listas</TabsTrigger>
         </TabsList>
 
         {/* ─── TAB: Visão geral ─── */}

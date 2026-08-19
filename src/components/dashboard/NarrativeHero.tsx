@@ -62,12 +62,8 @@ export default function NarrativeHero({
   const nada = totalLent === 0 && capitalOnStreet === 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[32px] border border-primary/15 bg-gradient-to-br from-primary/[0.08] via-card/60 to-card/30 backdrop-blur-xl p-6 md:p-8 shadow-2xl animate-fade-in">
-      {/* orbs decorativos */}
-      <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-primary/20 blur-3xl opacity-40" />
-      <div className="pointer-events-none absolute -bottom-32 -left-20 w-80 h-80 rounded-full bg-success/10 blur-3xl opacity-30" />
-
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6 lg:gap-8">
+    <div className="overflow-hidden rounded-2xl border border-white/[.08] bg-card/55 p-5 backdrop-blur-xl animate-fade-in md:p-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr] lg:gap-8">
         {/* ─── Coluna narrativa ─── */}
         <div className="space-y-5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">

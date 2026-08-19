@@ -102,10 +102,10 @@ export default function BentoKPI({
       disabled={!clickable}
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border bg-card/40 backdrop-blur-xl text-left w-full transition-all duration-300",
+        "group relative overflow-hidden rounded-2xl border bg-card/45 text-left w-full transition-colors duration-200",
         t.border,
         sizeCls,
-        clickable && "hover:bg-card/60 hover:border-primary/30 hover:shadow-xl cursor-pointer",
+        clickable && "hover:bg-card/65 hover:border-primary/30 cursor-pointer",
         !clickable && "cursor-default",
         className
       )}
@@ -113,18 +113,10 @@ export default function BentoKPI({
       {/* faixa gradient */}
       <div
         className={cn(
-          "absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r opacity-60 group-hover:opacity-100 transition-opacity",
+          "absolute inset-y-4 left-0 w-0.5 bg-gradient-to-b opacity-70",
           t.grad
         )}
       />
-      {/* orb sutil */}
-      <div
-        className={cn(
-          "pointer-events-none absolute -right-10 -bottom-10 w-32 h-32 rounded-full blur-3xl opacity-[0.08] group-hover:opacity-[0.15] transition-opacity bg-gradient-to-br",
-          t.grad
-        )}
-      />
-
       <div className="relative z-10 flex flex-col justify-between h-full gap-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -152,7 +144,7 @@ export default function BentoKPI({
           {Icon && (
             <div
               className={cn(
-                "w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110",
+                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
                 t.bg
               )}
             >

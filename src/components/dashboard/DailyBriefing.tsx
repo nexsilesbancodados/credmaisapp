@@ -59,9 +59,8 @@ export default function DailyBriefing() {
   const Icon = style.icon;
 
   return (
-    <div className={`relative overflow-hidden rounded-[32px] glass-premium animate-fade-in`}>
-      <div className={`absolute inset-0 bg-gradient-to-br ${style.bg} opacity-20`} />
-      <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-20" style={{ background: "var(--gradient-button)" }} />
+    <div className="relative overflow-hidden rounded-2xl border border-white/[.08] bg-card/65 animate-fade-in">
+      <div className={`absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b ${style.bg}`} />
       <div className="relative p-5 md:p-6">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">

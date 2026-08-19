@@ -36,7 +36,7 @@ export default function AtivoPassivoCard() {
   if (data.ativo_capital === 0 && data.passivo_captado === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/60 via-indigo-950/40 to-slate-900/60 p-5 backdrop-blur">
+    <div className="rounded-2xl border border-white/[.08] bg-card/55 p-5 backdrop-blur-xl">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-primary/80">Balanço da Operação</p>
