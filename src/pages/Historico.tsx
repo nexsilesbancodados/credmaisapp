@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/feedback/ErrorState";
 
 const actionLabels: Record<string, string> = {
   contract_created: "Contrato criado",
@@ -42,7 +43,7 @@ const Historico = () => {
 
   useRealtimeSubscription("audit_logs", [["audit-logs-history", user?.id || ""]]);
 
-  const { data: logs = [], isLoading } = useQuery({
+  const { data: logs = [], isLoading, error, refetch } = useQuery({
     queryKey: ["audit-logs-history", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -57,23 +58,29 @@ const Historico = () => {
     enabled: !!user,
   });
 
-  const entityTypes = [...new Set(logs.map((l: any) => l.entity_type))];
+  const entityTypes = useMemo(() => [...new Set(logs.map((l: any) => l.entity_type))], [logs]);
 
-  const filtered = logs.filter((l: any) => {
-    const matchSearch = !search ||
-      (actionLabels[l.action] || l.action).toLowerCase().includes(search.toLowerCase()) ||
-      JSON.stringify(l.details || {}).toLowerCase().includes(search.toLowerCase());
-    const matchType = typeFilter === "all" || l.entity_type === typeFilter;
-    return matchSearch && matchType;
-  });
+  const filtered = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR");
+    return logs.filter((l: any) => {
+      const matchSearch = !term ||
+        (actionLabels[l.action] || l.action).toLocaleLowerCase("pt-BR").includes(term) ||
+        JSON.stringify(l.details || {}).toLocaleLowerCase("pt-BR").includes(term);
+      const matchType = typeFilter === "all" || l.entity_type === typeFilter;
+      return matchSearch && matchType;
+    });
+  }, [logs, search, typeFilter]);
 
   // Group by date
-  const grouped: Record<string, any[]> = {};
-  filtered.forEach((log: any) => {
-    const date = new Date(log.created_at).toLocaleDateString("pt-BR");
-    if (!grouped[date]) grouped[date] = [];
-    grouped[date].push(log);
-  });
+  const grouped = useMemo(() => {
+    const result: Record<string, any[]> = {};
+    filtered.forEach((log: any) => {
+      const date = new Date(log.created_at).toLocaleDateString("pt-BR");
+      if (!result[date]) result[date] = [];
+      result[date].push(log);
+    });
+    return result;
+  }, [filtered]);
 
   const inputCls = "w-full px-4 py-2.5 rounded-2xl bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
 
@@ -84,8 +91,8 @@ const Historico = () => {
           <div className="page-hero-icon">
             <Clock size={22} />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-shimmer">Histórico</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground">Histórico</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Log de todas as atividades do sistema</p>
           </div>
         </div>
@@ -100,10 +107,11 @@ const Historico = () => {
             placeholder="Buscar atividade..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="Buscar no histórico"
             className={`${inputCls} pl-9`}
           />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
           <Filter size={16} className="text-muted-foreground" />
           <button
             onClick={() => setTypeFilter("all")}
@@ -145,6 +153,12 @@ const Historico = () => {
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
         </div>
+      ) : error ? (
+        <ErrorState
+          title="Não foi possível carregar o histórico"
+          description="Confira sua conexão e tente novamente."
+          onRetry={() => void refetch()}
+        />
       ) : filtered.length === 0 ? (
         <EmptyState icon={Clock} title="Nenhuma atividade registrada" description="As ações do sistema aparecerão aqui." />
       ) : (
@@ -157,7 +171,7 @@ const Historico = () => {
               </p>
               <div className="rounded-2xl border border-border bg-card divide-y divide-border overflow-hidden">
                 {items.map((log: any) => (
-                  <div key={log.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-accent/50 transition-colors">
+                  <div key={log.id} className="flex min-w-0 items-start gap-3 px-4 py-3.5 hover:bg-accent/50 sm:px-5">
                     <div className="mt-0.5 p-2 rounded-lg bg-accent">
                       <Clock size={14} className="text-muted-foreground" />
                     </div>
@@ -176,7 +190,7 @@ const Historico = () => {
                         {new Date(log.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] shrink-0 ${entityColors[log.entity_type] || ""}`}>
+                    <Badge variant="outline" className={`max-w-24 shrink-0 truncate text-[10px] ${entityColors[log.entity_type] || ""}`}>
                       {entityLabels[log.entity_type] || log.entity_type}
                     </Badge>
                   </div>

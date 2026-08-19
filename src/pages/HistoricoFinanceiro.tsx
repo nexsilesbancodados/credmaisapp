@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAll } from "@/lib/fetchAll";
 import { Archive, TrendingUp, Wallet, HandCoins, Search, FileText, CalendarRange } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +44,7 @@ function getRange(period: PeriodKey, from?: string, to?: string): { start: Date 
     case "all": return { start: null, end: null };
     case "custom": {
       const s = from ? new Date(from + "T00:00:00") : null;
-      const e = to ? new Date(to + "T23:59:59") : null;
+      const e = to ? new Date(to + "T23:59:59.999") : null;
       return { start: s, end: e };
     }
   }
@@ -131,12 +132,12 @@ export default function HistoricoFinanceiro() {
       sum + (receivedByContract.get(contract.id) || 0), 0);
     const totalCapital = contractsInRange.reduce((s: number, c: any) =>
       s + Number(c.capital || 0), 0);
-    const totalLucro = Math.max(0, totalRecebido - totalCapital);
+    const totalLucro = totalRecebido - totalCapital;
     return {
       totalRecebido,
       totalCapital,
       totalLucro,
-      totalGeral: totalRecebido,
+      ticketMedio: contractsInRange.length ? totalRecebido / contractsInRange.length : 0,
       quantidade: contractsInRange.length,
     };
   }, [data, contractsInRange, receivedByContract]);
@@ -144,11 +145,14 @@ export default function HistoricoFinanceiro() {
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     if (!term) return contractsInRange;
+    const digits = term.replace(/\D/g, "");
     return contractsInRange.filter((c: any) =>
-      c.clients?.name?.toLowerCase().includes(term) ||
-      c.clients?.cpf_cnpj?.includes(term)
+      c.clients?.name?.toLocaleLowerCase("pt-BR").includes(term) ||
+      (digits.length > 0 && c.clients?.cpf_cnpj?.replace(/\D/g, "").includes(digits))
     );
   }, [contractsInRange, search]);
+
+  const invalidCustomRange = period === "custom" && customFrom && customTo && customFrom > customTo;
 
   if (isLoading) {
     return (
@@ -174,12 +178,12 @@ export default function HistoricoFinanceiro() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-500/20 to-slate-500/5 border border-slate-500/20 flex items-center justify-center">
             <Archive className="text-slate-400" size={22} />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-black tracking-tight">Histórico financeiro</h1>
             <p className="text-sm text-muted-foreground">
               Contratos quitados e lucros já realizados — fora das métricas ativas.
@@ -194,45 +198,45 @@ export default function HistoricoFinanceiro() {
           <CalendarRange size={14} />
           Período
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {PRESETS.map((p) => (
             <Button
               key={p.key}
               size="sm"
               variant={period === p.key ? "default" : "outline"}
               onClick={() => setPeriod(p.key)}
-              className="h-8"
+              className="h-8 shrink-0"
             >
               {p.label}
             </Button>
           ))}
         </div>
         {period === "custom" && (
-          <div className="flex flex-wrap gap-2 items-center pt-1">
+          <div className="grid grid-cols-1 items-center gap-2 pt-1 sm:grid-cols-[1fr_auto_1fr]">
             <Input
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="h-9 w-auto"
+              aria-label="Data inicial" className="h-9 w-full"
             />
             <span className="text-muted-foreground text-sm">até</span>
             <Input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="h-9 w-auto"
+              min={customFrom} aria-label="Data final" className="h-9 w-full"
             />
           </div>
         )}
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
         <KPI icon={FileText} label="Contratos quitados" value={String(summary?.quantidade ?? 0)} tone="slate" />
         <KPI icon={HandCoins} label="Capital histórico" value={`R$ ${fmt(summary?.totalCapital ?? 0)}`} tone="indigo" />
         <KPI icon={Wallet} label="Recebido histórico" value={`R$ ${fmt(summary?.totalRecebido ?? 0)}`} tone="success" />
         <KPI icon={TrendingUp} label="Lucro histórico" value={`R$ ${fmt(summary?.totalLucro ?? 0)}`} tone="primary" />
-        <KPI icon={Archive} label="Total realizado" value={`R$ ${fmt(summary?.totalGeral ?? 0)}`} tone="success" />
+        <KPI icon={Archive} label="Média por contrato" value={`R$ ${fmt(summary?.ticketMedio ?? 0)}`} tone="success" />
       </div>
 
       {/* Busca */}
@@ -242,20 +246,27 @@ export default function HistoricoFinanceiro() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por cliente ou CPF/CNPJ..."
+          aria-label="Buscar contrato quitado"
           className="pl-9"
         />
       </div>
 
       {/* Lista */}
-      {filtered.length === 0 ? (
+      {invalidCustomRange ? (
+        <EmptyState
+          icon={CalendarRange}
+          title="Período inválido"
+          description="A data inicial deve ser anterior ou igual à data final."
+        />
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={Archive}
           title="Nada arquivado nesse período"
           description="Ajuste o período acima ou aguarde novos contratos serem quitados."
         />
       ) : (
-        <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-3 text-[11px] uppercase tracking-wider font-bold text-muted-foreground border-b border-border/40 bg-muted/20">
+        <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/65">
+          <div className="hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-4 border-b border-border/40 bg-muted/20 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground md:grid">
             <span>Cliente / contrato</span>
             <span className="text-right">Capital</span>
             <span className="text-right">Total pago</span>
@@ -263,12 +274,12 @@ export default function HistoricoFinanceiro() {
           </div>
           {filtered.map((c: any) => {
             const recebido = receivedByContract.get(c.id) || 0;
-            const lucroRealizado = Math.max(0, recebido - Number(c.capital || 0));
+            const lucroRealizado = recebido - Number(c.capital || 0);
             return (
               <button
                 key={c.id}
                 onClick={() => navigate(`/clientes/${c.client_id}`)}
-                className="w-full grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-3 items-center border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors text-left"
+                className="grid w-full grid-cols-2 gap-3 border-b border-border/30 px-4 py-4 text-left transition-colors last:border-0 hover:bg-muted/20 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center md:gap-4 md:py-3"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold truncate">
@@ -283,20 +294,20 @@ export default function HistoricoFinanceiro() {
                     </span>
                   </div>
                 </div>
-                <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-                  R$ {fmt(Number(c.capital))}
+                <span className="text-sm font-semibold tabular-nums text-muted-foreground md:text-right">
+                  <span className="block text-[10px] uppercase md:hidden">Capital</span>R$ {fmt(Number(c.capital))}
                 </span>
-                <span className="text-sm font-semibold tabular-nums text-success">
-                  R$ {fmt(recebido)}
+                <span className="text-right text-sm font-semibold tabular-nums text-success">
+                  <span className="block text-[10px] uppercase md:hidden">Total pago</span>R$ {fmt(recebido)}
                 </span>
-                <span className="text-sm font-black tabular-nums text-primary">
-                  R$ {fmt(lucroRealizado)}
+                <span className={`text-right text-sm font-black tabular-nums md:text-right ${lucroRealizado >= 0 ? "text-primary" : "text-destructive"}`}>
+                  <span className="block text-[10px] uppercase md:hidden">Resultado</span>R$ {fmt(lucroRealizado)}
                 </span>
               </button>
             );
           })}
           {/* Footer com totais */}
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-4 py-3 items-center border-t border-border/40 bg-muted/30 font-black">
+          <div className="hidden grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-4 border-t border-border/40 bg-muted/30 px-4 py-3 font-black md:grid">
             <span className="text-xs uppercase tracking-wider text-muted-foreground">
               Totais ({filtered.length})
             </span>
@@ -311,7 +322,7 @@ export default function HistoricoFinanceiro() {
               )}
             </span>
             <span className="text-sm tabular-nums text-primary">
-              R$ {fmt(filtered.reduce((s: number, c: any) => s + Math.max(0, (receivedByContract.get(c.id) || 0) - Number(c.capital || 0)), 0))}
+              R$ {fmt(filtered.reduce((s: number, c: any) => s + (receivedByContract.get(c.id) || 0) - Number(c.capital || 0), 0))}
             </span>
           </div>
         </div>
@@ -322,7 +333,7 @@ export default function HistoricoFinanceiro() {
 
 function KPI({
   icon: Icon, label, value, tone,
-}: { icon: any; label: string; value: string; tone: "slate" | "indigo" | "success" | "primary" }) {
+}: { icon: LucideIcon; label: string; value: string; tone: "slate" | "indigo" | "success" | "primary" }) {
   const map = {
     slate:   { bg: "bg-slate-500/10",   ring: "ring-slate-500/20",   text: "text-slate-400" },
     indigo:  { bg: "bg-indigo-500/10",  ring: "ring-indigo-500/20",  text: "text-indigo-400" },
@@ -330,14 +341,14 @@ function KPI({
     primary: { bg: "bg-primary/10",     ring: "ring-primary/20",     text: "text-primary" },
   }[tone];
   return (
-    <div className={`rounded-2xl border border-border/40 bg-card/40 backdrop-blur p-4 ring-1 ${map.ring}`}>
+    <div className={`min-w-0 rounded-2xl border border-border/60 bg-card/65 p-4 ring-1 ${map.ring}`}>
       <div className="flex items-center gap-2 mb-2">
         <div className={`w-8 h-8 rounded-lg ${map.bg} flex items-center justify-center`}>
           <Icon size={14} className={map.text} />
         </div>
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
       </div>
-      <p className={`text-xl font-black tabular-nums ${map.text}`}>{value}</p>
+      <p className={`break-words text-lg font-black tabular-nums sm:text-xl ${map.text}`}>{value}</p>
     </div>
   );
 }
