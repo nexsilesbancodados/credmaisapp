@@ -4,11 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import type { ClientSummary } from "./ClientRow";
 
 const scoreColor = (s: number) =>
-  s >= 700 ? "text-success bg-success/10 ring-success/20"
-  : s >= 400 ? "text-warning bg-warning/10 ring-warning/20"
+  s >= 75 ? "text-success bg-success/10 ring-success/20"
+  : s >= 50 ? "text-warning bg-warning/10 ring-warning/20"
   : "text-destructive bg-destructive/10 ring-destructive/20";
 
-const scoreLabel = (s: number) => (s >= 700 ? "Bom" : s >= 400 ? "Médio" : "Risco");
+const scoreLabel = (s: number) => (s >= 75 ? "Bom" : s >= 50 ? "Médio" : "Risco");
 
 type Props = {
   client: any;
@@ -24,7 +24,7 @@ function ClientCardImpl({ client: c, summary, isSel, onToggle, onOpen, onDelete 
   return (
     <div
       onClick={() => onOpen(c.id)}
-      className={`relative bg-gradient-to-br from-card/40 to-card/10 backdrop-blur-md border rounded-3xl p-5 cursor-pointer transition-all group shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 ${isSel ? "border-primary/50 ring-1 ring-primary/30" : "border-border/10 hover:border-primary/30"}`}
+      className={`group relative cursor-pointer rounded-2xl border bg-card/45 p-5 transition-colors ${isSel ? "border-primary/50 ring-1 ring-primary/30" : "border-border/20 hover:border-primary/30 hover:bg-card/65"}`}
     >
       <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         <input
@@ -51,8 +51,8 @@ function ClientCardImpl({ client: c, summary, isSel, onToggle, onOpen, onDelete 
 
       <div className="flex flex-col items-center text-center mb-3 mt-2">
         <div className="relative w-16 h-16 mb-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 ring-1 ring-primary/15 flex items-center justify-center text-xl font-bold text-primary">
-            {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-16 h-16 rounded-2xl object-cover" /> : c.name?.charAt(0)?.toUpperCase()}
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-xl font-bold text-primary">
+            {c.avatar_url ? <img src={c.avatar_url} alt="" className="h-16 w-16 rounded-2xl object-cover" /> : c.name?.charAt(0)?.toUpperCase()}
           </div>
           <span className={`absolute -bottom-1 -right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md ring-2 ring-card ${scoreColor(sc)}`}>{sc}</span>
         </div>

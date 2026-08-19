@@ -3,17 +3,17 @@ import { Eye, Trash2, FileText } from "lucide-react";
 import RiskBadge from "./RiskBadge";
 
 const scoreColor = (s: number) =>
-  s >= 700 ? "text-success bg-success/10 ring-success/20"
-  : s >= 400 ? "text-warning bg-warning/10 ring-warning/20"
+  s >= 75 ? "text-success bg-success/10 ring-success/20"
+  : s >= 50 ? "text-warning bg-warning/10 ring-warning/20"
   : "text-destructive bg-destructive/10 ring-destructive/20";
 
 const PALETTES = [
-  "from-violet-500/25 to-fuchsia-500/10 text-violet-300 ring-violet-400/20",
-  "from-sky-500/25 to-cyan-500/10 text-sky-300 ring-sky-400/20",
-  "from-emerald-500/25 to-teal-500/10 text-emerald-300 ring-emerald-400/20",
-  "from-amber-500/25 to-orange-500/10 text-amber-300 ring-amber-400/20",
-  "from-rose-500/25 to-pink-500/10 text-rose-300 ring-rose-400/20",
-  "from-indigo-500/25 to-blue-500/10 text-indigo-300 ring-indigo-400/20",
+  "bg-violet-500/10 text-violet-300 ring-violet-400/20",
+  "bg-sky-500/10 text-sky-300 ring-sky-400/20",
+  "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20",
+  "bg-amber-500/10 text-amber-300 ring-amber-400/20",
+  "bg-rose-500/10 text-rose-300 ring-rose-400/20",
+  "bg-indigo-500/10 text-indigo-300 ring-indigo-400/20",
 ];
 
 export type ClientSummary = { contracts: number; active: number; overdue: number };
@@ -46,10 +46,10 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           className="check-premium"
         />
       </td>
-      <td className="min-w-[260px] px-5 py-2.5">
+      <td className="w-[27%] px-5 py-3">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${pal} ring-1 flex items-center justify-center text-[13px] font-bold shrink-0 transition-transform group-hover:scale-105`}>
-            {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover" /> : initial}
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${pal} ring-1 text-[13px] font-bold`}>
+            {c.avatar_url ? <img src={c.avatar_url} alt="" className="h-10 w-10 rounded-xl object-cover" /> : initial}
           </div>
           <div className="min-w-0">
             <p className="font-semibold text-foreground truncate text-[13.5px] leading-tight">{c.name}</p>
@@ -57,14 +57,14 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           </div>
         </div>
       </td>
-      <td className="min-w-[150px] px-5 py-2.5 text-muted-foreground">
+      <td className="w-[19%] px-5 py-3 text-muted-foreground">
         <div className="space-y-0.5">
           {(c.phone || c.whatsapp) && <p className="whitespace-nowrap text-[12.5px] text-foreground/85">{c.phone || c.whatsapp}</p>}
           {c.email && <p className="text-[11px] text-muted-foreground/70 truncate max-w-[200px]">{c.email}</p>}
           {!c.phone && !c.whatsapp && !c.email && <span className="text-xs text-muted-foreground/40">—</span>}
         </div>
       </td>
-      <td className="min-w-[120px] whitespace-nowrap px-5 py-2.5">
+      <td className="w-[14%] whitespace-nowrap px-5 py-3">
         {summary.contracts === 0 ? (
           <span className="text-xs text-muted-foreground/50">—</span>
         ) : (
@@ -80,7 +80,7 @@ function ClientRowImpl({ client: c, summary, isSel, striped, onToggle, onOpen, o
           </div>
         )}
       </td>
-      <td className="min-w-[150px] whitespace-nowrap px-5 py-2.5">
+      <td className="w-[16%] whitespace-nowrap px-5 py-3">
         <div className="flex items-center gap-2">
           <div className="flex flex-col gap-1 min-w-[54px]">
             <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md text-center ring-1 ${scoreColor(sc)}`}>{sc}</span>

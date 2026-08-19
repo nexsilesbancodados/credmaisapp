@@ -25,11 +25,11 @@ type SortKey = "recent" | "name" | "score_desc" | "score_asc" | "overdue";
 type ScoreBand = "all" | "high" | "mid" | "low";
 
 const scoreColor = (s: number) =>
-  s >= 700 ? "text-success bg-success/10 ring-success/20"
-  : s >= 400 ? "text-warning bg-warning/10 ring-warning/20"
+  s >= 75 ? "text-success bg-success/10 ring-success/20"
+  : s >= 50 ? "text-warning bg-warning/10 ring-warning/20"
   : "text-destructive bg-destructive/10 ring-destructive/20";
 
-const scoreLabel = (s: number) => s >= 700 ? "Bom" : s >= 400 ? "Médio" : "Risco";
+const scoreLabel = (s: number) => s >= 75 ? "Bom" : s >= 50 ? "Médio" : "Risco";
 
 // debounce hook (small, local)
 const useDebounced = <T,>(value: T, ms = 200) => {
@@ -166,9 +166,9 @@ const Clientes = () => {
     let arr = derived.filter((c: any) => {
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
       const sc = Number(c.credit_score || 0);
-      if (scoreBand === "high" && sc < 700) return false;
-      if (scoreBand === "mid" && (sc < 400 || sc >= 700)) return false;
-      if (scoreBand === "low" && sc >= 400) return false;
+      if (scoreBand === "high" && sc < 75) return false;
+      if (scoreBand === "mid" && (sc < 50 || sc >= 75)) return false;
+      if (scoreBand === "low" && sc >= 50) return false;
       if (!q) return true;
       const name = (c.name || "").toLowerCase();
       const email = (c.email || "").toLowerCase();
@@ -369,27 +369,27 @@ const Clientes = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-[1600px] mx-auto pb-24">
+    <div className="mx-auto max-w-[1600px] space-y-5 pb-24 animate-fade-in md:space-y-6">
       {/* Hero */}
       <div className="page-hero animate-fade-in">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.2)]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10">
               <Users size={22} className="text-primary" />
             </div>
             <div>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">Clientes</h1>
+              <h1 className="text-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Clientes</h1>
               <p className="text-muted-foreground text-sm mt-0.5">Gerencie seus clientes e contratos.</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-            <button onClick={handleBulkExport} className="btn-ghost flex-1 sm:flex-none justify-center" title="Exportar lista atual / selecionados" aria-label="Exportar lista atual / selecionados">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+            <button onClick={handleBulkExport} className="btn-ghost justify-center sm:flex-none" title="Exportar lista atual / selecionados" aria-label="Exportar lista atual / selecionados">
               <Download size={15} /> Exportar
             </button>
-            <button onClick={() => setImportOpen(true)} className="btn-ghost flex-1 sm:flex-none justify-center">
+            <button onClick={() => setImportOpen(true)} className="btn-ghost justify-center sm:flex-none">
               <Upload size={15} /> Importar CSV
             </button>
-            <button onClick={() => navigate("/clientes/novo")} className="btn-premium flex-1 sm:flex-none justify-center">
+            <button onClick={() => navigate("/clientes/novo")} className="btn-premium col-span-2 justify-center sm:flex-none">
               <Plus size={16} /> Novo Cliente
             </button>
           </div>
@@ -405,7 +405,7 @@ const Clientes = () => {
           { label: "Com atraso", value: stats.overdue, color: "text-destructive", filter: "overdue" as const },
         ].map(s => (
           <button key={s.label} onClick={() => s.filter === "overdue" ? setSort("overdue") : setStatusFilter(s.filter)}
-            className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-6 text-left transition-all duration-300 ${(s.filter === "overdue" ? sort === "overdue" : statusFilter === s.filter) ? "border-white/20 bg-card/60 shadow-xl" : "border-white/10 bg-card/20 hover:bg-card/40"}`}>
+            className={`rounded-2xl border p-4 text-left transition-colors sm:p-5 ${(s.filter === "overdue" ? sort === "overdue" : statusFilter === s.filter) ? "border-primary/25 bg-primary/[.055]" : "border-white/[.08] bg-card/35 hover:bg-card/55"}`}>
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{s.label}</p>
             <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
           </button>
@@ -423,7 +423,7 @@ const Clientes = () => {
               placeholder="Buscar por nome, CPF, telefone ou email…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-28 py-3.5 rounded-2xl bg-card/30 backdrop-blur-md border border-border/10 text-foreground placeholder:text-muted-foreground/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary/40 transition-all"
+              className="w-full rounded-xl border border-border/20 bg-card/40 py-3.5 pl-11 pr-28 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/35 focus:ring-1 focus:ring-primary/30"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
               {search ? (
@@ -439,7 +439,7 @@ const Clientes = () => {
 
           <button
             onClick={() => setShowFilters(v => !v)}
-            className={`relative shrink-0 px-3.5 py-3.5 rounded-2xl border transition-all ${activeFilters > 0 ? "border-primary/40 bg-primary/5 text-primary" : "border-border/10 bg-card/30 text-muted-foreground hover:text-foreground"}`}
+            className={`relative shrink-0 rounded-xl border px-3.5 py-3.5 transition-colors ${activeFilters > 0 ? "border-primary/40 bg-primary/5 text-primary" : "border-border/20 bg-card/40 text-muted-foreground hover:text-foreground"}`}
             title="Filtros e ordenação"
             aria-label="Filtros e ordenação"
           >
@@ -449,7 +449,7 @@ const Clientes = () => {
             )}
           </button>
 
-          <div className="flex items-center bg-card/30 backdrop-blur-md border border-border/10 rounded-2xl p-1 shrink-0">
+          <div className="flex shrink-0 items-center rounded-xl border border-border/20 bg-card/40 p-1">
             <button onClick={() => toggleView("list")}
               className={`p-2.5 rounded-xl transition-colors ${viewMode === "list" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
               title="Lista" aria-label="Ver como lista" aria-pressed={viewMode === "list"}>
@@ -471,7 +471,7 @@ const Clientes = () => {
                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">Score</span>
                 {([
                   { v: "all", label: "Todos" },
-                  { v: "high", label: "Bom (700+)" },
+                  { v: "high", label: "Bom (75+)" },
                   { v: "mid", label: "Médio" },
                   { v: "low", label: "Risco" },
                 ] as const).map(b => (
@@ -561,10 +561,10 @@ const Clientes = () => {
       ) : viewMode === "list" ? (
         <>
           {/* Desktop Table */}
-          <div className="clients-table-wrap hidden xl:block rounded-3xl border border-border/10 overflow-x-auto bg-gradient-to-b from-card/40 to-card/10 backdrop-blur-xl shadow-2xl">
-            <table className="clients-table w-full min-w-[1050px] text-sm">
+          <div className="clients-table-wrap hidden overflow-x-auto rounded-2xl border border-border/20 bg-card/35 2xl:block">
+            <table className="clients-table w-full min-w-[1050px] table-fixed text-sm">
               <thead>
-                <tr className="border-b border-border/40 bg-gradient-to-r from-muted/40 via-muted/20 to-transparent">
+                <tr className="border-b border-border/40 bg-muted/20">
                   <th className="w-10 px-4 py-2.5">
                     <input type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible}
                       ref={(el) => { if (el) el.indeterminate = !allVisibleSelected && selected.size > 0; }}
@@ -600,14 +600,14 @@ const Clientes = () => {
 
 
           {/* Mobile List */}
-          <div className="xl:hidden space-y-2">
+          <div className="space-y-2 2xl:hidden">
             {visible.map((c: any) => {
               const summary = contractMap[c.id] || { contracts: 0, active: 0, overdue: 0 };
               return (
                 <button key={c.id} onClick={() => navigate(`/clientes/${c.id}`)}
-                  className="w-full flex items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:bg-accent/30 transition-colors text-left">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
-                    {c.avatar_url ? <img src={c.avatar_url} alt="" className="w-11 h-11 rounded-2xl object-cover" /> : c.name?.charAt(0)?.toUpperCase()}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border/20 bg-card/45 p-3.5 text-left transition-colors hover:border-primary/20 hover:bg-card/65 sm:p-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-primary/10 text-sm font-bold text-primary sm:h-11 sm:w-11">
+                    {c.avatar_url ? <img src={c.avatar_url} alt="" className="h-full w-full rounded-xl object-cover" /> : c.name?.charAt(0)?.toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -632,7 +632,7 @@ const Clientes = () => {
         </>
       ) : (
         /* Cards View */
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {visible.map((c: any) => {
             const summary = contractMap[c.id] || { contracts: 0, active: 0, overdue: 0 };
             return (
