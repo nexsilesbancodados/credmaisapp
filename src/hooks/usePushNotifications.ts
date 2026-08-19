@@ -75,7 +75,16 @@ export function usePushNotifications() {
             if (row.link) {
               n.onclick = () => {
                 window.focus();
-                window.location.href = row.link;
+                // Notifications are database content. Only permit same-origin app
+                // routes so a compromised row cannot become an open redirect.
+                try {
+                  const destination = new URL(String(row.link), window.location.origin);
+                  if (destination.origin === window.location.origin) {
+                    window.location.assign(`${destination.pathname}${destination.search}${destination.hash}`);
+                  }
+                } catch {
+                  // Ignore malformed notification links.
+                }
               };
             }
           }
@@ -111,13 +120,15 @@ export function usePushNotifications() {
       document.title = document.title.replace(/^\(\d+\)\s*/, "");
     };
     window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", () => {
+    const onVisibilityChange = () => {
       if (!document.hidden) onFocus();
-    });
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       supabase.removeChannel(channel);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [user, settings?.push_notifications_enabled]);
 }

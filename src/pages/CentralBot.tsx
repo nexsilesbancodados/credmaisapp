@@ -56,11 +56,12 @@ const Overview = () => {
   const { data: settings, isLoading } = useQuery({
     queryKey: ["central-bot-settings", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("settings")
-        .select("bot_enabled, bot_auto_send, whatsapp_api_url, whatsapp_instance, whatsapp_api_key, company_name, bot_tone")
+      const { data, error } = await supabase
+        .from("settings_safe")
+        .select("bot_enabled, bot_auto_send, whatsapp_api_url, whatsapp_instance, whatsapp_api_key_configured, company_name, bot_tone")
         .eq("user_id", user!.id)
         .single();
+      if (error) throw error;
       return data;
     },
     enabled: !!user,
@@ -103,7 +104,7 @@ const Overview = () => {
     refetchInterval: 60000,
   });
 
-  const hasInstance = !!(settings?.whatsapp_instance && settings?.whatsapp_api_url && settings?.whatsapp_api_key)
+  const hasInstance = !!(settings?.whatsapp_instance && settings?.whatsapp_api_url && settings?.whatsapp_api_key_configured)
     || (instances && instances.some((i: any) => i.is_active));
   const botEnabled = !!settings?.bot_enabled;
   const autoSend = !!settings?.bot_auto_send;
