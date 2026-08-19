@@ -287,24 +287,21 @@ const Carteira = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       {/* HERO — Saldo destacado */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 md:p-8 animate-fade-in">
-        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-success/10 blur-3xl pointer-events-none" />
-
-        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="rounded-2xl border border-white/[.08] bg-card/65 p-5 shadow-[0_18px_50px_-36px_rgba(0,0,0,.9)] animate-fade-in md:p-6">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.25)]">
-              <Banknote size={26} className="text-primary" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+              <Banknote size={21} className="text-primary" />
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Carteira</p>
-              <h1 className="text-display text-3xl md:text-4xl font-bold text-foreground tracking-tight">
+              <h1 className="text-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                 Saldo Total
               </h1>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className={`text-4xl md:text-5xl font-bold tracking-tight ${saldo >= 0 ? "text-success" : "text-destructive"}`}>
+                <span className={`text-3xl font-bold tracking-tight tabular-nums sm:text-4xl md:text-5xl ${saldo >= 0 ? "text-success" : "text-destructive"}`}>
                   R$ {fmt(saldo)}
                 </span>
               </div>
@@ -315,22 +312,22 @@ const Carteira = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <button
               onClick={() => { setDialogType("in"); setAmount(""); setDescription(""); setDialogOpen(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-success/15 text-success hover:bg-success/25 font-semibold text-sm transition-colors border border-success/30"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-success/25 bg-success/10 px-4 py-2.5 text-sm font-semibold text-success transition-colors hover:bg-success/20"
             >
               <Plus size={16} /> Aporte
             </button>
             <button
               onClick={() => { setDialogType("withdraw"); setAmount(""); setDescription(""); setDialogOpen(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-warning/15 text-warning hover:bg-warning/25 font-semibold text-sm transition-colors border border-warning/30"
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-warning/25 bg-warning/10 px-4 py-2.5 text-sm font-semibold text-warning transition-colors hover:bg-warning/20"
             >
               <Minus size={16} /> Retirar Capital
             </button>
             <button
               onClick={() => { setDialogType("out"); setAmount(""); setDescription(""); setDialogOpen(true); }}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-destructive/15 text-destructive hover:bg-destructive/25 font-semibold text-sm transition-colors border border-destructive/30"
+              className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/20 sm:col-span-1"
             >
               <Minus size={16} /> Saída
             </button>
@@ -338,7 +335,7 @@ const Carteira = () => {
         </div>
 
         {/* Composição do saldo em uma linha */}
-        <div className="relative mt-6 grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+        <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-white/[.06] pt-5 text-xs md:grid-cols-5">
           {[
             { label: "Aportes", value: totalCapital, color: "text-primary", dot: "bg-primary" },
             { label: "Lucros", value: totalLucros, color: "text-success", dot: "bg-success" },
@@ -346,7 +343,7 @@ const Carteira = () => {
             { label: "Retiradas", value: -totalWithdrawals, color: "text-warning", dot: "bg-warning" },
             { label: "Gastos", value: -totalGastos, color: "text-destructive", dot: "bg-destructive" },
           ].map((c) => (
-            <div key={c.label} className="rounded-xl border border-border/60 bg-background/40 backdrop-blur-sm px-3 py-2.5">
+            <div key={c.label} className="rounded-xl border border-border/40 bg-background/35 px-3 py-2.5">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
                 {c.label}
@@ -434,7 +431,7 @@ const Carteira = () => {
       </div>
 
       {/* Stats — período */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger-fade-in">
         {[
           {
             icon: ArrowUpRight,
@@ -481,7 +478,7 @@ const Carteira = () => {
           return (
             <div
               key={s.label}
-              className={`rounded-2xl border ${s.ring} bg-card p-5 card-shine hover:border-primary/30 transition-colors`}
+              className={`rounded-2xl border ${s.ring} bg-card/55 p-4 transition-colors hover:border-primary/30 sm:p-5`}
               style={{ animationDelay: `${idx * 60}ms` }}
             >
               <div className="flex items-center justify-between mb-3">
@@ -496,7 +493,7 @@ const Carteira = () => {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className={`text-2xl font-bold mt-0.5 ${s.color} tabular-nums`}>{fmtCompact(s.value)}</p>
+              <p className={`mt-0.5 text-xl font-bold ${s.color} tabular-nums sm:text-2xl`}>{fmtCompact(s.value)}</p>
               <p className="text-[10px] text-muted-foreground mt-1">{s.hint}</p>
             </div>
           );
@@ -505,7 +502,7 @@ const Carteira = () => {
 
       {/* Composição de fluxo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in">
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl border border-border/50 bg-card/55 p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-foreground flex items-center gap-2">
               <ArrowUpRight size={16} className="text-success" /> Composição das Entradas
@@ -524,7 +521,7 @@ const Carteira = () => {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="rounded-2xl border border-border/50 bg-card/55 p-4 sm:p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-semibold text-foreground flex items-center gap-2">
               <ArrowDownRight size={16} className="text-destructive" /> Composição das Saídas
@@ -543,20 +540,20 @@ const Carteira = () => {
       </div>
 
       {/* Timeline */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden animate-fade-in">
-        <div className="px-5 py-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sticky-header">
+      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card/55 animate-fade-in">
+        <div className="sticky-header flex flex-col items-start justify-between gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:px-5">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <CreditCard size={18} className="text-primary" /> Histórico
             <span className="text-xs text-muted-foreground font-normal">({timeline.length})</span>
           </h2>
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder="Buscar por descrição ou origem..."
               value={searchTimeline}
               onChange={(e) => setSearchTimeline(e.target.value)}
-              className="pl-9 pr-8 py-2 rounded-xl bg-accent/50 border border-border text-xs text-foreground placeholder:text-muted-foreground w-72 max-w-full input-enhanced"
+              className="w-full rounded-xl border border-border bg-accent/50 py-2 pl-9 pr-8 text-xs text-foreground placeholder:text-muted-foreground sm:w-72 input-enhanced"
             />
             {searchTimeline && (
               <button onClick={() => setSearchTimeline("")} className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -578,7 +575,7 @@ const Carteira = () => {
               const net = tot.in - tot.out;
               return (
                 <div key={date}>
-                  <div className="px-5 py-2.5 sticky top-0 bg-card/95 backdrop-blur z-[5] border-b border-border/60 flex items-center justify-between">
+                  <div className="sticky top-0 z-[5] flex items-center justify-between border-b border-border/60 bg-card/95 px-4 py-2.5 backdrop-blur sm:px-5">
                     <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Calendar size={11} /> {date}
                     </span>
@@ -588,7 +585,7 @@ const Carteira = () => {
                   </div>
                   <div className="divide-y divide-border/40">
                     {items.map((t, idx) => (
-                      <div key={idx} className="flex items-center gap-3 px-5 py-3 hover:bg-accent/30 transition-colors group">
+                      <div key={idx} className="group flex items-center gap-2.5 px-3 py-3 transition-colors hover:bg-accent/30 sm:gap-3 sm:px-5">
                         <div className={`w-1 self-stretch rounded-full ${t.type === "in" ? "bg-success" : "bg-destructive"}`} />
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.type === "in" ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
                           {sourceIcon(t.source)}
@@ -601,13 +598,13 @@ const Carteira = () => {
                             </span>
                           </p>
                         </div>
-                        <span className={`font-bold text-sm tabular-nums ${t.type === "in" ? "text-success" : "text-destructive"}`}>
+                        <span className={`whitespace-nowrap text-xs font-bold tabular-nums sm:text-sm ${t.type === "in" ? "text-success" : "text-destructive"}`}>
                           {t.type === "in" ? "+" : "−"}R$ {fmt(t.amount)}
                         </span>
                         {t.removable && (
                           <button
                             onClick={() => handleDeleteCapital(t.id)}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:opacity-0 sm:group-hover:opacity-100"
                             title="Remover"
                           >
                             <X size={14} />
