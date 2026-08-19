@@ -326,11 +326,11 @@ const Suporte = () => {
     <div className="min-h-dvh p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <div className="page-hero animate-fade-in">
         <div className="page-hero-content flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="page-hero-icon">
               <LifeBuoy size={22} />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-shimmer">Central de Suporte</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Abra um ticket e fale com nossa equipe</p>
             </div>
@@ -347,6 +347,7 @@ const Suporte = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar tickets..."
+          aria-label="Buscar tickets de suporte"
           className="pl-9"
         />
       </div>
@@ -409,7 +410,7 @@ const Suporte = () => {
 
       {/* New Ticket Dialog */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-1.5rem)] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Abrir novo ticket</DialogTitle>
             <DialogDescription>Descreva sua dúvida ou problema. Nossa equipe responderá em breve.</DialogDescription>
@@ -425,7 +426,7 @@ const Suporte = () => {
                 maxLength={120}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label>Categoria</Label>
                 <Select value={newCategory} onValueChange={setNewCategory}>

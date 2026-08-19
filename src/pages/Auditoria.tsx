@@ -13,7 +13,7 @@ type AuditLog = Database["public"]["Tables"]["audit_logs"]["Row"];
 const PAGE_SIZE = 200;
 const csvCell = (value: unknown) => {
   let text = String(value ?? "");
-  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  if (/^[=+\-@]/.test(text.trimStart())) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 };
 
@@ -107,7 +107,9 @@ const Auditoria = () => {
     const a = document.createElement("a");
     a.href = url;
     a.download = `auditoria-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
   };
 
@@ -140,6 +142,7 @@ const Auditoria = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar nos logs..."
+            aria-label="Buscar nos logs de auditoria"
             className={`${selectCls} pl-9 w-full`}
           />
         </div>
@@ -165,7 +168,7 @@ const Auditoria = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {statItems.map((s, idx) => (
           <div key={s.label} className="rounded-2xl border border-border bg-card p-4 animate-fade-in card-hover" style={{ animationDelay: `${(idx + 1) * 80}ms` }}>
             <div className="flex items-center gap-2 mb-2">

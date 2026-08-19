@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bell, Search, CheckCheck, Trash2, Filter, AlertCircle, AlertTriangle, CheckCircle2, Info, MessageSquare, DollarSign, Users, Settings as SettingsIcon, Sparkles, ExternalLink, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import EmptyState from "@/components/EmptyState";
+import ErrorState from "@/components/feedback/ErrorState";
 
 interface NotificationItem {
   id: string;
@@ -52,28 +53,34 @@ const Notificacoes = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "unread" | "read">("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setLoadError(null);
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) setLoadError(error);
+    else setItems((data || []) as NotificationItem[]);
+    setLoading(false);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    const fetchAll = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      setItems((data || []) as NotificationItem[]);
-      setLoading(false);
-    };
-    fetchAll();
+    void fetchNotifications();
 
     const channel = supabase
       .channel("notif-page")
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => void fetchNotifications())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   const filtered = useMemo(() => {
     return items.filter((n) => {
@@ -114,16 +121,38 @@ const Notificacoes = () => {
   };
 
   const markRead = async (ids: string[], read: boolean) => {
+    if (!user || ids.length === 0 || actionBusy) return;
+    const previous = items;
+    setActionBusy(true);
     setItems((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, is_read: read } : n)));
-    await supabase.from("notifications").update({ is_read: read }).in("id", ids);
-    toast.success(`${ids.length} ${read ? "marcadas como lidas" : "marcadas como não lidas"}`);
+    const { error } = await supabase.from("notifications").update({ is_read: read }).eq("user_id", user.id).in("id", ids);
+    if (error) {
+      setItems(previous);
+      toast.error("Não foi possível atualizar as notificações", { description: error.message });
+    } else {
+      setSelected(new Set());
+      toast.success(`${ids.length} ${read ? "marcadas como lidas" : "marcadas como não lidas"}`);
+    }
+    setActionBusy(false);
   };
 
   const remove = async (ids: string[]) => {
+    if (!user || ids.length === 0 || actionBusy) return;
+    if (!window.confirm(`Excluir ${ids.length === 1 ? "esta notificação" : `estas ${ids.length} notificações`}?`)) return;
+    const previous = items;
+    const previousSelected = selected;
+    setActionBusy(true);
     setItems((prev) => prev.filter((n) => !ids.includes(n.id)));
     setSelected(new Set());
-    await supabase.from("notifications").delete().in("id", ids);
-    toast.success(`${ids.length} excluída${ids.length > 1 ? "s" : ""}`);
+    const { error } = await supabase.from("notifications").delete().eq("user_id", user.id).in("id", ids);
+    if (error) {
+      setItems(previous);
+      setSelected(previousSelected);
+      toast.error("Não foi possível excluir as notificações", { description: error.message });
+    } else {
+      toast.success(`${ids.length} excluída${ids.length > 1 ? "s" : ""}`);
+    }
+    setActionBusy(false);
   };
 
   const fmtDate = (s: string) => new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -142,10 +171,11 @@ const Notificacoes = () => {
               <p className="text-sm text-muted-foreground mt-0.5">Central de notificações — todas as atividades em um só lugar</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:items-center">
             {stats.unread > 0 && (
               <button
                 onClick={() => markRead(items.filter((n) => !n.is_read).map((n) => n.id), true)}
+                disabled={actionBusy}
                 className="text-xs font-semibold px-3 py-2 rounded-xl bg-primary/15 text-primary hover:bg-primary/25 transition flex items-center gap-1.5 border border-primary/20"
               >
                 <CheckCheck size={14} /> Marcar todas ({stats.unread})
@@ -154,6 +184,7 @@ const Notificacoes = () => {
             {items.some((n) => n.is_read) && (
               <button
                 onClick={() => remove(items.filter((n) => n.is_read).map((n) => n.id))}
+                disabled={actionBusy}
                 className="text-xs font-semibold px-3 py-2 rounded-xl bg-muted/40 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition flex items-center gap-1.5"
               >
                 <Trash2 size={14} /> Limpar lidas
@@ -194,7 +225,7 @@ const Notificacoes = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por mensagem ou remetente..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+              aria-label="Buscar notificações" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
             />
             {search && (
               <button onClick={() => setSearch("")} className="text-muted-foreground hover:text-foreground">
@@ -284,6 +315,8 @@ const Notificacoes = () => {
               </div>
             ))}
           </div>
+        ) : loadError ? (
+          <div className="p-5"><ErrorState error={loadError} onRetry={() => void fetchNotifications()} /></div>
         ) : paginated.length === 0 ? (
           <EmptyState
             icon={Bell}
@@ -340,9 +373,10 @@ const Notificacoes = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-0.5 opacity-100 transition-opacity sm:opacity-60 sm:group-hover:opacity-100">
                       <button
                         onClick={() => markRead([n.id], !n.is_read)}
+                        disabled={actionBusy}
                         className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-success transition"
                         title={n.is_read ? "Marcar não lida" : "Marcar lida"}
                       >
@@ -350,6 +384,7 @@ const Notificacoes = () => {
                       </button>
                       <button
                         onClick={() => remove([n.id])}
+                        disabled={actionBusy}
                         className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition"
                         title="Excluir"
                       >
