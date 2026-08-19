@@ -988,7 +988,7 @@ const ClienteDetalhe = () => {
   };
 
   const updateScore = async (delta: number) => {
-    const ns = Math.max(0, Math.min(1000, (client?.credit_score || 100) + delta));
+    const ns = Math.max(0, Math.min(100, (client?.credit_score || 0) + delta));
     const key = ["client-detail", id];
     const prev = qc.getQueryData<any>(key);
     qc.setQueryData(key, (old: any) => (old ? { ...old, credit_score: ns } : old));
@@ -1087,7 +1087,6 @@ const ClienteDetalhe = () => {
   );
 
   const address = client.address as any;
-  const scoreClr = (client.credit_score || 0) >= 700 ? "text-success" : (client.credit_score || 0) >= 400 ? "text-warning" : "text-destructive";
 
   const tabs = [
     { key: "contratos" as const, label: "Contratos", Icon: FileText },
@@ -1129,8 +1128,8 @@ const ClienteDetalhe = () => {
     {
       label: "Score & Status",
       actions: [
-        { icon: Star, label: "Score +50", description: "Aumenta o score de crédito", action: () => updateScore(50) },
-        { icon: TrendingUp, label: "Score -50", description: "Reduz o score de crédito", action: () => updateScore(-50) },
+        { icon: Star, label: "Score +5", description: "Aumenta o score de crédito", action: () => updateScore(5) },
+        { icon: TrendingUp, label: "Score -5", description: "Reduz o score de crédito", action: () => updateScore(-5) },
         { icon: Ban, label: client.status === "Ativo" ? "Inativar Cliente" : "Reativar Cliente", description: client.status === "Ativo" ? "Suspende novas operações" : "Volta a aceitar operações", action: toggleStatus },
         { icon: Trash2, label: "Excluir Cliente", description: "Remove cliente e todos os dados — irreversível", action: handleDelete, destructive: true },
       ],
@@ -1140,38 +1139,20 @@ const ClienteDetalhe = () => {
 
   const daysAsClient = client.created_at ? Math.max(1, Math.floor((Date.now() - new Date(client.created_at).getTime()) / 86400000)) : 0;
   const clientSince = client.created_at ? new Date(client.created_at).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).toUpperCase() : "—";
-  const riskLabel = (client.credit_score || 0) >= 750 ? "Baixo Risco" : (client.credit_score || 0) >= 600 ? "Risco Moderado" : (client.credit_score || 0) >= 400 ? "Risco Elevado" : "Risco Alto";
-  const riskTone = (client.credit_score || 0) >= 750 ? "text-emerald-400 border-emerald-400/30 bg-emerald-500/10" : (client.credit_score || 0) >= 600 ? "text-amber-300 border-amber-400/30 bg-amber-500/10" : "text-rose-400 border-rose-400/30 bg-rose-500/10";
+  const riskLabel = (client.credit_score || 0) >= 75 ? "Baixo Risco" : (client.credit_score || 0) >= 50 ? "Risco Moderado" : (client.credit_score || 0) >= 25 ? "Risco Elevado" : "Risco Alto";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-24" style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+    <div className="mx-auto max-w-6xl space-y-6 pb-24" style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
       {/* ===== Banner Navy + Ações Rápidas + KPIs (padrão CRM) ===== */}
       <header className="space-y-5">
-        {/* Banner escuro com ondas */}
-        <div className="relative overflow-hidden rounded-[24px] border border-white/10 shadow-2xl shadow-black/40"
-             style={{ background: "linear-gradient(120deg, hsl(0 0% 4%) 0%, hsl(0 0% 8%) 60%, hsl(0 0% 13%) 100%)" }}>
-          {/* Ondas decorativas à direita */}
-          <svg className="pointer-events-none absolute inset-y-0 right-0 h-full w-[55%] opacity-70" viewBox="0 0 600 220" fill="none" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-              <linearGradient id="waveGrad" x1="0" x2="1" y1="0" y2="0">
-                <stop offset="0" stopColor="hsl(0 0% 100%)" stopOpacity="0" />
-                <stop offset="1" stopColor="hsl(0 0% 100%)" stopOpacity="0.22" />
-              </linearGradient>
-            </defs>
-            {[0, 14, 28, 42, 56, 70].map((off, i) => (
-              <path key={i}
-                d={`M0 ${90 + off} Q 150 ${40 + off}, 300 ${90 + off} T 600 ${90 + off}`}
-                stroke="url(#waveGrad)" strokeWidth="1.2" fill="none" opacity={0.9 - i * 0.12} />
-            ))}
-          </svg>
-          <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+        <div className="overflow-hidden rounded-2xl border border-white/[.08] bg-card/65 shadow-[0_18px_50px_-36px_rgba(0,0,0,.9)]">
 
           {/* Voltar / Cliente desde */}
-          <div className="relative z-10 flex items-center justify-between px-5 md:px-7 pt-4">
-            <button onClick={() => navigate("/clientes")} className="p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white/90 hover:bg-white/20 transition-colors" aria-label="Voltar">
+          <div className="flex items-center justify-between border-b border-white/[.06] px-5 py-3 md:px-6">
+            <button onClick={() => navigate("/clientes")} className="rounded-lg border border-white/10 bg-white/[.035] p-2 text-foreground transition-colors hover:bg-white/[.07]" aria-label="Voltar">
               <ArrowLeft size={16} />
             </button>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-white/90">
+            <div className="flex items-center gap-2 rounded-lg border border-white/[.08] bg-white/[.025] px-3 py-1.5 text-[11px] font-semibold text-muted-foreground">
               <Calendar size={12} className="opacity-80" />
               <span className="opacity-75">Cliente desde</span>
               <span className="font-bold">{clientSince.toLowerCase()}</span>
@@ -1179,15 +1160,14 @@ const ClienteDetalhe = () => {
           </div>
 
           {/* Conteúdo principal do banner */}
-          <div className="relative z-10 px-5 md:px-7 pt-5 pb-7 flex flex-col md:flex-row md:items-center gap-5">
+          <div className="flex flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:px-6">
             {/* Avatar circular */}
             <div className="relative shrink-0 mx-auto md:mx-0">
-              <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-white/15 backdrop-blur-md ring-4 ring-white/20 flex items-center justify-center overflow-hidden text-white text-4xl md:text-5xl font-extrabold"
+              <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-primary/15 bg-primary/10 text-3xl font-extrabold text-primary md:h-24 md:w-24 md:text-4xl"
                    style={{ fontFamily: "'Sora','Space Grotesk',sans-serif" }}>
                 {client.avatar_url ? <img src={client.avatar_url} alt="" className="w-full h-full object-cover" /> : client.name?.charAt(0)?.toUpperCase()}
               </div>
-              <label className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-lg ring-2 ring-[hsl(222_47%_11%)]"
-                     style={{ background: "var(--gradient-button)" }} title="Trocar foto">
+              <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-primary text-primary-foreground ring-2 ring-card" title="Trocar foto">
                 <Camera size={12} className="text-primary-foreground" />
                 <input type="file" accept="image/*" onChange={async (e) => {
                   const file = e.target.files?.[0];
@@ -1209,22 +1189,21 @@ const ClienteDetalhe = () => {
 
             {/* Nome + chips */}
             <div className="min-w-0 flex-1 text-center md:text-left">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-white/50 font-bold">Bem-vindo(a),</p>
-              <h1 className="mt-0.5 text-3xl md:text-[36px] font-extrabold text-white leading-[1.05] tracking-tight truncate"
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">Ficha do cliente</p>
+              <h1 className="mt-1 truncate text-2xl font-extrabold leading-tight tracking-tight text-foreground md:text-3xl"
                   style={{ fontFamily: "'Sora','Space Grotesk',sans-serif", letterSpacing: "-0.02em" }}>
                 {client.name}
               </h1>
-              <p className="text-xs text-white/60 mt-1">Ficha do cliente</p>
               <div className="flex flex-wrap justify-center md:justify-start items-center gap-1.5 mt-3">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${client.status === "Ativo" ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40" : "bg-white/10 text-white/70 ring-1 ring-white/20"}`}>
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${client.status === "Ativo" ? "bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-400/25" : "bg-white/5 text-muted-foreground ring-1 ring-white/10"}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${client.status === "Ativo" ? "bg-emerald-400" : "bg-white/50"}`} />
                   {client.status}
                 </span>
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ring-1 ${(client.credit_score || 0) >= 750 ? "bg-emerald-500/20 text-emerald-300 ring-emerald-400/40" : (client.credit_score || 0) >= 600 ? "bg-amber-500/20 text-amber-200 ring-amber-400/40" : "bg-rose-500/20 text-rose-300 ring-rose-400/40"}`}>
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ring-1 ${(client.credit_score || 0) >= 75 ? "bg-emerald-500/10 text-emerald-400 ring-emerald-400/25" : (client.credit_score || 0) >= 50 ? "bg-amber-500/10 text-amber-300 ring-amber-400/25" : "bg-rose-500/10 text-rose-400 ring-rose-400/25"}`}>
                   <ShieldCheck size={11} /> {riskLabel}
                 </span>
                 {client.cpf_cnpj && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold text-white/80 ring-1 ring-white/20 bg-white/5 font-mono">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[.035] px-2.5 py-1 font-mono text-[10px] font-semibold text-muted-foreground ring-1 ring-white/10">
                     {client.cpf_cnpj}
                   </span>
                 )}
@@ -1241,7 +1220,7 @@ const ClienteDetalhe = () => {
         {/* Ações rápidas */}
         <div>
           <p className="text-sm font-bold text-foreground mb-3" style={{ fontFamily: "'Sora','Space Grotesk',sans-serif" }}>Ações rápidas</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
             {[
               { Icon: MessageSquare, label: "WhatsApp",   sub: "Enviar mensagem", tint: "bg-emerald-500 text-white",   onClick: () => { const p = getPhone(); if (p) window.open(`https://wa.me/${p}`, "_blank"); }, disabled: !getPhone() },
               { Icon: Phone,         label: "Ligar",      sub: "Fazer ligação",   tint: "bg-sky-500 text-white",       onClick: () => { const p = client.phone; if (p) window.open(`tel:${p.replace(/\D/g, "")}`, "_self"); }, disabled: !client.phone },
@@ -1253,9 +1232,9 @@ const ClienteDetalhe = () => {
                 key={a.label}
                 onClick={a.onClick}
                 disabled={a.disabled}
-                className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-border/60 bg-card/70 hover:bg-card hover:border-border hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:pointer-events-none text-left"
+                className="group flex items-center gap-3 rounded-xl border border-border/40 bg-card/55 px-3 py-2.5 text-left transition-colors hover:border-primary/20 hover:bg-card/75 disabled:pointer-events-none disabled:opacity-40"
               >
-                <span className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-sm ${a.tint}`}>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${a.tint}`}>
                   <a.Icon size={16} />
                 </span>
                 <span className="min-w-0">
@@ -1269,8 +1248,8 @@ const ClienteDetalhe = () => {
               onOpenChange={setShowMoreActions}
               groups={toolGroups}
               trigger={
-                <button className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-border/60 bg-card/70 hover:bg-card hover:border-border hover:-translate-y-0.5 transition-all text-left">
-                  <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-slate-500 text-white">
+                <button className="group flex items-center gap-3 rounded-xl border border-border/40 bg-card/55 px-3 py-2.5 text-left transition-colors hover:border-primary/20 hover:bg-card/75">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
                     <Wrench size={16} />
                   </span>
                   <span className="min-w-0">
@@ -1280,8 +1259,8 @@ const ClienteDetalhe = () => {
                 </button>
               }
             />
-            <button onClick={startEdit} className="group flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-border/60 bg-card/70 hover:bg-card hover:border-border hover:-translate-y-0.5 transition-all text-left" title="Editar dados">
-              <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-rose-500 text-white">
+            <button onClick={startEdit} className="group flex items-center gap-3 rounded-xl border border-border/40 bg-card/55 px-3 py-2.5 text-left transition-colors hover:border-primary/20 hover:bg-card/75" title="Editar dados">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
                 <Edit size={16} />
               </span>
               <span className="min-w-0">
@@ -1300,8 +1279,8 @@ const ClienteDetalhe = () => {
             { label: "Lucro",          value: `R$ ${fmt(kpis.totalProfit)}`,  sub: `Ticket médio: R$ ${fmt(kpis.ticketMedio)}`,   Icon: TrendingUp,  chip: "bg-amber-500 text-white" },
             { label: "Próx. vencimento", value: kpis.nextDueInst ? formatBR(kpis.nextDueInst.due_date) : "—", sub: kpis.nextDueInst ? `R$ ${fmt(Number(kpis.nextDueInst.amount))}` : "Sem pendências", Icon: Calendar, chip: kpis.overdueInst.length > 0 ? "bg-rose-500 text-white" : "bg-sky-500 text-white" },
           ].map(k => (
-            <div key={k.label} className="rounded-2xl border border-border/60 bg-card/70 backdrop-blur-sm p-4 flex items-center gap-3 hover:-translate-y-0.5 hover:border-border transition-all">
-              <span className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-md ${k.chip}`}>
+            <div key={k.label} className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/55 p-4 transition-colors hover:border-border">
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${k.chip}`}>
                 <k.Icon size={18} />
               </span>
               <div className="min-w-0 flex-1">
@@ -1453,12 +1432,12 @@ const ClienteDetalhe = () => {
       {(kpis.overdueInst.length > 0 || kpis.pendingInst.length > 0) && (
         <div className="flex items-center gap-2 flex-wrap">
           {kpis.overdueInst.length > 0 && (
-            <button onClick={sendAllOverdue} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-400/30 text-xs font-bold hover:bg-rose-500/20 hover:-translate-y-0.5 transition-all">
+            <button onClick={sendAllOverdue} className="flex items-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-400 transition-colors hover:bg-rose-500/20">
               <AlertTriangle size={14} /> {kpis.overdueInst.length} parcela(s) em atraso · Cobrar todas
             </button>
           )}
           {kpis.pendingInst.length > 0 && (
-            <button onClick={payAllPending} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-400/30 text-xs font-bold hover:bg-emerald-500/20 hover:-translate-y-0.5 transition-all">
+            <button onClick={payAllPending} className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold text-emerald-400 transition-colors hover:bg-emerald-500/20">
               <CheckCircle size={14} /> Quitar todas as pendentes
             </button>
           )}
@@ -1665,7 +1644,7 @@ const ClienteDetalhe = () => {
             const barColor = isPaid ? "bg-emerald-500" : overdue > 0 ? "bg-destructive" : "bg-primary";
             const isExpanded = expandedContracts.has(c.id);
             return (
-            <div key={c.id} className={`group relative overflow-hidden bg-card border rounded-2xl transition-all ${isExpanded ? "border-primary/40 shadow-[0_12px_32px_-20px_hsl(var(--primary)/0.5)]" : "border-border/60 hover:border-primary/30"}`}>
+            <div key={c.id} className={`group relative overflow-hidden rounded-2xl border bg-card/55 transition-colors ${isExpanded ? "border-primary/40" : "border-border/50 hover:border-primary/30"}`}>
               {/* Faixa lateral de status */}
               <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${barColor}`} />
 
