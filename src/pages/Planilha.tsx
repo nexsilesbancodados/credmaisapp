@@ -12,7 +12,7 @@ import { isOverdue } from "@/lib/dateUtils";
 const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 const csvCell = (value: unknown) => {
   let text = String(value ?? "");
-  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+  if (/^[=+\-@]/.test(text.trimStart())) text = `'${text}`;
   return `"${text.replace(/"/g, '""')}"`;
 };
 
@@ -98,7 +98,12 @@ const Planilha = () => {
     const rows = sorted.map(c => [c.name, c.cpf_cnpj, c.phone, c.status, c.totalCapital.toFixed(2), c.totalAmount.toFixed(2), c.totalPaid.toFixed(2), c.contractCount, c.paidCount, c.totalInstallments, c.overdueCount].map(csvCell).join(",")).join("\r\n");
     const blob = new Blob([`\uFEFF${header}\r\n${rows}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "planilha-clientes.csv"; a.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "planilha-clientes.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     URL.revokeObjectURL(url);
   };
 
@@ -122,7 +127,7 @@ const Planilha = () => {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-fade-in">
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-2 sm:grid-cols-4 gap-3 stagger-fade-in">
         {[
           { label: "Clientes", value: enriched.length, icon: Users, color: "text-foreground" },
           { label: "Capital Total", value: `R$ ${fmt(totals.capital)}`, icon: DollarSign, color: "text-primary" },
@@ -143,7 +148,7 @@ const Planilha = () => {
       <div className="relative">
         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input type="text" placeholder="Buscar cliente..." value={search} onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-10 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm input-enhanced" />
+          aria-label="Buscar cliente na planilha" className="w-full pl-10 pr-10 py-3 rounded-2xl bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm input-enhanced" />
         {search && (
           <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
         )}

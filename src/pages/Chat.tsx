@@ -116,6 +116,11 @@ const Chat = () => {
         supabase.from("chat_dm_threads").select("*").or(`user_a.eq.${user.id},user_b.eq.${user.id}`).order("last_message_at", { ascending: false }),
         supabase.rpc("list_public_profiles"),
       ]);
+      const initialError = [chRes.error, memRes.error, dmRes.error, prfRes.error].find(Boolean);
+      if (initialError) {
+        const friendly = friendlyError(initialError, "Não foi possível carregar o chat completo.");
+        toast.error(friendly.title, { description: friendly.description });
+      }
       setChannels(chRes.data || []);
       setMemberships(memRes.data || []);
       setDmThreads(dmRes.data || []);
@@ -342,7 +347,8 @@ const Chat = () => {
 
   const leave = async (channelId: string) => {
     if (!user) return;
-    await supabase.from("chat_channel_members").delete().eq("channel_id", channelId).eq("user_id", user.id);
+    const { error } = await supabase.from("chat_channel_members").delete().eq("channel_id", channelId).eq("user_id", user.id);
+    if (error) return toast.error("Não foi possível sair do canal", { description: error.message });
     toast.success("Você saiu do canal");
     if (scope?.kind === "channel" && scope.id === channelId) setScope(null);
   };
@@ -351,7 +357,8 @@ const Chat = () => {
     const { data, error } = await supabase.rpc("get_or_create_dm_thread", { _other_user: otherUserId });
     if (error || !data) return toast.error("Erro ao abrir conversa");
     const tid = data as string;
-    const { data: dms } = await supabase.from("chat_dm_threads").select("*").or(`user_a.eq.${user!.id},user_b.eq.${user!.id}`);
+    const { data: dms, error: listError } = await supabase.from("chat_dm_threads").select("*").or(`user_a.eq.${user!.id},user_b.eq.${user!.id}`);
+    if (listError) return toast.error("A conversa foi criada, mas a lista não pôde ser atualizada.");
     setDmThreads(dms || []);
     setScope({ kind: "dm", id: tid, otherUserId });
     setTab("dms");
@@ -473,15 +480,20 @@ const Chat = () => {
   const toggleReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
     const existing = reactions.find((r) => r.message_id === messageId && r.user_id === user.id && r.emoji === emoji);
-    if (existing) await supabase.from("chat_message_reactions").delete().eq("id", existing.id);
-    else await supabase.from("chat_message_reactions").insert({ message_id: messageId, user_id: user.id, emoji });
+    const { error } = existing
+      ? await supabase.from("chat_message_reactions").delete().eq("id", existing.id).eq("user_id", user.id)
+      : await supabase.from("chat_message_reactions").insert({ message_id: messageId, user_id: user.id, emoji });
+    if (error) toast.error("Não foi possível atualizar a reação");
     setShowEmoji(null);
   };
 
   const deleteMessage = async (m: Message) => {
     if (!user) return;
     if (m.user_id === user.id || isAdmin) {
-      await supabase.from("chat_messages").update({ is_deleted: true, content: "[mensagem removida]", deleted_by: user.id }).eq("id", m.id);
+      let query = supabase.from("chat_messages").update({ is_deleted: true, content: "[mensagem removida]", deleted_by: user.id }).eq("id", m.id);
+      if (!isAdmin) query = query.eq("user_id", user.id);
+      const { error } = await query;
+      if (error) return toast.error("Não foi possível remover a mensagem");
       toast.success("Mensagem removida");
     }
     setOpenMenu(null);
@@ -489,7 +501,8 @@ const Chat = () => {
 
   const togglePin = async (m: Message) => {
     if (!isAdmin) return;
-    await supabase.from("chat_messages").update({ is_pinned: !m.is_pinned }).eq("id", m.id);
+    const { error } = await supabase.from("chat_messages").update({ is_pinned: !m.is_pinned }).eq("id", m.id);
+    if (error) return toast.error("Não foi possível alterar o destaque da mensagem");
     toast.success(m.is_pinned ? "Desfixada" : "Fixada");
     setOpenMenu(null);
   };
@@ -504,7 +517,8 @@ const Chat = () => {
 
   const banUser = async (userId: string, ban: boolean) => {
     if (!isAdmin) return;
-    await supabase.from("profiles").update({ is_chat_blocked: ban }).eq("id", userId);
+    const { error } = await supabase.from("profiles").update({ is_chat_blocked: ban }).eq("id", userId);
+    if (error) return toast.error("Não foi possível alterar a permissão do usuário");
     setProfiles((prev) => ({ ...prev, [userId]: { ...prev[userId], is_chat_blocked: ban } }));
     toast.success(ban ? "Usuário silenciado" : "Usuário liberado");
     setOpenMenu(null);
@@ -514,7 +528,8 @@ const Chat = () => {
     if (!isAdmin || !scope) return;
     if (!(await confirm("Apagar TODO o histórico desta conversa? Esta ação é irreversível."))) return;
     const filterCol = scope.kind === "channel" ? "channel_id" : "dm_thread_id";
-    await supabase.from("chat_messages").delete().eq(filterCol, scope.id);
+    const { error } = await supabase.from("chat_messages").delete().eq(filterCol, scope.id);
+    if (error) return toast.error("Não foi possível limpar o histórico", { description: error.message });
     toast.success("Histórico limpo");
   };
 
@@ -533,7 +548,8 @@ const Chat = () => {
   const deleteChannel = async (channelId: string) => {
     if (!isAdmin) return;
     if (!(await confirm("Excluir este canal e todas as mensagens?"))) return;
-    await supabase.from("chat_channels").delete().eq("id", channelId);
+    const { error } = await supabase.from("chat_channels").delete().eq("id", channelId);
+    if (error) return toast.error("Não foi possível excluir o canal", { description: error.message });
     toast.success("Canal excluído");
     if (scope?.kind === "channel" && scope.id === channelId) setScope(null);
   };
@@ -570,7 +586,7 @@ const Chat = () => {
             </div>
             <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-muted/30 border border-border/40">
               <Search size={13} className="text-muted-foreground" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..." className="flex-1 bg-transparent text-xs outline-none" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar..." aria-label="Buscar canais ou pessoas" className="min-w-0 flex-1 bg-transparent text-xs outline-none" />
             </div>
             <div className="grid grid-cols-3 gap-1 p-0.5 bg-muted/30 rounded-xl">
               {(["channels", "dms", "people"] as const).map((t) => {

@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
 import { useMultiTableRealtime } from "@/hooks/useRealtimeSubscription";
 import { ArrowLeft, Wallet, TrendingUp, AlertCircle, Users, FileSignature, Activity } from "lucide-react";
+import { todayLocalISO } from "@/lib/dateUtils";
+import ErrorState from "@/components/feedback/ErrorState";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
@@ -22,7 +24,7 @@ export default function TvMode() {
 
   useMultiTableRealtime(["contracts", "contract_installments", "clients"], [["tv-mode-data", user?.id || ""]]);
 
-  const { data } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["tv-mode-data", user?.id],
     queryFn: async () => {
       const [contracts, installments, clients] = await Promise.all([
@@ -39,12 +41,13 @@ export default function TvMode() {
   const m = useMemo(() => {
     if (!data) return null;
     const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
+    const todayStr = todayLocalISO();
     const active = data.contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
+    const activeIds = new Set(active.map((c: any) => c.id));
     const capital = active.reduce((s: number, c: any) => s + Number(c.capital), 0);
     const paid = data.installments.filter((i: any) => i.status === "paid");
     const received = paid.reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount), 0);
-    const overdue = data.installments.filter((i: any) => isEmAtraso(i, today));
+    const overdue = data.installments.filter((i: any) => activeIds.has(i.contract_id) && isEmAtraso(i, today));
     const overdueAmt = overdue.reduce((s: number, i: any) => s + Number(i.amount), 0);
     const paidToday = paid.filter((p: any) => p.paid_at?.startsWith(todayStr));
     const paidTodayAmt = paidToday.reduce((s: number, p: any) => s + Number(p.paid_amount || p.amount), 0);
@@ -78,6 +81,14 @@ export default function TvMode() {
       </button>
 
       <div className="min-h-dvh p-6 md:p-10 flex flex-col gap-8">
+        {error ? (
+          <div className="m-auto w-full max-w-xl">
+            <ErrorState error={error} onRetry={() => void refetch()} />
+          </div>
+        ) : isLoading ? (
+          <div className="m-auto text-sm font-semibold text-muted-foreground">Carregando painel ao vivo...</div>
+        ) : (
+        <>
         {/* Header */}
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
@@ -103,7 +114,7 @@ export default function TvMode() {
                   <t.icon size={26} className={t.color} />
                 </div>
               </div>
-              <p className={`text-5xl md:text-7xl font-bold tabular-nums ${t.color}`}>{t.value}</p>
+              <p className={`break-words text-3xl font-bold tabular-nums sm:text-5xl md:text-7xl ${t.color}`}>{t.value}</p>
             </div>
           ))}
         </div>
@@ -122,6 +133,8 @@ export default function TvMode() {
             </div>
           ))}
         </div>
+        </>
+        )}
       </div>
     </div>
   );
