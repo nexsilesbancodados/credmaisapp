@@ -1442,7 +1442,7 @@ const Cobrancas = () => {
       {/* Bulk WhatsApp preview modal */}
       {bulkPreview && (
         <div className="modal-backdrop" onClick={() => !bulkSending && (setBulkPreview(null), setPreviewEditIdx(null))}>
-          <div className="modal-content max-w-2xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content collection-modal-shell max-w-2xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="collection-modal-header px-5 py-4 border-b border-border flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-semibold flex items-center gap-2"><MessageSquare size={16} className="text-success" /> Pré-visualizar cobrança em lote</h3>
@@ -1452,7 +1452,7 @@ const Cobrancas = () => {
               </div>
               <button aria-label="Fechar prévia" disabled={bulkSending} onClick={() => { setBulkPreview(null); setPreviewEditIdx(null); }} className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground"><X size={16} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            <div className="collection-modal-body flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {bulkPreview.groups.map((g, idx) => (
                 <div key={g.clientId} className="rounded-2xl border border-border bg-card/50">
                   <div className="collection-preview-row px-4 py-2.5 border-b border-border flex items-center justify-between gap-2">
@@ -1595,7 +1595,7 @@ const Cobrancas = () => {
 
         return (
           <div className="modal-backdrop" onClick={() => setCobrarAteOpen(false)}>
-            <div className="modal-content w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="modal-content collection-modal-shell w-full max-w-3xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
               {/* Header */}
               <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
@@ -1656,7 +1656,7 @@ const Cobrancas = () => {
               </div>
 
               {/* List */}
-              <div className="flex-1 overflow-y-auto px-5 py-3">
+              <div className="collection-modal-body flex-1 overflow-y-auto px-5 py-3">
                 {items.length === 0 ? (
                   <div className="text-center py-10">
                     <CheckCircle size={32} className="text-success mx-auto mb-2" />

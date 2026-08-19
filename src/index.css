@@ -1873,8 +1873,9 @@ div[style*="Edit with Lovable"],
   .collection-account-card { border-radius: 1rem; }
   .collection-installment-row { flex-wrap: wrap; align-items: flex-start; }
   .collection-installment-info { min-width: calc(100% - 5.75rem); }
-  .collection-installment-actions { width: 100%; justify-content: flex-end; padding-top: .625rem; border-top: 1px solid hsl(40 10% 70% / .08); }
-  .collection-installment-actions > button { min-height: 38px; min-width: 42px; justify-content: center; }
+  .collection-installment-actions { display: flex; width: 100%; padding-top: .625rem; border-top: 1px solid hsl(40 10% 70% / .08); }
+  .collection-installment-actions > button { flex: 1 1 0; min-height: 42px; min-width: 0; justify-content: center; padding-inline: .5rem; }
+  .collection-installment-actions .collection-action-label { display: inline; overflow: hidden; text-overflow: ellipsis; }
   .collection-card-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .collection-bulk-bar { bottom: max(.75rem, env(safe-area-inset-bottom)); padding: .75rem; }
   .collection-bulk-summary { justify-content: space-between; gap: .5rem; }
@@ -1883,6 +1884,10 @@ div[style*="Edit with Lovable"],
   .collection-bulk-actions > button { min-height: 42px; justify-content: center; padding-inline: .5rem; }
   .collection-bulk-actions > button:last-child { grid-column: 1 / -1; }
   .collection-modal-header { padding: .875rem 1rem; }
+  .modal-backdrop:has(.collection-modal-shell) { align-items: flex-end; padding: 0; }
+  .collection-modal-shell { max-height: 94dvh !important; border-radius: 1.5rem 1.5rem 0 0 !important; border-bottom: 0; }
+  .collection-modal-shell::before { content: ""; display: block; flex: 0 0 auto; width: 2.5rem; height: .25rem; margin: .5rem auto 0; border-radius: 999px; background: hsl(var(--muted-foreground) / .28); }
+  .collection-modal-body { padding-inline: 1rem; overscroll-behavior: contain; }
   .collection-preview-row { flex-direction: column; align-items: stretch; }
   .collection-preview-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr auto; }
   .collection-preview-actions > button { min-width: 0; justify-content: center; }

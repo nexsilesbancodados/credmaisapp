@@ -141,7 +141,7 @@ const InstallmentRowInner = ({
               className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gradient-to-br from-success to-success/85 text-success-foreground text-xs font-semibold hover:shadow-md hover:shadow-success/30 transition-all active:scale-95 focus-ring"
               title="Cobrar via WhatsApp" aria-label="Cobrar via WhatsApp"
             >
-              <MessageSquare size={13} /> <span className="hidden sm:inline">WhatsApp</span>
+              <MessageSquare size={13} /> <span className="collection-action-label hidden sm:inline">WhatsApp</span>
             </button>
             {hasPixKey && (
               <button
@@ -149,7 +149,7 @@ const InstallmentRowInner = ({
                 className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 text-primary border border-primary/25 text-xs font-semibold hover:bg-primary/20 transition-all active:scale-95 focus-ring"
                 title="Copiar chave PIX" aria-label="Copiar chave PIX"
               >
-                <Copy size={13} /> <span className="hidden md:inline">PIX</span>
+                <Copy size={13} /> <span className="collection-action-label hidden md:inline">PIX</span>
               </button>
             )}
             {inst.client_email && (
@@ -166,7 +166,7 @@ const InstallmentRowInner = ({
               className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-success/12 text-success border border-success/25 text-xs font-semibold hover:bg-success/20 transition-all active:scale-95 focus-ring"
               title="Marcar como paga" aria-label="Marcar como paga"
             >
-              <Check size={13} /> <span className="hidden sm:inline">Paga</span>
+              <Check size={13} /> <span className="collection-action-label hidden sm:inline">Paga</span>
             </button>
           </>
         )}
