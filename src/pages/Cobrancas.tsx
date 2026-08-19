@@ -792,23 +792,20 @@ const Cobrancas = () => {
 
   return (
     <div className="collections-page space-y-5 pb-24">
-      {/* HERO Premium */}
-      <div className="collections-hero relative overflow-hidden rounded-[28px] border p-5 sm:p-6 md:p-8 animate-fade-in">
-        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-stone-200/[0.035] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-20 w-72 h-72 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
-
-        <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
+      {/* Resumo operacional */}
+      <div className="collections-hero rounded-2xl border p-5 sm:p-6 animate-fade-in">
+        <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="collections-hero-summary flex items-start gap-4 min-w-0">
-            <div className="collections-hero-icon w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center">
-              <Receipt size={26} className="text-destructive" />
+            <div className="collections-hero-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12">
+              <Receipt size={22} className="text-primary" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-medium">Cobranças</p>
-              <h1 className="text-display text-2xl sm:text-3xl md:text-4xl font-semibold text-foreground tracking-[-0.04em]">
+              <h1 className="text-display text-xl font-semibold tracking-[-0.025em] text-foreground sm:text-2xl">
                 Total a Receber
               </h1>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="collections-total money-fit block max-w-full text-4xl sm:text-5xl md:text-6xl font-semibold tracking-[-0.055em] tabular-nums whitespace-nowrap">
+                <span className="collections-total money-fit block max-w-full whitespace-nowrap text-3xl font-semibold tracking-[-0.045em] tabular-nums sm:text-4xl md:text-5xl">
                   R$ {fmt(stats.totalOverdue + dueTodayStats.total)}
                 </span>
               </div>
@@ -820,7 +817,7 @@ const Cobrancas = () => {
             </div>
           </div>
 
-          <div className="collections-hero-actions flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
+          <div className="collections-hero-actions grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-col xl:flex-row">
             {stats.overdue > 0 && selected.size === 0 && (
               <button onClick={() => handleBulk("whatsapp")} className="collections-primary-action btn-premium">
                 <MessageSquare size={14} /> Cobrar atrasadas ({stats.overdue})
@@ -927,14 +924,14 @@ const Cobrancas = () => {
                 key={s.label}
                 onClick={s.onClick}
                 style={{ animationDelay: `${idx * 60}ms` }}
-                className={`collection-stat relative overflow-hidden rounded-2xl border p-5 text-left transition-all focus-ring group ${s.active ? "is-active" : s.ring}`}
+                className={`collection-stat relative overflow-hidden rounded-2xl border p-4 text-left transition-colors focus-ring group ${s.active ? "is-active" : s.ring}`}
               >
-                {s.urgent && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-destructive via-destructive/70 to-transparent" />}
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
+                {s.urgent && <div className="absolute inset-y-4 left-0 w-0.5 rounded-full bg-destructive" />}
+                <div className="mb-2 flex items-start justify-between">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.bg}`}>
                     <s.icon size={18} className={s.color} />
                   </div>
-                  <span className={`text-3xl font-bold tabular-nums ${s.color}`}>{s.value}</span>
+                  <span className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</span>
                 </div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{s.label}</p>
                 {s.amount != null && (
@@ -972,7 +969,7 @@ const Cobrancas = () => {
         ] as const;
         const sortLabel = sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
         return (
-          <div className="collection-toolbar relative rounded-[22px] border p-2 sm:p-2.5 animate-fade-in">
+          <div className="collection-toolbar relative rounded-2xl border p-2 sm:p-2.5 animate-fade-in">
             <div className="flex flex-col xl:flex-row xl:items-center gap-2">
               {/* Search */}
               <div className="relative flex-1 min-w-0 group">
@@ -983,7 +980,7 @@ const Cobrancas = () => {
                   placeholder="Buscar por cliente, parcela # ou valor…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-11 pr-24 h-11 rounded-2xl bg-background/60 border border-border/50 text-foreground placeholder:text-muted-foreground/50 text-sm focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-all"
+                  className="h-11 w-full rounded-xl border border-border/50 bg-background/60 pl-11 pr-24 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
                 />
                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                   {search ? (
@@ -1037,7 +1034,7 @@ const Cobrancas = () => {
                 </div>
                 <button
                   onClick={toggleSelectAll}
-                  className={`flex items-center gap-2 px-3.5 h-11 rounded-2xl text-xs font-semibold shrink-0 transition-all focus-ring ${selected.size > 0 ? "bg-primary/10 border border-primary/40 text-primary" : "bg-background/60 border border-border/50 text-foreground hover:border-primary/30"}`}
+                  className={`flex h-11 shrink-0 items-center gap-2 rounded-xl px-3.5 text-xs font-semibold transition-colors focus-ring ${selected.size > 0 ? "bg-primary/10 border border-primary/40 text-primary" : "bg-background/60 border border-border/50 text-foreground hover:border-primary/30"}`}
                   title="Selecionar todas visíveis"
                 >
                   {selected.size > 0 ? <CheckSquare size={14} /> : <Square size={14} />}
@@ -1200,23 +1197,22 @@ const Cobrancas = () => {
             const avgTicket = agg && totalActiveInst > 0 ? (agg.grossExpected / totalActiveInst) : 0;
             const feePct = (group.total > 0 && group.totalFees > 0) ? Math.round((group.totalFees / group.total) * 100) : 0;
 
-            const accentGrad =
-              dueInfo.tone === "danger" ? "from-destructive via-destructive/70 to-amber-500"
-              : dueInfo.tone === "warn" ? "from-amber-500 via-amber-400 to-amber-300"
-              : dueInfo.tone === "ok" ? "from-success via-success/70 to-primary"
-              : "from-primary via-primary/60 to-primary/30";
+            const accentColor =
+              dueInfo.tone === "danger" ? "bg-destructive"
+              : dueInfo.tone === "warn" ? "bg-amber-500"
+              : dueInfo.tone === "ok" ? "bg-success"
+              : "bg-primary";
             const cardTint =
-              dueInfo.tone === "danger" ? "bg-gradient-to-br from-destructive/[0.04] via-card to-card"
-              : dueInfo.tone === "warn" ? "bg-gradient-to-br from-amber-500/[0.04] via-card to-card"
+              dueInfo.tone === "danger" ? "bg-destructive/[0.025]"
+              : dueInfo.tone === "warn" ? "bg-amber-500/[0.025]"
               : "bg-card/60";
             const copyPhone = async () => {
               try { await navigator.clipboard.writeText(phoneDigits || rawPhone); toast({ title: "Telefone copiado" }); } catch {}
             };
 
             return (
-              <div key={group.client_id} className={`collection-account-card group relative rounded-[22px] border ${cardTint} transition-all overflow-hidden ${dueInfo.tone === "danger" ? "is-overdue border-destructive/25" : "border-border"}`}>
-                {/* Top gradient accent strip */}
-                <div className={`h-1 w-full bg-gradient-to-r ${accentGrad}`} />
+              <div key={group.client_id} className={`collection-account-card group relative overflow-hidden rounded-2xl border ${cardTint} transition-colors ${dueInfo.tone === "danger" ? "is-overdue border-destructive/25" : "border-border"}`}>
+                <div className={`absolute inset-y-4 left-0 w-0.5 rounded-full ${accentColor}`} />
                 {showHeader && (
                   <div className="p-4 sm:p-5 flex flex-col gap-4">
                     {/* Top row: avatar + name + status + quick chips + select */}
@@ -1235,7 +1231,7 @@ const Cobrancas = () => {
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${group.client_id}`); }}
-                        className={`relative shrink-0 w-12 h-12 rounded-full ring-2 ${avatarRing} flex items-center justify-center text-sm font-bold focus-ring transition-transform hover:scale-105`}
+                        className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ${avatarRing} text-sm font-bold focus-ring`}
                         title="Abrir ficha do cliente"
                       >
                         {initials || "?"}
@@ -1314,20 +1310,20 @@ const Cobrancas = () => {
                             <p className="text-[9px] text-success/80 mt-0.5 tabular-nums font-semibold">recebido R$ {fmt(agg.paidAmount)}</p>
                             <p className="text-[9px] text-muted-foreground tabular-nums">a receber R$ {fmt(Math.max(0, agg.grossExpected - agg.paidAmount))}</p>
                           </div>
-                          <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/10 to-success/[0.02] px-3 py-2.5">
+                          <div className="rounded-xl border border-success/25 bg-success/[0.055] px-3 py-2.5">
                             <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold inline-flex items-center gap-1"><TrendingUp size={10} /> Lucro previsto</p>
                             <p className="text-sm font-bold text-success tabular-nums mt-1">R$ {fmt(expectedProfit)}</p>
                             <p className="text-[9px] text-success/80 mt-0.5 tabular-nums">já rendeu R$ {fmt(realizedProfit)}</p>
                             {agg.loaned > 0 && <p className="text-[9px] text-muted-foreground tabular-nums">ROI final {Math.round((expectedProfit / agg.loaned) * 100)}%</p>}
                           </div>
                           {agg.overdueCount > 0 ? (
-                            <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/10 to-destructive/[0.02] px-3 py-2.5">
+                            <div className="rounded-xl border border-destructive/25 bg-destructive/[0.055] px-3 py-2.5">
                               <p className="text-[9px] uppercase tracking-wide text-destructive/90 font-semibold inline-flex items-center gap-1"><AlertTriangle size={10} /> {agg.overdueCount} atrasada{agg.overdueCount === 1 ? "" : "s"}</p>
                               <p className="text-sm font-bold text-foreground tabular-nums mt-1">R$ {fmt(agg.overdueAmount)}</p>
                               <p className="text-[10px] font-semibold text-destructive tabular-nums">c/ multa R$ {fmt(agg.overdueAmount + agg.overdueFees)}</p>
                             </div>
                           ) : (
-                            <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/10 to-success/[0.02] px-3 py-2.5">
+                            <div className="rounded-xl border border-success/25 bg-success/[0.055] px-3 py-2.5">
                               <p className="text-[9px] uppercase tracking-wide text-success/80 font-semibold inline-flex items-center gap-1"><CheckCircle size={10} /> Situação</p>
                               <p className="text-sm font-bold text-success mt-1">Em dia</p>
                               <p className="text-[9px] text-success/70 mt-0.5">nenhum atraso</p>
@@ -1358,7 +1354,7 @@ const Cobrancas = () => {
                     <div className="collection-card-actions grid grid-cols-4 gap-2 pt-0.5">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleWhatsAppGroup(group); }}
-                        className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-br from-success to-success/85 text-success-foreground text-sm font-semibold hover:shadow-md hover:shadow-success/30 active:scale-[0.98] transition-all focus-ring"
+                        className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl bg-success px-3 py-2.5 text-sm font-semibold text-success-foreground transition-colors hover:bg-success/90 focus-ring sm:col-span-1"
                         title="Cobrar via WhatsApp"
                       >
                         <MessageSquare size={15} /> Cobrar
@@ -1369,21 +1365,21 @@ const Cobrancas = () => {
                           if (unpaidCount === 1 && firstUnpaid) setConfirmPayId(firstUnpaid.id);
                           else toggleGroupCollapse(group.client_id);
                         }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary/85 text-primary-foreground text-sm font-semibold hover:shadow-md hover:shadow-primary/30 active:scale-[0.98] transition-all focus-ring"
+                        className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-ring"
                         title={unpaidCount === 1 ? "Marcar como paga" : "Ver parcelas"}
                       >
                         <Check size={15} /> {unpaidCount === 1 ? "Pagar" : "Parcelas"}
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); copyPhone(); }}
-                        className="hidden sm:flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-accent hover:bg-accent/70 text-foreground text-sm font-semibold active:scale-[0.98] transition-all focus-ring"
+                        className="hidden items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent/70 focus-ring sm:flex"
                         title="Copiar telefone"
                       >
                         <Copy size={14} /> Telefone
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); navigate(`/clientes/${group.client_id}`); }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-accent hover:bg-accent/70 text-foreground text-sm font-semibold active:scale-[0.98] transition-all focus-ring"
+                        className="flex items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-accent/70 focus-ring"
                         title="Abrir cliente"
                       >
                         <ExternalLink size={14} /> Ficha

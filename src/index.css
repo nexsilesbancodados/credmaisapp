@@ -1746,13 +1746,8 @@ div[style*="Edit with Lovable"],
 
 .collections-hero {
   border-color: var(--collection-line);
-  background:
-    linear-gradient(90deg, hsl(42 22% 90% / .035) 1px, transparent 1px),
-    linear-gradient(hsl(42 22% 90% / .035) 1px, transparent 1px),
-    radial-gradient(700px 260px at 92% 0%, hsl(42 18% 72% / .08), transparent 68%),
-    linear-gradient(145deg, hsl(32 10% 10% / .94), hsl(30 8% 5% / .96));
-  background-size: 42px 42px, 42px 42px, auto, auto;
-  box-shadow: 0 28px 90px hsl(0 0% 0% / .3);
+  background: hsl(32 8% 7% / .82);
+  box-shadow: 0 18px 50px -36px hsl(0 0% 0% / .9);
 }
 
 .collections-hero-icon {
@@ -1764,7 +1759,6 @@ div[style*="Edit with Lovable"],
 
 .collections-total {
   color: var(--collection-ivory);
-  text-shadow: 0 12px 40px hsl(42 30% 65% / .07);
 }
 
 .money-fit {
@@ -1775,12 +1769,12 @@ div[style*="Edit with Lovable"],
 .collections-primary-action {
   min-height: 46px;
   border-radius: .75rem;
-  background: var(--collection-ivory) !important;
-  color: hsl(30 10% 7%) !important;
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
   box-shadow: none !important;
 }
 
-.collections-primary-action:hover { background: white !important; }
+.collections-primary-action:hover { background: hsl(var(--primary) / .9) !important; }
 
 .collections-secondary-action {
   min-height: 46px;
@@ -1802,19 +1796,18 @@ div[style*="Edit with Lovable"],
 
 .collection-stat {
   border-color: var(--collection-line);
-  background: linear-gradient(145deg, hsl(40 10% 12% / .7), hsl(30 8% 6% / .82));
+  background: hsl(32 8% 7% / .72);
   box-shadow: inset 0 1px hsl(0 0% 100% / .025);
 }
 
 .collection-stat:hover {
   border-color: hsl(42 18% 78% / .24);
-  transform: translateY(-2px);
 }
 
 .collection-stat.is-active {
   border-color: hsl(42 22% 82% / .3);
-  background: linear-gradient(145deg, hsl(42 14% 17% / .75), hsl(30 8% 7% / .9));
-  box-shadow: inset 0 0 0 1px hsl(42 22% 82% / .06), 0 14px 40px hsl(0 0% 0% / .22);
+  background: hsl(var(--primary) / .07);
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / .05);
 }
 
 .collection-tabs {
@@ -1842,18 +1835,17 @@ div[style*="Edit with Lovable"],
 
 .collection-account-card {
   border-color: var(--collection-line) !important;
-  background: linear-gradient(150deg, hsl(35 9% 10% / .74), hsl(30 7% 6% / .88)) !important;
-  box-shadow: 0 14px 40px hsl(0 0% 0% / .14);
+  background: hsl(32 8% 7% / .76) !important;
+  box-shadow: 0 16px 45px -38px hsl(0 0% 0% / .95);
 }
 
 .collection-account-card:hover {
   border-color: hsl(42 16% 78% / .21) !important;
-  box-shadow: 0 22px 62px hsl(0 0% 0% / .26);
-  transform: translateY(-1px);
+  box-shadow: 0 18px 48px -36px hsl(0 0% 0% / .98);
 }
 
 .collection-account-card.is-overdue {
-  background: linear-gradient(150deg, hsl(4 22% 10% / .62), hsl(30 7% 6% / .9)) !important;
+  background: hsl(4 18% 8% / .82) !important;
 }
 
 .collection-account-card > .h-1 { height: 2px; opacity: .72; }
