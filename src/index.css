@@ -1817,13 +1817,6 @@ div[style*="Edit with Lovable"],
 }
 
 @media (min-width: 640px) and (max-width: 1279px) {
-  .collection-tabs {
-    width: 100%;
-    justify-content: space-between;
-    overflow-x: auto;
-  }
-
-  .collection-tabs > button { flex: 1 0 auto; justify-content: center; }
   .collection-sort-actions { width: 100%; }
 }
 
@@ -1860,11 +1853,11 @@ div[style*="Edit with Lovable"],
   .collections-hero-summary h1 { font-size: clamp(1.3rem, 6.4vw, 1.75rem); }
   .collections-hero-summary > div:last-child > p:last-child { column-gap: .5rem; }
   .collections-hero-summary > div:last-child > p:last-child > .text-border { display: none; }
-  .collections-stats { grid-template-columns: 1fr; }
+  .collections-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .collection-stat { padding: .875rem 1rem; }
   .collection-stat > div:first-of-type { margin-bottom: .4rem; }
   .collection-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
-  .collection-tabs > button { justify-content: center; padding-inline: .375rem; }
+  .collection-tabs > button { justify-content: center; padding-inline: .375rem; min-width: 0; }
   .collection-sort-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; }
   .collection-sort-actions > button { border-radius: .75rem; }
   .collection-tools { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }

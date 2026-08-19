@@ -803,7 +803,7 @@ const Cobrancas = () => {
     <div className="collections-page space-y-5 pb-24">
       {/* Resumo operacional */}
       <div className="collections-hero rounded-2xl border p-5 sm:p-6 animate-fade-in">
-        <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <div className="collections-hero-summary flex items-start gap-4 min-w-0">
             <div className="collections-hero-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12">
               <Receipt size={22} className="text-primary" />
@@ -826,7 +826,7 @@ const Cobrancas = () => {
             </div>
           </div>
 
-          <div className="collections-hero-actions grid grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-col xl:flex-row">
+          <div className="collections-hero-actions grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-w-[21rem]">
             {stats.overdue > 0 && selected.size === 0 && (
               <button onClick={() => handleBulk("whatsapp")} className="collections-primary-action btn-premium">
                 <MessageSquare size={14} /> Cobrar atrasadas ({stats.overdue})
@@ -927,13 +927,13 @@ const Cobrancas = () => {
           },
         ];
         return (
-          <div className="collections-stats grid grid-cols-1 sm:grid-cols-3 gap-3 stagger-fade-in">
+          <div className="collections-stats grid grid-cols-2 lg:grid-cols-3 gap-3 stagger-fade-in">
             {kpis.map((s, idx) => (
               <button
                 key={s.label}
                 onClick={s.onClick}
                 style={{ animationDelay: `${idx * 60}ms` }}
-                className={`collection-stat relative overflow-hidden rounded-2xl border p-4 text-left transition-colors focus-ring group ${s.active ? "is-active" : s.ring}`}
+                className={`collection-stat relative overflow-hidden rounded-2xl border p-4 text-left transition-colors focus-ring group ${idx === 2 ? "col-span-2 lg:col-span-1" : ""} ${s.active ? "is-active" : s.ring}`}
               >
                 {s.urgent && <div className="absolute inset-y-4 left-0 w-0.5 rounded-full bg-destructive" />}
                 <div className="mb-2 flex items-start justify-between">
@@ -978,8 +978,8 @@ const Cobrancas = () => {
         ] as const;
         const sortLabel = sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
         return (
-          <div className="collection-toolbar relative rounded-2xl border p-2 sm:p-2.5 animate-fade-in">
-            <div className="flex flex-col xl:flex-row xl:items-center gap-2">
+          <div className="collection-toolbar relative rounded-2xl border p-3 sm:p-3.5 animate-fade-in">
+            <div className="collection-command-row grid gap-2 lg:grid-cols-[minmax(18rem,1fr)_auto]">
               {/* Search */}
               <div className="relative flex-1 min-w-0 group">
                 <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -989,39 +989,15 @@ const Cobrancas = () => {
                   placeholder="Buscar por cliente, parcela # ou valor…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-border/50 bg-background/60 pl-11 pr-24 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+                  className="h-11 w-full rounded-xl border border-border/50 bg-background/60 pl-11 pr-11 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
                 />
                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                   {search ? (
-                    <>
-                      <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{filtered.length} result.</span>
-                      <button aria-label="Limpar busca" onClick={() => setSearch("")} className="p-1 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
-                    </>
+                    <button aria-label="Limpar busca" onClick={() => setSearch("")} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground"><X size={14} /></button>
                   ) : (
                     <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md border border-border/40 bg-muted/40 text-[10px] font-mono text-muted-foreground">/</kbd>
                   )}
                 </div>
-              </div>
-
-              {/* Segmented tabs com contagem */}
-              <div className="collection-tabs flex items-center gap-1 p-1 rounded-xl border overflow-x-auto scrollbar-thin">
-                {tabs.map((f) => {
-                  const toneColor = f.tone === "destructive" ? "text-destructive" : f.tone === "success" ? "text-success" : f.tone === "primary" ? "text-primary" : "text-muted-foreground";
-                  return (
-                    <button
-                      key={f.key}
-                      onClick={() => applyFocus(f.key as any)}
-                       className={`relative flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${f.match ? "is-active text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      <span>{f.label}</span>
-                      {f.count > 0 && (
-                        <span className={`inline-flex items-center justify-center min-w-[20px] h-[18px] px-1.5 rounded-full text-[10px] font-bold tabular-nums ${f.match ? `bg-muted ${toneColor}` : "bg-background/70 text-muted-foreground"}`}>
-                          {f.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
               </div>
 
               {/* Sort + selection */}
@@ -1052,8 +1028,35 @@ const Cobrancas = () => {
               </div>
             </div>
 
+            {search && (
+              <p className="mt-1.5 px-1 text-[11px] text-muted-foreground" aria-live="polite">
+                {filtered.length} {filtered.length === 1 ? "resultado encontrado" : "resultados encontrados"}
+              </p>
+            )}
+
+            {/* Períodos ficam em uma faixa própria para nunca disputar espaço com a busca. */}
+            <div className="collection-tabs mt-3 grid grid-cols-3 gap-1 rounded-xl border p-1 sm:grid-cols-6">
+              {tabs.map((f) => {
+                const toneColor = f.tone === "destructive" ? "text-destructive" : f.tone === "success" ? "text-success" : f.tone === "primary" ? "text-primary" : "text-muted-foreground";
+                return (
+                  <button
+                    key={f.key}
+                    onClick={() => applyFocus(f.key as any)}
+                    className={`relative flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 h-10 text-xs font-semibold whitespace-nowrap transition-all ${f.match ? "is-active text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <span className="truncate">{f.label}</span>
+                    {f.count > 0 && (
+                      <span className={`inline-flex shrink-0 items-center justify-center min-w-[20px] h-[18px] px-1 rounded-full text-[10px] font-bold tabular-nums ${f.match ? `bg-muted ${toneColor}` : "bg-background/70 text-muted-foreground"}`}>
+                        {f.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Ações secundárias inline */}
-            <div className="collection-tools flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-border/40">
+            <div className="collection-tools flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-border/40">
               <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70 pl-2 pr-1">Ferramentas</span>
               <button
                 onClick={() => setShowAging(v => !v)}
