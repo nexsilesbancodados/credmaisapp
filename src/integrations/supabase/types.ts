@@ -700,11 +700,16 @@ export type Database = {
           last_collected_channel: string | null
           late_fee: number | null
           paid_amount: number | null
+          paid_fees: number
+          paid_interest: number
+          paid_principal: number
           paid_at: string | null
           payment_method: string | null
           receipt_review_status: string
           receipt_storage_path: string | null
           receipt_url: string | null
+          scheduled_interest: number
+          scheduled_principal: number
           status: string
           user_id: string
         }
@@ -722,11 +727,16 @@ export type Database = {
           last_collected_channel?: string | null
           late_fee?: number | null
           paid_amount?: number | null
+          paid_fees?: number
+          paid_interest?: number
+          paid_principal?: number
           paid_at?: string | null
           payment_method?: string | null
           receipt_review_status?: string
           receipt_storage_path?: string | null
           receipt_url?: string | null
+          scheduled_interest?: number
+          scheduled_principal?: number
           status?: string
           user_id: string
         }
@@ -744,11 +754,16 @@ export type Database = {
           last_collected_channel?: string | null
           late_fee?: number | null
           paid_amount?: number | null
+          paid_fees?: number
+          paid_interest?: number
+          paid_principal?: number
           paid_at?: string | null
           payment_method?: string | null
           receipt_review_status?: string
           receipt_storage_path?: string | null
           receipt_url?: string | null
+          scheduled_interest?: number
+          scheduled_principal?: number
           status?: string
           user_id?: string
         }
@@ -902,6 +917,7 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          fee_amount: number
           id: string
           receipt_url: string | null
           user_id: string
@@ -2092,7 +2108,9 @@ export type Database = {
           description: string
           id: string
           installment_id: string | null
+          interest_amount: number
           investor_payment_id: string | null
+          principal_amount: number
           source_key: string | null
           type: string
           user_id: string
@@ -2105,9 +2123,12 @@ export type Database = {
           created_at?: string
           date?: string
           description: string
+          fee_amount?: number
           id?: string
           installment_id?: string | null
+          interest_amount?: number
           investor_payment_id?: string | null
+          principal_amount?: number
           source_key?: string | null
           type?: string
           user_id: string
@@ -2120,9 +2141,12 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          fee_amount?: number
           id?: string
           installment_id?: string | null
+          interest_amount?: number
           investor_payment_id?: string | null
+          principal_amount?: number
           source_key?: string | null
           type?: string
           user_id?: string

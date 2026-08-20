@@ -181,6 +181,18 @@ describe("carteira e capital", () => {
     expect(m.lucroRecebido).toBe(40);     // antes era zero fixo no código
   });
 
+  it("reduz capital na rua pelo principal efetivamente devolvido", () => {
+    const m = computeDashboardMetrics(
+      entrada([
+        parcela({ status: "paid", paid_amount: 300, paid_principal: 180, paid_at: dias(-1) }),
+        parcela({ status: "pending", due_date: dias(10) }),
+      ]),
+      AGORA,
+    );
+    expect(m.capitalNaRua).toBe(820);
+    expect(m.totalProfitAmount).toBe(120);
+  });
+
   it("não inventa lucro negativo", () => {
     const m = computeDashboardMetrics(
       entrada([parcela({ status: "paid", amount: 10, paid_amount: 10, paid_at: dias(-1) })]),

@@ -18,6 +18,7 @@ export interface MetricsInstallment {
   contract_id: string;
   amount: number | string | null;
   paid_amount?: number | string | null;
+  paid_principal?: number | string | null;
   due_date: string;
   paid_at?: string | null;
   status: InstallmentStatus;
@@ -64,7 +65,21 @@ export function computeDashboardMetrics(data: DashboardInput, agora: Date = new 
   const activeIds = new Set(activeContracts.map((c) => c.id));
   const activeInstallments = installments.filter((i) => activeIds.has(i.contract_id));
 
-  const capitalNaRua = activeContracts.reduce((s, c) => s + num(c.capital), 0);
+  const returnedByContract = new Map<string, number>();
+  for (const installment of activeInstallments) {
+    if (installment.status !== "paid") continue;
+    const contract = activeContracts.find((c) => c.id === installment.contract_id);
+    const fallback = contract ? num(contract.capital) / (num(contract.num_installments) || 1) : 0;
+    returnedByContract.set(
+      installment.contract_id,
+      (returnedByContract.get(installment.contract_id) || 0) +
+        (installment.paid_principal == null ? fallback : num(installment.paid_principal)),
+    );
+  }
+  const capitalNaRua = activeContracts.reduce(
+    (s, c) => s + Math.max(0, num(c.capital) - (returnedByContract.get(c.id) || 0)),
+    0,
+  );
   const lucroAReceber = activeContracts.reduce((s, c) => s + num(c.total_interest), 0);
 
   const totalInstallments = activeInstallments.length;
@@ -115,10 +130,9 @@ export function computeDashboardMetrics(data: DashboardInput, agora: Date = new 
 
   // Lucro: do que já entrou, quanto era juros e não devolução de capital.
   const totalCapitalReturned = paidInstallments.reduce((s, i) => {
+    if (i.paid_principal != null) return s + num(i.paid_principal);
     const contract = activeContracts.find((c) => c.id === i.contract_id);
-    if (!contract) return s;
-    const parcelas = num(contract.num_installments) || 1;
-    return s + num(contract.capital) / parcelas;
+    return contract ? s + num(contract.capital) / (num(contract.num_installments) || 1) : s;
   }, 0);
   const totalProfitAmount = Math.max(0, totalReceived - totalCapitalReturned);
 

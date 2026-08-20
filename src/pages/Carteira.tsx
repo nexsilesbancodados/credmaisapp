@@ -85,7 +85,7 @@ const Carteira = () => {
       // dinheiro que ele trouxe continua no caixa.
       fetchAll((f, t) =>
         supabase.from("contract_installments")
-          .select("id, amount, paid_amount, paid_at, contract_id, client_id")
+          .select("id, amount, paid_amount, paid_principal, paid_interest, paid_fees, paid_at, contract_id, client_id")
           .eq("user_id", user!.id)
           .eq("status", "paid")
           .order("paid_at", { ascending: false })
@@ -106,8 +106,16 @@ const Carteira = () => {
     enabled: !!user,
   });
 
-  const loading = loadingProfits || loadingExpenses || loadingInst || loadingCapital || loadingWithdraw;
-  const loadError = profitsError || expensesError || installmentsError || capitalError || withdrawalsError;
+  const { data: ledgerOutflows = [], isLoading: loadingLedger, error: ledgerError } = useQuery({
+    queryKey: ["carteira-ledger-outflows", user?.id],
+    queryFn: async () => fetchAll((f, t) => supabase.from("transactions").select("*")
+      .eq("user_id", user!.id).in("type", ["loan_disbursement", "expense"])
+      .order("date", { ascending: false }).range(f, t)),
+    enabled: !!user,
+  });
+
+  const loading = loadingProfits || loadingExpenses || loadingInst || loadingCapital || loadingWithdraw || loadingLedger;
+  const loadError = profitsError || expensesError || installmentsError || capitalError || withdrawalsError || ledgerError;
 
   const handleSave = async () => {
     if (!user || !amount || !description || saving) return;
@@ -167,9 +175,12 @@ const Carteira = () => {
   const totalWithdrawals = withdrawals.reduce((a: number, w: any) => a + Number(w.amount), 0);
   const totalLucros = profits.reduce((a: number, p: any) => a + Number(p.amount), 0);
   const totalParcelas = installments.reduce((a: number, i: any) => a + Number(i.paid_amount || i.amount), 0);
+  const principalRecebido = installments.reduce((a: number, i: any) => a + Number(i.paid_principal || 0), 0);
+  const totalEmprestimosLiberados = ledgerOutflows.filter((t: any) => t.type === "loan_disbursement").reduce((a: number, t: any) => a + Number(t.amount), 0);
+  const totalSaidasRazao = ledgerOutflows.filter((t: any) => t.type === "expense").reduce((a: number, t: any) => a + Number(t.amount), 0);
   const totalGastos = expenses.reduce((a: number, e: any) => a + Number(e.amount), 0);
   const totalEntradas = totalCapital + totalParcelas;
-  const totalSaidas = totalGastos + totalWithdrawals;
+  const totalSaidas = totalGastos + totalWithdrawals + totalEmprestimosLiberados + totalSaidasRazao;
   const saldo = totalEntradas - totalSaidas;
 
   // === Filtros de período ===
@@ -194,16 +205,16 @@ const Carteira = () => {
   const stats = useMemo(() => {
     // Sem o lucro na soma: ele já vem embutido na parcela (ver totais acima).
     const inCur = sumIn(capital, "amount", days, null) + sumIn(installments.map((i: any) => ({ ...i, date: i.paid_at })), "amount", days, null);
-    const outCur = sumIn(expenses, "amount", days, null) + sumIn(withdrawals, "amount", days, null);
+    const outCur = sumIn(expenses, "amount", days, null) + sumIn(withdrawals, "amount", days, null) + sumIn(ledgerOutflows, "amount", days, null);
     const inPrev = prevDays ? sumIn(capital, "amount", prevDays, days) + sumIn(installments.map((i: any) => ({ ...i, date: i.paid_at })), "amount", prevDays, days) : 0;
-    const outPrev = prevDays ? sumIn(expenses, "amount", prevDays, days) + sumIn(withdrawals, "amount", prevDays, days) : 0;
+    const outPrev = prevDays ? sumIn(expenses, "amount", prevDays, days) + sumIn(withdrawals, "amount", prevDays, days) + sumIn(ledgerOutflows, "amount", prevDays, days) : 0;
     const inDelta = inPrev > 0 ? ((inCur - inPrev) / inPrev) * 100 : null;
     const outDelta = outPrev > 0 ? ((outCur - outPrev) / outPrev) * 100 : null;
     return { inCur, outCur, netCur: inCur - outCur, inDelta, outDelta };
-  }, [capital, profits, installments, expenses, withdrawals, days, prevDays]);
+  }, [capital, installments, expenses, withdrawals, ledgerOutflows, days, prevDays]);
 
   // Capital líquido disponível (aportes − retiradas de capital)
-  const capitalLiquido = totalCapital - totalWithdrawals;
+  const capitalLiquido = totalCapital + principalRecebido - totalEmprestimosLiberados - totalWithdrawals;
 
   const timeline = useMemo(() => {
     const all = [
@@ -212,6 +223,7 @@ const Carteira = () => {
       // O lucro NÃO entra na linha do tempo como movimento próprio: ele já está
       // dentro da parcela recebida logo abaixo. Aparecia duas vezes.
       ...installments.map((i: any) => ({ type: "in" as const, desc: "Parcela recebida", amount: Number(i.paid_amount || i.amount), date: i.paid_at, source: "Parcela", removable: false, id: i.id })),
+      ...ledgerOutflows.map((t: any) => ({ type: "out" as const, desc: t.description, amount: Number(t.amount), date: t.date, source: t.type === "loan_disbursement" ? "Empréstimo liberado" : "Pagamento a investidor", removable: false, id: t.id })),
       ...expenses.map((e: any) => ({ type: "out" as const, desc: e.description, amount: Number(e.amount), date: e.date, source: e.category || "Gasto", removable: false, id: e.id })),
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -220,7 +232,7 @@ const Carteira = () => {
       if (searchTimeline && !t.desc.toLowerCase().includes(searchTimeline.toLowerCase()) && !t.source.toLowerCase().includes(searchTimeline.toLowerCase())) return false;
       return true;
     });
-  }, [profits, expenses, installments, capital, withdrawals, days, searchTimeline]);
+  }, [expenses, installments, capital, withdrawals, ledgerOutflows, days, searchTimeline]);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
   const fmtCompact = (v: number) =>
@@ -255,7 +267,6 @@ const Carteira = () => {
   }
 
   // === Composição de entradas (para barra segmentada) ===
-  const principalRecebido = Math.max(0, totalParcelas - totalLucros);
   const entradasTotal = totalCapital + totalParcelas || 1;
   const capitalPct = (totalCapital / entradasTotal) * 100;
   const lucrosPct = (totalLucros / entradasTotal) * 100;

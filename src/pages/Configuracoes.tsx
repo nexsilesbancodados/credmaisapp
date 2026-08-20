@@ -26,6 +26,14 @@ const COLOR_PRESETS = [
 const Configuracoes = () => {
   const confirm = useConfirm();
   const { user, profile, isPlatformAdmin } = useAuth();
+  const { data: ownRole } = useQuery({
+    queryKey: ["own-settings-role", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user!.id).maybeSingle();
+      return data?.role ?? null;
+    },
+    enabled: !!user,
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { refresh: refreshWhiteLabel } = useWhiteLabel();
@@ -400,7 +408,7 @@ const Configuracoes = () => {
   type Item = { id: string; label: string; icon: any; keywords?: string };
   type Group = { id: string; label: string; items: Item[] };
 
-  const groups: Group[] = [
+  const allGroups: Group[] = [
     {
       id: "essencial",
       label: "Essencial",
@@ -440,6 +448,18 @@ const Configuracoes = () => {
       ],
     },
   ];
+
+  // Operadores e leitores recebem uma tela enxuta. Controles de marca, módulos,
+  // integrações e automações pertencem ao dono/admin da operação.
+  const commonAllowed = ownRole === "viewer"
+    ? new Set(["notificacoes"])
+    : ownRole === "operator"
+      ? new Set(["pix", "padroes", "notificacoes", "portal", "contrato", "mensagem"])
+      : null;
+  const groups = commonAllowed
+    ? allGroups.map((group) => ({ ...group, items: group.items.filter((item) => commonAllowed.has(item.id)) }))
+        .filter((group) => group.items.length > 0)
+    : allGroups;
 
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);

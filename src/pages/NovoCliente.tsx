@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import ContractTemplate from "@/components/ContractTemplate";
 
 import LoanPreviewPanel from "@/components/loan/LoanPreviewPanel";
-import { calculateLoan, generateInstallmentSchedule, type LoanMode } from "@/lib/loanMath";
+import { buildAmortization, calculateLoan, generateInstallmentSchedule, type LoanMode } from "@/lib/loanMath";
 import { getSignedUploadUrl } from "@/lib/storage";
 import { todayLocalISO, toDateInputValue, formatBR, localNoonISO, parseLocalDate } from "@/lib/dateUtils";
 import InvestorAllocationSelect from "@/components/InvestorAllocationSelect";
@@ -425,12 +425,23 @@ const NovoCliente = () => {
       gracePeriods: grace,
     });
     if (!r) return null;
+    const amortization = buildAmortization(r, {
+      capital: cap,
+      rate: taxa,
+      periods: n,
+      frequency,
+      loanMode,
+      valueMode,
+      installmentValue: parcela,
+      gracePeriods: grace,
+    });
     return {
       totalInterest: r.totalInterest,
       totalAmount: r.totalAmount,
       installmentAmount: r.installmentAmount,
       numParcelas: r.numInstallments,
       schedule: r.schedule,
+      amortization,
       ...(r.derivedRate !== undefined ? { derivedRate: r.derivedRate } : {}),
     };
   }, [capital, taxaJuros, numInstallments, loanMode, frequency, valueMode, installmentValue, gracePeriods]);
@@ -650,6 +661,8 @@ const NovoCliente = () => {
       const installments = dueDates.map((dd, i) => ({
         installment_number: i + 1,
         amount: calc.schedule[i] ?? calc.installmentAmount,
+        scheduled_principal: calc.amortization[i]?.principal ?? 0,
+        scheduled_interest: calc.amortization[i]?.interest ?? 0,
         due_date: dd,
       }));
       const { data: created, error: createError } = await (supabase as any).rpc("create_client_contract", {

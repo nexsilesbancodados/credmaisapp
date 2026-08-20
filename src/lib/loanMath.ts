@@ -360,12 +360,16 @@ export function buildAmortization(
     // fechava: zerava o saldo cedo demais e subestimava os juros.)
     const remaining = result.schedule.length - grace;
     const pmt = result.schedule[grace] ?? 0;
-    const startBalance = balance; // capital acumulado ao fim da carência
-    const interestPer = remaining > 0 ? (pmt * remaining - startBalance) / remaining : 0;
+    // Para fins contábeis, "principal devolvido" nunca pode superar o capital
+    // originalmente emprestado. Os juros acumulados na carência continuam sendo
+    // juros, não viram um novo aporte do usuário.
+    const principalPer = remaining > 0 ? input.capital / remaining : 0;
+    let principalRemaining = input.capital;
     for (let k = 0; k < remaining; k++) {
-      const interest = interestPer;
-      const principal = pmt - interest;
-      balance = Math.max(0, balance - principal);
+      const principal = k === remaining - 1 ? principalRemaining : principalPer;
+      const interest = pmt - principal;
+      principalRemaining = Math.max(0, principalRemaining - principal);
+      balance = Math.max(0, balance - pmt);
       rows.push({ n: grace + k + 1, payment: pmt, interest, principal, balance });
     }
     return rows;
