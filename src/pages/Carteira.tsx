@@ -85,7 +85,7 @@ const Carteira = () => {
       // dinheiro que ele trouxe continua no caixa.
       fetchAll((f, t) =>
         supabase.from("contract_installments")
-          .select("id, amount, paid_amount, paid_principal, paid_interest, paid_fees, paid_at, contract_id, client_id")
+          .select("id, amount, paid_amount, paid_at, contract_id, client_id")
           .eq("user_id", user!.id)
           .eq("status", "paid")
           .order("paid_at", { ascending: false })
@@ -175,7 +175,12 @@ const Carteira = () => {
   const totalWithdrawals = withdrawals.reduce((a: number, w: any) => a + Number(w.amount), 0);
   const totalLucros = profits.reduce((a: number, p: any) => a + Number(p.amount), 0);
   const totalParcelas = installments.reduce((a: number, i: any) => a + Number(i.paid_amount || i.amount), 0);
-  const principalRecebido = installments.reduce((a: number, i: any) => a + Number(i.paid_principal || 0), 0);
+  // Enquanto a migração ainda não chegou ao ambiente remoto, a diferença
+  // recebimentos-lucro preserva compatibilidade. Após a migração, o razão
+  // passa a fornecer a mesma composição de forma explícita.
+  const principalRecebido = installments.some((i: any) => i.paid_principal != null)
+    ? installments.reduce((a: number, i: any) => a + Number(i.paid_principal || 0), 0)
+    : Math.max(0, totalParcelas - totalLucros);
   const totalEmprestimosLiberados = ledgerOutflows.filter((t: any) => t.type === "loan_disbursement").reduce((a: number, t: any) => a + Number(t.amount), 0);
   const totalSaidasRazao = ledgerOutflows.filter((t: any) => t.type === "expense").reduce((a: number, t: any) => a + Number(t.amount), 0);
   const totalGastos = expenses.reduce((a: number, e: any) => a + Number(e.amount), 0);

@@ -50,7 +50,7 @@ const Dashboard = () => {
           .select("id, capital, total_interest, num_installments, status, created_at, client_id, clients(name, cpf_cnpj)")
           .eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("contract_installments")
-          .select("id, contract_id, client_id, amount, paid_amount, paid_principal, paid_interest, paid_fees, late_fee, due_date, paid_at, status")
+          .select("id, contract_id, client_id, amount, paid_amount, late_fee, due_date, paid_at, status")
           .eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("clients").select("id, name, credit_score, status").eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("goals").select("*").eq("user_id", user!.id).range(f, t)),
