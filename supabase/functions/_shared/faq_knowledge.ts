@@ -305,7 +305,7 @@ export const FAQ: FaqEntry[] = [
     patterns: rx("(cobrança indevida|cobrar[aá] duas vezes|paguei e cobra de novo|ja paguei e continua|cobrança errada|valor errado)"),
     answer: () => `Vamos verificar já! 🔍 Me envie o comprovante e o valor que aparece cobrado — resolvo em minutos.` },
   { id: "complain.harassment", category: "complain",
-    patterns: rx("(muita mensagem|para de mandar|para de me mandar|assediando|perseguindo|bloquear)"),
+    patterns: rx("(muita mensagem|para de mandar|para de me mandar|nao me manda mais|nao manda mais|assediando|perseguindo|bloquear)"),
     answer: () => `Peço desculpa pelo incômodo. 🙏 Vou reduzir a frequência e você pode digitar *"parar"* a qualquer momento pra sair da lista.` },
 
   // ═════ PERGUNTAS CONTEXTUAIS (CLIENTE ATIVO) ═════
@@ -313,7 +313,7 @@ export const FAQ: FaqEntry[] = [
     patterns: rx("(quando vence|proximo vencimento|próximo vencimento|proxima parcela vence|data de vencimento|dia da parcela)"),
     answer: (c) => `Digite *1* que já te mando *todas as parcelas em aberto* com data e valor certinhos. 📅` },
   { id: "ctx.balance", category: "context",
-    patterns: rx("(saldo devedor|quanto devo|quanto falta pagar|meu saldo|quanto ainda devo|total em aberto)"),
+    patterns: rx("(saldo devedor|quanto (eu )?devo|quanto falta pagar|meu saldo|quanto ainda devo|total em aberto)"),
     answer: (c) => `Digite *1* que puxo *tudo em aberto* com o saldo atualizado. 💰` },
   { id: "ctx.installments_left", category: "context",
     patterns: rx("(quantas parcelas faltam|parcelas restantes|faltam quantas)"),
@@ -327,7 +327,7 @@ export const FAQ: FaqEntry[] = [
 
   // ═════ FAQs FINAIS DIVERSAS ═════
   { id: "misc.location", category: "misc",
-    patterns: rx("(onde fica|endereco|endereço|localizacao|localização|tem escritorio|escritório fisico|matriz)"),
+    patterns: rx("(onde (voces |vocês )?fica(m)?|endereco|endereço|localizacao|localização|tem escritorio|escritório fisico|matriz)"),
     answer: (c) => `Somos *100% digitais* — atendemos de qualquer lugar do Brasil via WhatsApp e portal. Sem filas, sem deslocamento! 🌐` },
   { id: "misc.states", category: "misc",
     patterns: rx("(atende (em|no|na) [a-z ]+|atende todo brasil|atende meu estado|só (em|no|na))"),
@@ -339,13 +339,13 @@ export const FAQ: FaqEntry[] = [
     patterns: rx("(fala ingles|english|habla espanol|other language|otro idioma)"),
     answer: () => `Atendemos em *português* apenas por enquanto. 🇧🇷 Português mesmo é o que fluímos! 😄` },
   { id: "misc.working_ok", category: "misc",
-    patterns: rx("(voce ta funcionando|voce funciona|o bot ta on|ta on line|ta ai)"),
+    patterns: rx("((voce|voces|vocês) (esta|estao|está|estão|ta|tão) funcionando|voce funciona|o bot ta on|ta on line|ta ai)"),
     answer: () => `Aqui estou! ✅ 24 horas por dia respondendo. Manda a boa!` },
   { id: "misc.reference", category: "misc",
     patterns: rx("(indicar amigo|indicacao|indicação|programa de indicacao|ganho por indicar|cashback)"),
     answer: (c) => `Amamos indicações! 💚 Ainda não temos programa formal, mas fale com seu consultor sobre *bônus por indicação* — muitas vezes conseguimos. 🎁` },
   { id: "misc.review", category: "misc",
-    patterns: rx("(reclame aqui|nota|avaliacao|avaliação|reputacao|reputação|é confiavel|confiável)"),
+    patterns: rx("(reclame aqui|nota|avaliacao|avaliação|reputacao|reputação|(e|sao|é|são) confiaveis?|(e|sao|é|são) confiáveis?)"),
     answer: (c) => `Trabalhamos pra manter reputação sólida — atendimento humano, contratos claros e taxa transparente. Melhor prova é o cliente satisfeito. 💚` },
 ];
 
@@ -366,8 +366,11 @@ export function findFaqMatch(text: string, ctx: FaqContext): { entry: FaqEntry; 
   for (const entry of FAQ) {
     let score = 0;
     for (const pat of entry.patterns) {
-      if (pat.test(text) || pat.test(t)) {
-        score += 10;
+      const match = text.match(pat) ?? t.match(pat);
+      if (match) {
+        // Frases específicas vencem palavras genéricas. Ex.: "quantas parcelas
+        // faltam" é contexto do contrato, não a pergunta genérica sobre prazo.
+        score += 10 + Math.min(match[0].length, 50) / 10;
         break;
       }
     }
