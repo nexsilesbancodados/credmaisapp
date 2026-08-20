@@ -44,9 +44,10 @@ const CobradorExterno = () => {
   const [payFile, setPayFile] = useState<File | null>(null);
   const [paySaving, setPaySaving] = useState(false);
 
-  // Auto-login from saved token
+  // Mantém o token apenas durante a aba atual. Tokens de portal são credenciais:
+  // persistir em localStorage os deixava disponíveis mesmo após fechar o navegador.
   useEffect(() => {
-    const saved = localStorage.getItem(TOKEN_KEY);
+    const saved = sessionStorage.getItem(TOKEN_KEY);
     if (saved) {
       setToken(saved);
       void loginWithToken(saved, true);
@@ -105,7 +106,7 @@ const CobradorExterno = () => {
 
     if (error || !data) {
       if (!silent) toast({ title: "Acesso negado", description: "Token inválido ou desativado.", variant: "destructive" });
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
       setLoading(false);
       return;
     }
@@ -115,7 +116,7 @@ const CobradorExterno = () => {
     setCollectorData(payload.collector);
     setCollectorId(payload.collector?.id ?? null);
     setUserId(payload.owner_id ?? null);
-    localStorage.setItem(TOKEN_KEY, tk);
+    sessionStorage.setItem(TOKEN_KEY, tk);
     setLoading(false);
   };
 
@@ -125,7 +126,7 @@ const CobradorExterno = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
     setCollectorData(null);
     setCollectorId(null);
     setUserId(null);
@@ -151,7 +152,7 @@ const CobradorExterno = () => {
     try {
       let receipt_url: string | null = null;
       if (payFile && userId) {
-        const savedTok = localStorage.getItem(TOKEN_KEY) || token;
+        const savedTok = sessionStorage.getItem(TOKEN_KEY) || token;
         const fd = new FormData();
         fd.append("collector_token", savedTok);
         fd.append("installment_id", payInstallment.id);
@@ -232,7 +233,7 @@ const CobradorExterno = () => {
           <button type="submit" disabled={loading} className="btn-premium w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
             {loading ? "Verificando..." : (<><LogIn size={16} /> Acessar Portal</>)}
           </button>
-          <p className="text-[10px] text-center text-muted-foreground">Acesso seguro · Token fornecido pelo gestor · Sessão lembrada neste dispositivo</p>
+          <p className="text-[10px] text-center text-muted-foreground">Acesso seguro · Token fornecido pelo gestor · Sessão mantida somente nesta aba</p>
         </form>
       </div>
     );

@@ -35,6 +35,14 @@ Não há vulnerabilidades críticas ou altas conhecidas abertas no código ativo
 - Impacto: a política não bloqueava recursos ou execução fora da lista permitida.
 - Correção: CSP passou a ser aplicada, `unsafe-eval` foi removido e `frame-ancestors 'self'` foi adicionado. Os demais cabeçalhos incluem HSTS, `nosniff`, política de referência e política de permissões.
 
+### SEC-004 — token do portal do cobrador persistente
+
+- Severidade: baixa
+- Local: `src/pages/CobradorExterno.tsx`, autenticação do portal externo
+- Evidência: o token de acesso era salvo em `localStorage` e continuava disponível depois de fechar o navegador.
+- Impacto: em dispositivo compartilhado, outra pessoa poderia reabrir o portal sem reapresentar a credencial; uma injeção executada futuramente também teria uma janela de exposição maior.
+- Correção: o token passou para `sessionStorage`, é removido no logout e expira automaticamente ao encerrar a aba.
+
 ## Controles verificados
 
 - 41 funções Supabase passaram pela checagem estática do projeto.
@@ -49,9 +57,9 @@ Não há vulnerabilidades críticas ou altas conhecidas abertas no código ativo
 
 - TypeScript e ESLint: aprovados.
 - Funções Supabase: 41 aprovadas na checagem; 96 testes Deno aprovados.
-- Frontend: 149 testes unitários aprovados.
+- Frontend: 151 testes unitários aprovados.
 - Build Vite de produção: aprovado.
-- Playwright: 96 cenários de saúde de rotas, autenticação, acessibilidade básica e responsividade aprovados.
+- Playwright: 147 cenários de saúde de rotas, autenticação, acessibilidade básica e responsividade aprovados.
 - Dependências de produção: 0 avisos conhecidos no `npm audit`.
 - Busca de segredos no `dist`: nenhum resultado.
 
