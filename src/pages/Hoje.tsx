@@ -8,11 +8,14 @@ import { toast } from "sonner";
 import {
   Sunrise, AlertCircle, CheckCircle2, ListTodo, Receipt,
   ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
-  UserPlus, Cake, DollarSign, TrendingUp, CalendarDays, Wallet, History, X
+  UserPlus, Cake, DollarSign, TrendingUp, CalendarDays, Wallet, History
 } from "lucide-react";
 import SmartAlerts from "@/components/SmartAlerts";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
 import { fetchAll } from "@/lib/fetchAll";
+import { computeLateFeeBreakdown } from "@/lib/lateFee";
+import PayModal from "@/components/cobrancas/PayModal";
+import ErrorState from "@/components/feedback/ErrorState";
 
 const startOfToday = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
 const endOfToday = () => { const d = new Date(); d.setHours(23,59,59,999); return d; };
@@ -36,7 +39,7 @@ const Hoje = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [pendingPayment, setPendingPayment] = useState<{ id: string; amount: number; client: string } | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<any | null>(null);
   const [greeting, setGreeting] = useState("");
 
   useEffect(() => {
@@ -49,7 +52,7 @@ const Hoje = () => {
     [["hoje", user?.id]],
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ["hoje", user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -64,13 +67,13 @@ const Hoje = () => {
         next7Res, paidRecentRes, profitsMonthRes, pendingMonthRes, clientsRes,
       ] = await Promise.all([
         supabase.from("contract_installments")
-          .select("id, amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, phone, whatsapp), contracts:contract_id(capital)")
-          .eq("user_id", user.id).eq("status", "pending")
+          .select("*, clients:client_id(name, phone, whatsapp), contracts:contract_id(capital, interest_rate, num_installments, daily_interest_percent, max_interest_cap_percent)")
+          .eq("user_id", user.id).neq("status", "paid").neq("status", "cancelled")
           .gte("due_date", today).lte("due_date", eod)
           .order("due_date", { ascending: true }).limit(50),
         fetchAll((f, t) => supabase.from("contract_installments")
-          .select("id, amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, phone, whatsapp), contracts:contract_id(capital)")
-          .eq("user_id", user.id).eq("status", "pending")
+          .select("*, clients:client_id(name, phone, whatsapp), contracts:contract_id(capital, interest_rate, num_installments, daily_interest_percent, max_interest_cap_percent)")
+          .eq("user_id", user.id).neq("status", "paid").neq("status", "cancelled")
           .lt("due_date", today)
           .order("due_date", { ascending: true }).range(f, t)).then((d) => ({ data: d })),
         supabase.from("todos").select("id, task, is_complete").eq("user_id", user.id).eq("is_complete", false).order("created_at", { ascending: false }).limit(8),
@@ -80,7 +83,7 @@ const Hoje = () => {
         // Agenda 7 dias (incluindo hoje)
         supabase.from("contract_installments")
           .select("id, amount, due_date, client_id, clients:client_id(name)")
-          .eq("user_id", user.id).eq("status", "pending")
+          .eq("user_id", user.id).neq("status", "paid").neq("status", "cancelled")
           .gte("due_date", today).lte("due_date", in7)
           .order("due_date", { ascending: true }).limit(80),
         // Últimos pagamentos
@@ -93,7 +96,7 @@ const Hoje = () => {
         fetchAll((f, t) => supabase.from("profits").select("amount").eq("user_id", user.id).gte("date", som).lte("date", eom).range(f, t)).then((d) => ({ data: d })),
         // A receber no mês (pendente)
         fetchAll((f, t) => supabase.from("contract_installments").select("amount")
-          .eq("user_id", user.id).eq("status", "pending")
+          .eq("user_id", user.id).neq("status", "paid").neq("status", "cancelled")
           .gte("due_date", som).lte("due_date", eom).range(f, t)).then((d) => ({ data: d })),
         // Aniversariantes (puxa só os com birth_date e filtra no client)
         supabase.from("clients")
@@ -102,6 +105,10 @@ const Hoje = () => {
           .not("birth_date", "is", null)
           .limit(500),
       ]);
+
+      const failed = [dueTodayRes, todosRes, notifRes, promisesRes, next7Res, paidRecentRes, clientsRes]
+        .find((result: any) => result?.error) as any;
+      if (failed?.error) throw failed.error;
 
       // Top devedores: agrupa atraso por cliente
       const debtors: Record<string, { id: string; name: string; total: number; count: number; phone?: string; whatsapp?: string }> = {};
@@ -166,8 +173,8 @@ const Hoje = () => {
     dueTodayCount: data?.dueToday.length || 0,
   }), [data]);
 
-  const markPaid = async (id: string, amount: number) => {
-    setSavingId(id);
+  const markPaid = async (inst: any, received: number, waiveFee = false) => {
+    setSavingId(inst.id);
     // RPC atômico, o mesmo usado em Cobranças e no Detalhe do Cliente: numa
     // transação só ele baixa a parcela, lança o lucro (juros reais do contrato),
     // lança o caixa e conclui o contrato se foi a última.
@@ -176,17 +183,37 @@ const Hoje = () => {
     // NUNCA aparecia em Lucros nem no caixa. Em 2026-08-05 havia 88 pagamentos
     // recentes (R$ 16.164,28) fora do razão por causa deste caminho e dos outros
     // que também não usavam o RPC.
-    const { error } = await supabase.rpc("pay_installment", {
-      _installment_id: id,
-      _paid_total: amount,
-      _mark_paid: true,
-    });
-    setSavingId(null);
-    if (error) { toast.error("Erro ao registrar pagamento"); return; }
-    setPendingPayment(null);
-    toast.success("Pagamento registrado");
-    qc.invalidateQueries({ queryKey: ["hoje"] });
-    qc.invalidateQueries({ queryKey: ["dashboard-data"] });
+    const breakdown = computeLateFeeBreakdown(inst);
+    const alreadyPaid = Number(inst.paid_amount || 0);
+    const totalDue = waiveFee ? breakdown.base : breakdown.withFees;
+    const remaining = Math.max(0, Math.round((totalDue - alreadyPaid) * 100) / 100);
+    const isFull = received + 0.005 >= remaining;
+    try {
+      const result = waiveFee && isFull
+        ? await (supabase as any).rpc("pay_installment_waiving_fees", {
+            _installment_id: inst.id,
+            _paid_total: alreadyPaid + received,
+            _method: "manual",
+          })
+        : await supabase.rpc("pay_installment", {
+            _installment_id: inst.id,
+            _paid_total: alreadyPaid + received,
+            _mark_paid: isFull,
+          });
+      if (result.error) throw result.error;
+      setPendingPayment(null);
+      toast.success(isFull ? (waiveFee ? "Parcela quitada sem encargos" : "Pagamento registrado") : "Pagamento parcial registrado");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["hoje"] }),
+        qc.invalidateQueries({ queryKey: ["dashboard-data"] }),
+        qc.invalidateQueries({ queryKey: ["cobrancas-installments"] }),
+      ]);
+    } catch (error: any) {
+      toast.error(waiveFee ? "Não foi possível aplicar o desconto" : "Erro ao registrar pagamento", { description: error?.message });
+      throw error;
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const toggleTodo = async (id: string, current: boolean) => {
@@ -216,6 +243,10 @@ const Hoje = () => {
         </div>
       </div>
     );
+  }
+
+  if (loadError || !data) {
+    return <ErrorState error={loadError} title="Não foi possível carregar o resumo do dia" onRetry={() => { void refetch(); }} />;
   }
 
   const quickActions = [
@@ -431,7 +462,7 @@ const Hoje = () => {
                       <span className="text-[11px] font-bold sm:hidden">WhatsApp</span>
                     </button>
                     <button
-                      onClick={() => setPendingPayment({ id: inst.id, amount, client: clientName })}
+                      onClick={() => setPendingPayment({ ...inst, client_name: clientName })}
                       disabled={savingId === inst.id}
                       className="min-h-9 px-2.5 rounded-lg bg-primary text-primary-foreground text-xs font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-1"
                     >
@@ -575,33 +606,22 @@ const Hoje = () => {
         </section>
       )}
 
-      {pendingPayment && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-black/75 backdrop-blur-sm p-4" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) setPendingPayment(null); }}>
-          <div role="dialog" aria-modal="true" aria-labelledby="confirm-payment-title" className="w-full max-w-md rounded-2xl border border-white/15 bg-zinc-950/95 p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[.16em] text-muted-foreground">Confirmação financeira</p>
-                <h2 id="confirm-payment-title" className="mt-1 text-lg font-bold text-foreground">Registrar pagamento?</h2>
-              </div>
-              <button onClick={() => setPendingPayment(null)} className="w-9 h-9 rounded-xl hover:bg-white/[.07] grid place-items-center" aria-label="Fechar"><X size={16} /></button>
-            </div>
-            <div className="my-5 rounded-xl border border-white/10 bg-white/[.035] p-4">
-              <p className="text-xs text-muted-foreground">Cliente</p>
-              <p className="mt-0.5 font-bold text-foreground">{pendingPayment.client}</p>
-              <p className="mt-3 text-xs text-muted-foreground">Valor da baixa</p>
-              <p className="mt-0.5 text-2xl font-extrabold tabular-nums text-success">R$ {fmtBRL(pendingPayment.amount)}</p>
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">A baixa atualiza a parcela, o caixa e o lucro. Confira o recebimento antes de continuar.</p>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <button onClick={() => setPendingPayment(null)} className="h-11 rounded-xl border border-white/10 bg-white/[.03] text-sm font-bold hover:bg-white/[.07]">Cancelar</button>
-              <button onClick={() => markPaid(pendingPayment.id, pendingPayment.amount)} disabled={savingId === pendingPayment.id} className="h-11 rounded-xl bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50">
-                {savingId === pendingPayment.id ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
-                Confirmar baixa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {pendingPayment && (() => {
+        const fee = computeLateFeeBreakdown(pendingPayment);
+        const alreadyPaid = Number(pendingPayment.paid_amount || 0);
+        const remaining = Math.max(0, Math.round((fee.withFees - alreadyPaid) * 100) / 100);
+        return (
+          <PayModal
+            inst={pendingPayment}
+            fee={fee}
+            alreadyPaid={alreadyPaid}
+            remaining={remaining}
+            daysLate={fee.daysLate}
+            onCancel={() => setPendingPayment(null)}
+            onConfirm={(value, waiveFee) => markPaid(pendingPayment, value, waiveFee)}
+          />
+        );
+      })()}
     </section>
   );
 };
