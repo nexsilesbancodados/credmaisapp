@@ -80,11 +80,6 @@ export default function DashboardCharts({ contracts, installments, profits }: Pr
         if (b) {
           const amt = Number(i.paid_amount || i.amount || 0);
           b.received += amt;
-          const contract = contracts.find((c: any) => c.id === i.contract_id);
-          if (contract) {
-            const cap = Number(contract.capital) / Number(contract.num_installments);
-            b.profit += Math.max(0, amt - cap);
-          }
         }
       }
       // Mesma regra do painel: em atraso é "não paga e já venceu". Filtrar por
@@ -97,6 +92,14 @@ export default function DashboardCharts({ contracts, installments, profits }: Pr
       }
     });
 
+    // Lucro vem do razão confirmado, nunca de capital/número de parcelas.
+    // Essa aproximação era incorreta para Price, somente juros e carência.
+    profits.forEach((profit: any) => {
+      if (!profit.date) return;
+      const bucket = buckets.get(keyOf(profit.date));
+      if (bucket) bucket.profit += Number(profit.amount || 0);
+    });
+
     return keys.map((k) => {
       const b = buckets.get(k)!;
       const label =
@@ -105,7 +108,7 @@ export default function DashboardCharts({ contracts, installments, profits }: Pr
           : formatBR(k + "-01", { month: "short" }).replace(".", "");
       return { label, Recebido: Math.round(b.received), Lucro: Math.round(b.profit), Atraso: Math.round(b.overdue) };
     });
-  }, [installments, contracts, cfg]);
+  }, [installments, profits, cfg]);
 
   // Status distribution
   const statusData = useMemo(() => {

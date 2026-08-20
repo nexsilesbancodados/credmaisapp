@@ -206,7 +206,19 @@ const ClienteDetalhe = () => {
 
   const kpis = useMemo(() => {
     const activeContracts = contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
-    const totalCapital = activeContracts.reduce((s: number, c: any) => s + Number(c.capital || 0), 0);
+    const returnedPrincipal = new Map<string, number>();
+    for (const installment of installments as any[]) {
+      if (installment.status !== "paid") continue;
+      const contract = activeContracts.find((c: any) => c.id === installment.contract_id);
+      if (!contract) continue;
+      const fallback = Number(contract.capital || 0) / (Number(contract.num_installments) || 1);
+      returnedPrincipal.set(
+        contract.id,
+        (returnedPrincipal.get(contract.id) || 0) + Number(installment.paid_principal ?? fallback),
+      );
+    }
+    const totalCapital = activeContracts.reduce((s: number, c: any) =>
+      s + Math.max(0, Number(c.capital || 0) - (returnedPrincipal.get(c.id) || 0)), 0);
     const lifetimeCapital = contracts.reduce((s: number, c: any) => s + Number(c.capital || 0), 0);
     const totalAmount = contracts.reduce((s: number, c: any) => s + Number(c.total_amount || 0), 0);
     const paidInst = installments.filter((i: any) => i.status === "paid");
