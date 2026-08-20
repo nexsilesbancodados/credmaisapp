@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "credmaisapp",
+  "account_id": "da6089ee64e7c6104d5227fb3abda29b",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-08-17"
 }
