@@ -64,11 +64,11 @@ export default function InvestorAllocationSelect({
       >
         <option value="">— Capital próprio —</option>
         {options.map((o) => {
-          const saldo = o.principal - o.paid_amount;
+          const saldo = Math.max(0, o.total_due - o.paid_amount);
           return (
             <option key={o.id} value={o.id}>
               {o.investor_name} — {o.principal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-              {" "}(saldo {saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })})
+              {" "}(dívida restante {saldo.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })})
             </option>
           );
         })}

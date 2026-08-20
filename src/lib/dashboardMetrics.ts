@@ -42,6 +42,24 @@ export interface DashboardInput {
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 
+export function computeOutstandingPrincipal(
+  contracts: MetricsContract[],
+  installments: MetricsInstallment[],
+) {
+  const active = contracts.filter((c) => c.status === "active" || c.status === "overdue");
+  const activeIds = new Set(active.map((c) => c.id));
+  const returned = new Map<string, number>();
+  for (const installment of installments) {
+    if (installment.status !== "paid" || !activeIds.has(installment.contract_id)) continue;
+    const contract = active.find((c) => c.id === installment.contract_id);
+    const fallback = contract ? num(contract.capital) / (num(contract.num_installments) || 1) : 0;
+    returned.set(installment.contract_id, (returned.get(installment.contract_id) || 0) +
+      (installment.paid_principal == null ? fallback : num(installment.paid_principal)));
+  }
+  return active.reduce((sum, contract) =>
+    sum + Math.max(0, num(contract.capital) - (returned.get(contract.id) || 0)), 0);
+}
+
 // As três definições vivem em `supabase/functions/_shared/installmentStatus.ts`
 // e são reexportadas aqui. Compartilhar em vez de copiar é proposital: o mesmo
 // conceito precisa valer no navegador e nos crons, e foi a divergência entre os
@@ -65,21 +83,7 @@ export function computeDashboardMetrics(data: DashboardInput, agora: Date = new 
   const activeIds = new Set(activeContracts.map((c) => c.id));
   const activeInstallments = installments.filter((i) => activeIds.has(i.contract_id));
 
-  const returnedByContract = new Map<string, number>();
-  for (const installment of activeInstallments) {
-    if (installment.status !== "paid") continue;
-    const contract = activeContracts.find((c) => c.id === installment.contract_id);
-    const fallback = contract ? num(contract.capital) / (num(contract.num_installments) || 1) : 0;
-    returnedByContract.set(
-      installment.contract_id,
-      (returnedByContract.get(installment.contract_id) || 0) +
-        (installment.paid_principal == null ? fallback : num(installment.paid_principal)),
-    );
-  }
-  const capitalNaRua = activeContracts.reduce(
-    (s, c) => s + Math.max(0, num(c.capital) - (returnedByContract.get(c.id) || 0)),
-    0,
-  );
+  const capitalNaRua = computeOutstandingPrincipal(activeContracts, activeInstallments);
   const lucroAReceber = activeContracts.reduce((s, c) => s + num(c.total_interest), 0);
 
   const totalInstallments = activeInstallments.length;

@@ -458,7 +458,7 @@ const ClienteDetalhe = () => {
         total_interest: payload.totalInterest,
         status: "active",
         loan_mode: "installments",
-        notes: `Renegociação do contrato ${old.id}${payload.notes ? " — " + payload.notes : ""}`,
+        notes: `Renegociação do contrato ${old.id} [cash_disbursed:${payload.addCapital.toFixed(2)}]${payload.notes ? " — " + payload.notes : ""}`,
       }).select().single();
       if (cErr) throw cErr;
 
@@ -1798,6 +1798,13 @@ const ClienteDetalhe = () => {
                             {inst.paid_at && ` · Pago ${formatBR(inst.paid_at)}`}
                             {partial && ` · Parcial R$ ${fmt(Number(inst.paid_amount))}`}
                           </p>
+                          {(inst.scheduled_principal != null || inst.paid_principal != null) && (
+                            <p className="mt-1 text-[10px] text-muted-foreground tabular-nums">
+                              Principal R$ {fmt(Number(isPaid ? inst.paid_principal : inst.scheduled_principal) || 0)}
+                              {" · "}Juros R$ {fmt(Number(isPaid ? inst.paid_interest : inst.scheduled_interest) || 0)}
+                              {Number(inst.paid_fees || 0) > 0 && ` · Encargos R$ ${fmt(Number(inst.paid_fees))}`}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-0.5 shrink-0">
                           {isOverdue && (

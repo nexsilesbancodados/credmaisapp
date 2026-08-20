@@ -1,4 +1,4 @@
-import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
+import { computeOutstandingPrincipal, isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchAll } from "@/lib/fetchAll";
@@ -337,12 +337,13 @@ const AgenteIA = () => {
   const { data: dashData } = useQuery({
     queryKey: ["agent-context", user?.id],
     queryFn: async () => {
-      const [contracts, installments, clients] = await Promise.all([
+      const [contracts, installments, clients, profits] = await Promise.all([
         fetchAll((f, t) => supabase.from("contracts").select("*, clients(name)").eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("contract_installments").select("*").eq("user_id", user!.id).range(f, t)),
         fetchAll((f, t) => supabase.from("clients").select("id, name, credit_score, status, phone, whatsapp").eq("user_id", user!.id).range(f, t)),
+        fetchAll((f, t) => supabase.from("profits").select("amount,date").eq("user_id", user!.id).range(f, t)),
       ]);
-      return { contracts, installments, clients };
+      return { contracts, installments, clients, profits };
     },
     enabled: !!user,
   });
@@ -709,7 +710,7 @@ const AgenteIA = () => {
     const { contracts, installments, clients } = dashData;
     const now = new Date(); now.setHours(0,0,0,0);
     const overdueInstallments = installments.filter((i: any) => isEmAtraso(i, now));
-    const activeContracts = contracts.filter((c: any) => c.status === "active");
+    const activeContracts = contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
     const todayStr = now.toISOString().split("T")[0];
     const dueToday = installments.filter((i: any) => isEmAberto(i) && i.due_date?.startsWith(todayStr));
     return {
@@ -719,8 +720,8 @@ const AgenteIA = () => {
       activeContracts: activeContracts.length,
       overdueCount: overdueInstallments.length,
       overdueAmount: overdueInstallments.reduce((s: number, i: any) => s + Number(i.amount), 0).toFixed(2),
-      capitalOnStreet: activeContracts.reduce((s: number, c: any) => s + Number(c.capital), 0).toFixed(2),
-      totalProfit: contracts.reduce((s: number, c: any) => s + Number(c.total_interest || 0), 0).toFixed(2),
+      capitalOnStreet: computeOutstandingPrincipal(activeContracts, installments).toFixed(2),
+      totalProfit: dashData.profits.reduce((s: number, p: any) => s + Number(p.amount || 0), 0).toFixed(2),
       dueTodayCount: dueToday.length,
       clientsList: clients.slice(0, 20).map((c: any) => `- ${c.name} (Score: ${c.credit_score}, Status: ${c.status})`).join("\n"),
       overdueDetails: overdueInstallments.slice(0, 15).map((i: any) => `- Parcela ${i.installment_number}: R$ ${Number(i.amount).toFixed(2)} venc. ${formatBR(i.due_date)}`).join("\n"),
@@ -801,11 +802,10 @@ const AgenteIA = () => {
   const overdueAmount = dashData?.installments
     .filter((i: any) => isEmAtraso(i, now))
     .reduce((s: number, i: any) => s + Number(i.amount), 0) || 0;
-  const capitalOnStreet = dashData?.contracts
-    .filter((c: any) => c.status === "active")
-    .reduce((s: number, c: any) => s + Number(c.capital), 0) || 0;
-  const totalProfit = dashData?.contracts
-    .reduce((s: number, c: any) => s + Number(c.total_interest || 0), 0) || 0;
+  const capitalOnStreet = dashData
+    ? computeOutstandingPrincipal(dashData.contracts as any, dashData.installments as any)
+    : 0;
+  const totalProfit = dashData?.profits.reduce((s: number, p: any) => s + Number(p.amount || 0), 0) || 0;
   const unreadCount = whatsappChats.reduce((s, c) => s + (c.unreadCount || 0), 0);
 
   const fmt = (n: number) =>

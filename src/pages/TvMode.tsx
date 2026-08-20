@@ -1,4 +1,4 @@
-import { isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
+import { computeOutstandingPrincipal, isEmAtraso, isEmAberto } from "@/lib/dashboardMetrics";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -44,7 +44,7 @@ export default function TvMode() {
     const todayStr = todayLocalISO();
     const active = data.contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
     const activeIds = new Set(active.map((c: any) => c.id));
-    const capital = active.reduce((s: number, c: any) => s + Number(c.capital), 0);
+    const capital = computeOutstandingPrincipal(active as any, data.installments as any);
     const paid = data.installments.filter((i: any) => i.status === "paid");
     const received = paid.reduce((s: number, i: any) => s + Number(i.paid_amount || i.amount), 0);
     const overdue = data.installments.filter((i: any) => activeIds.has(i.contract_id) && isEmAtraso(i, today));

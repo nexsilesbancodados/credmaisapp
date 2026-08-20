@@ -114,6 +114,17 @@ const Carteira = () => {
     enabled: !!user,
   });
 
+  const { data: reconciliation } = useQuery({
+    queryKey: ["financial-reconciliation", user?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("financial_reconciliation");
+      if (error) return null; // Compatível enquanto a migração remota não foi aplicada.
+      return data as { ok: boolean; checked_installments: number; anomaly_count: number };
+    },
+    enabled: !!user,
+    retry: false,
+  });
+
   const loading = loadingProfits || loadingExpenses || loadingInst || loadingCapital || loadingWithdraw || loadingLedger;
   const loadError = profitsError || expensesError || installmentsError || capitalError || withdrawalsError || ledgerError;
 
@@ -351,11 +362,12 @@ const Carteira = () => {
         </div>
 
         {/* Composição do saldo em uma linha */}
-        <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-white/[.06] pt-5 text-xs md:grid-cols-5">
+        <div className="mt-5 grid grid-cols-2 gap-2.5 border-t border-white/[.06] pt-5 text-xs md:grid-cols-3 xl:grid-cols-6">
           {[
             { label: "Aportes", value: totalCapital, color: "text-primary", dot: "bg-primary" },
             { label: "Lucros", value: totalLucros, color: "text-success", dot: "bg-success" },
             { label: "Parcelas", value: totalParcelas, color: "text-info", dot: "bg-info" },
+            { label: "Empréstimos liberados", value: -totalEmprestimosLiberados, color: "text-warning", dot: "bg-warning" },
             { label: "Retiradas", value: -totalWithdrawals, color: "text-warning", dot: "bg-warning" },
             { label: "Gastos", value: -totalGastos, color: "text-destructive", dot: "bg-destructive" },
           ].map((c) => (
@@ -370,6 +382,17 @@ const Carteira = () => {
             </div>
           ))}
         </div>
+
+        {reconciliation && (
+          <div className={`mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
+            reconciliation.ok ? "border-success/20 bg-success/5 text-success" : "border-destructive/30 bg-destructive/5 text-destructive"
+          }`}>
+            <span className="font-semibold">
+              {reconciliation.ok ? "Razão financeiro conciliado" : `${reconciliation.anomaly_count} divergência(s) financeira(s) detectada(s)`}
+            </span>
+            <span className="text-muted-foreground">{reconciliation.checked_installments} parcelas verificadas</span>
+          </div>
+        )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent>

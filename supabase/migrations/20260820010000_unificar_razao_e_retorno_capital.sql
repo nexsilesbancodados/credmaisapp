@@ -11,7 +11,11 @@ ALTER TABLE public.contract_installments
 ALTER TABLE public.transactions
   ADD COLUMN IF NOT EXISTS principal_amount numeric NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS interest_amount numeric NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS fee_amount numeric NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS fee_amount numeric NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS investor_loan_id uuid REFERENCES public.investor_loans(id) ON DELETE CASCADE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_investor_capital
+ON public.transactions(investor_loan_id) WHERE investor_loan_id IS NOT NULL;
 
 -- Reconstrói a composição prevista das parcelas antigas. O capital distribuído
 -- fecha exatamente no capital do contrato; centavos residuais vão para a última.
@@ -133,14 +137,22 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
+DECLARE
+  _cash numeric;
 BEGIN
+  _cash := CASE
+    WHEN coalesce(NEW.notes, '') LIKE 'Renegociação do contrato%'
+      THEN coalesce(nullif(substring(NEW.notes from '\[cash_disbursed:([0-9]+(\.[0-9]+)?)\]'), '')::numeric, 0)
+    ELSE round(NEW.capital::numeric, 2)
+  END;
+  IF _cash <= 0 THEN RETURN NEW; END IF;
   INSERT INTO public.transactions
     (user_id, type, category, description, amount, date, contract_id, client_id,
      principal_amount, source_key)
   VALUES
     (NEW.user_id, 'loan_disbursement', 'loan_disbursement', 'Empréstimo liberado',
-     round(NEW.capital::numeric, 2), coalesce(NEW.created_at, now()), NEW.id, NEW.client_id,
-     round(NEW.capital::numeric, 2), 'loan-disbursement:' || NEW.id::text)
+     _cash, coalesce(NEW.created_at, now()), NEW.id, NEW.client_id,
+     _cash, 'loan-disbursement:' || NEW.id::text)
   ON CONFLICT (user_id, source_key) WHERE source_key IS NOT NULL DO NOTHING;
   RETURN NEW;
 END;
@@ -155,9 +167,13 @@ INSERT INTO public.transactions
   (user_id, type, category, description, amount, date, contract_id, client_id,
    principal_amount, source_key)
 SELECT c.user_id, 'loan_disbursement', 'loan_disbursement', 'Empréstimo liberado',
-       round(c.capital::numeric, 2), coalesce(c.created_at, now()), c.id, c.client_id,
-       round(c.capital::numeric, 2), 'loan-disbursement:' || c.id::text
+       x.cash, coalesce(c.created_at, now()), c.id, c.client_id,
+       x.cash, 'loan-disbursement:' || c.id::text
 FROM public.contracts c
+JOIN LATERAL (SELECT CASE WHEN coalesce(c.notes,'') LIKE 'Renegociação do contrato%'
+  THEN coalesce((SELECT sum(t.amount) FROM public.transactions t
+    WHERE t.contract_id=c.id AND t.user_id=c.user_id AND t.type='loan'),0)
+  ELSE round(c.capital::numeric,2) END AS cash) x ON x.cash > 0
 ON CONFLICT (user_id, source_key) WHERE source_key IS NOT NULL DO NOTHING;
 
 -- Garante um lançamento de entrada para parcelas antigas que foram quitadas
@@ -391,3 +407,84 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.collector_register_payment(text,uuid,numeric,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.collector_register_payment(text,uuid,numeric,text,text) TO anon, authenticated;
+
+-- Renovação paga somente juros: classifica os lançamentos antigos e futuros
+-- sem devolver principal artificialmente para a carteira.
+UPDATE public.transactions SET interest_amount=amount, principal_amount=0, fee_amount=0
+WHERE type='payment' AND category='interest_renewal' AND interest_amount=0;
+
+CREATE OR REPLACE FUNCTION public.classify_financial_transaction()
+RETURNS trigger LANGUAGE plpgsql SET search_path TO 'public' AS $$
+BEGIN
+  IF NEW.type='payment' AND NEW.category='interest_renewal' THEN
+    NEW.principal_amount:=0; NEW.interest_amount:=NEW.amount; NEW.fee_amount:=0;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_classify_financial_transaction ON public.transactions;
+CREATE TRIGGER trg_classify_financial_transaction BEFORE INSERT OR UPDATE ON public.transactions
+FOR EACH ROW EXECUTE FUNCTION public.classify_financial_transaction();
+
+-- Diagnóstico seguro e somente do próprio tenant. Não altera dados: permite
+-- detectar imediatamente parcela, caixa ou lucro que ficaram divergentes.
+CREATE OR REPLACE FUNCTION public.financial_reconciliation()
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path TO 'public'
+AS $$
+WITH installment_ledger AS (
+  SELECT i.id, i.contract_id, i.installment_number,
+    round(coalesce(i.paid_amount,0)::numeric,2) AS paid,
+    round(coalesce(sum(t.amount) FILTER (WHERE t.category IS DISTINCT FROM 'interest_renewal'),0)::numeric,2) AS ledger,
+    round((coalesce(i.paid_interest,0)+coalesce(i.paid_fees,0))::numeric,2) AS expected_profit,
+    round(coalesce((SELECT sum(p.amount) FROM public.profits p
+      WHERE p.user_id=auth.uid() AND p.installment_id=i.id),0)::numeric,2) AS recorded_profit
+  FROM public.contract_installments i
+  LEFT JOIN public.transactions t ON t.installment_id=i.id AND t.user_id=auth.uid() AND t.type='payment'
+  WHERE i.user_id=auth.uid()
+  GROUP BY i.id
+), anomalies AS (
+  SELECT *, round(paid-ledger,2) AS cash_difference,
+    round(expected_profit-recorded_profit,2) AS profit_difference
+  FROM installment_ledger
+  WHERE abs(paid-ledger)>0.01 OR abs(expected_profit-recorded_profit)>0.01
+)
+SELECT jsonb_build_object(
+  'ok', NOT EXISTS(SELECT 1 FROM anomalies),
+  'checked_installments', (SELECT count(*) FROM installment_ledger),
+  'anomaly_count', (SELECT count(*) FROM anomalies),
+  'anomalies', coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY abs(a.cash_difference)+abs(a.profit_difference) DESC)
+    FROM (SELECT * FROM anomalies LIMIT 20) a),'[]'::jsonb)
+);
+$$;
+REVOKE ALL ON FUNCTION public.financial_reconciliation() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.financial_reconciliation() TO authenticated;
+
+-- Capital captado entra na carteira; pagamentos ao investidor já saem pelo
+-- fluxo register_investor_payment. Edição e exclusão permanecem sincronizadas.
+CREATE OR REPLACE FUNCTION public.sync_investor_capital_transaction()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  INSERT INTO public.transactions(user_id,type,category,description,amount,date,
+    investor_loan_id,principal_amount,source_key)
+  VALUES(NEW.user_id,'capital_injection','investor_capital','Capital recebido de investidor',
+    round(NEW.principal::numeric,2),NEW.start_date::timestamptz,NEW.id,
+    round(NEW.principal::numeric,2),'investor-capital:'||NEW.id::text)
+  ON CONFLICT (investor_loan_id) WHERE investor_loan_id IS NOT NULL
+  DO UPDATE SET amount=excluded.amount,principal_amount=excluded.principal_amount,
+    date=excluded.date,user_id=excluded.user_id;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_sync_investor_capital_transaction ON public.investor_loans;
+CREATE TRIGGER trg_sync_investor_capital_transaction
+AFTER INSERT OR UPDATE OF principal,start_date ON public.investor_loans
+FOR EACH ROW EXECUTE FUNCTION public.sync_investor_capital_transaction();
+
+INSERT INTO public.transactions(user_id,type,category,description,amount,date,
+  investor_loan_id,principal_amount,source_key)
+SELECT l.user_id,'capital_injection','investor_capital','Capital recebido de investidor',
+  round(l.principal::numeric,2),l.start_date::timestamptz,l.id,
+  round(l.principal::numeric,2),'investor-capital:'||l.id::text
+FROM public.investor_loans l
+ON CONFLICT (investor_loan_id) WHERE investor_loan_id IS NOT NULL
+DO UPDATE SET amount=excluded.amount,principal_amount=excluded.principal_amount,date=excluded.date;

@@ -35,8 +35,13 @@ export default function RenegociarModal({ contract, installments, clientName, on
   const pending = installments.filter((i: any) => i.status !== "paid" && i.status !== "cancelled");
 
   const principalOpen = useMemo(
-    () => pending.reduce((s, i: any) => s + Number(i.amount || 0), 0),
-    [pending]
+    () => pending.reduce((s, i: any) => {
+      if (i.scheduled_principal != null) return s + Number(i.scheduled_principal || 0);
+      // Compatibilidade antes da migração: distribui somente o capital original,
+      // sem transformar juros futuros em novo principal.
+      return s + Number(contract.capital || 0) / (Number(contract.num_installments) || 1);
+    }, 0),
+    [pending, contract.capital, contract.num_installments]
   );
   const feesTotal = useMemo(
     () => pending.reduce((s, i: any) => s + computeLateFeeBreakdown(i, now).total, 0),

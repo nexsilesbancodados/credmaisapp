@@ -2110,6 +2110,7 @@ export type Database = {
           installment_id: string | null
           interest_amount: number
           investor_payment_id: string | null
+          investor_loan_id: string | null
           principal_amount: number
           source_key: string | null
           type: string
@@ -2128,6 +2129,7 @@ export type Database = {
           installment_id?: string | null
           interest_amount?: number
           investor_payment_id?: string | null
+          investor_loan_id?: string | null
           principal_amount?: number
           source_key?: string | null
           type?: string
@@ -2146,6 +2148,7 @@ export type Database = {
           installment_id?: string | null
           interest_amount?: number
           investor_payment_id?: string | null
+          investor_loan_id?: string | null
           principal_amount?: number
           source_key?: string | null
           type?: string
