@@ -58,6 +58,7 @@ const Carteira = () => {
       ["carteira-installments-recebidas", user?.id || ""],
       ["carteira-capital", user?.id || ""],
       ["carteira-withdrawals", user?.id || ""],
+      ["carteira-receivables", user?.id || ""],
     ],
   );
 
@@ -114,6 +115,14 @@ const Carteira = () => {
     enabled: !!user,
   });
 
+  const { data: receivables = [], isLoading: loadingReceivables, error: receivablesError } = useQuery({
+    queryKey: ["carteira-receivables", user?.id],
+    queryFn: async () => fetchAll((f, t) => supabase.from("contract_installments")
+      .select("id,amount,paid_amount,due_date,status").eq("user_id", user!.id)
+      .neq("status", "paid").neq("status", "cancelled").order("due_date").range(f, t)),
+    enabled: !!user,
+  });
+
   const { data: reconciliation } = useQuery({
     queryKey: ["financial-reconciliation", user?.id],
     queryFn: async () => {
@@ -125,8 +134,8 @@ const Carteira = () => {
     retry: false,
   });
 
-  const loading = loadingProfits || loadingExpenses || loadingInst || loadingCapital || loadingWithdraw || loadingLedger;
-  const loadError = profitsError || expensesError || installmentsError || capitalError || withdrawalsError || ledgerError;
+  const loading = loadingProfits || loadingExpenses || loadingInst || loadingCapital || loadingWithdraw || loadingLedger || loadingReceivables;
+  const loadError = profitsError || expensesError || installmentsError || capitalError || withdrawalsError || ledgerError || receivablesError;
 
   const handleSave = async () => {
     if (!user || !amount || !description || saving) return;
@@ -229,8 +238,25 @@ const Carteira = () => {
     return { inCur, outCur, netCur: inCur - outCur, inDelta, outDelta };
   }, [capital, installments, expenses, withdrawals, ledgerOutflows, days, prevDays]);
 
+  const closing = useMemo(() => ({
+    openingBalance: period === "all" ? 0 : saldo - stats.netCur,
+    inflows: stats.inCur,
+    outflows: stats.outCur,
+    closingBalance: saldo,
+  }), [period, saldo, stats]);
+
   // Capital líquido disponível (aportes − retiradas de capital)
   const capitalLiquido = totalCapital + principalRecebido - totalEmprestimosLiberados - totalWithdrawals;
+
+  const forecast = useMemo(() => {
+    const now = new Date(); now.setHours(23, 59, 59, 999);
+    const sumUntil = (daysAhead: number) => {
+      const end = new Date(now.getTime() + daysAhead * 86400000);
+      return receivables.filter((i: any) => new Date(i.due_date) <= end)
+        .reduce((sum: number, i: any) => sum + Math.max(0, Number(i.amount || 0) - Number(i.paid_amount || 0)), 0);
+    };
+    return { d7: sumUntil(7), d30: sumUntil(30), d90: sumUntil(90) };
+  }, [receivables]);
 
   const timeline = useMemo(() => {
     const all = [
@@ -450,6 +476,29 @@ const Carteira = () => {
         </Dialog>
       </div>
 
+      <section className="rounded-2xl border border-border/50 bg-card/55 p-4" aria-label="Previsão de caixa">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.16em] text-primary">Previsão de caixa</p>
+            <h2 className="mt-1 text-sm font-bold text-foreground">Entradas previstas pelas parcelas</h2>
+          </div>
+          <span className="text-[11px] text-muted-foreground">Valores em aberto, incluindo atrasados</span>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {[
+            { label: "Próximos 7 dias", value: forecast.d7 },
+            { label: "Próximos 30 dias", value: forecast.d30 },
+            { label: "Próximos 90 dias", value: forecast.d90 },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border border-border/40 bg-background/30 px-3 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</p>
+              <p className="mt-1 text-lg font-black tabular-nums text-foreground">R$ {fmt(item.value)}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">Saldo projetado: R$ {fmt(saldo + item.value)}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Filtro de período */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -538,6 +587,36 @@ const Carteira = () => {
           );
         })}
       </div>
+
+      <section className="rounded-2xl border border-border/50 bg-card/45 p-4 sm:p-5" aria-label="Fechamento financeiro do período">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.16em] text-primary">Fechamento do período</p>
+            <h2 className="mt-1 text-sm font-bold text-foreground">Conferência do saldo da carteira</h2>
+          </div>
+          <span className="rounded-full border border-border/50 bg-background/35 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+            {period === "all" ? "Desde o início" : `Últimos ${days} dias`}
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 lg:grid-cols-4">
+          {[
+            { label: "Saldo inicial", value: closing.openingBalance },
+            { label: "Entradas", value: closing.inflows, tone: "text-success" },
+            { label: "Saídas", value: closing.outflows, tone: "text-destructive" },
+            { label: "Saldo final", value: closing.closingBalance, tone: closing.closingBalance >= 0 ? "text-foreground" : "text-destructive" },
+          ].map((item) => (
+            <div key={item.label} className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</p>
+              <p className={`mt-1 truncate text-base font-black tabular-nums sm:text-lg ${item.tone || "text-foreground"}`} title={`R$ ${fmt(item.value)}`}>
+                R$ {fmt(item.value)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 border-t border-border/40 pt-3 text-[10px] text-muted-foreground">
+          Saldo inicial + entradas − saídas = saldo final. Os juros já estão incluídos nas parcelas recebidas e não são somados novamente.
+        </p>
+      </section>
 
       {/* Composição de fluxo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-in">

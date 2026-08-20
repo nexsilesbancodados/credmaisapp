@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   Sunrise, AlertCircle, CheckCircle2, ListTodo, Receipt,
   ArrowRight, MessageSquare, Loader2, Plus, Clock, Sparkles,
-  UserPlus, Cake, DollarSign, TrendingUp, CalendarDays, Wallet, History
+  UserPlus, Cake, DollarSign, TrendingUp, CalendarDays, Wallet, History, ShieldCheck
 } from "lucide-react";
 import SmartAlerts from "@/components/SmartAlerts";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
@@ -65,6 +65,7 @@ const Hoje = () => {
       const [
         dueTodayRes, overdueRes, todosRes, notifRes, profitsTodayRes, promisesRes,
         next7Res, paidRecentRes, profitsMonthRes, pendingMonthRes, clientsRes,
+        transactionsRes, expensesRes, reconciliationRes,
       ] = await Promise.all([
         supabase.from("contract_installments")
           .select("*, clients:client_id(name, phone, whatsapp), contracts:contract_id(capital, interest_rate, num_installments, daily_interest_percent, max_interest_cap_percent)")
@@ -104,6 +105,11 @@ const Hoje = () => {
           .eq("user_id", user.id)
           .not("birth_date", "is", null)
           .limit(500),
+        fetchAll((f, t) => supabase.from("transactions").select("amount,type,date")
+          .eq("user_id", user.id).range(f, t)).then((d) => ({ data: d })),
+        fetchAll((f, t) => supabase.from("expenses").select("amount,date")
+          .eq("user_id", user.id).range(f, t)).then((d) => ({ data: d })),
+        (supabase as any).rpc("financial_reconciliation"),
       ]);
 
       const failed = [dueTodayRes, todosRes, notifRes, promisesRes, next7Res, paidRecentRes, clientsRes]
@@ -141,6 +147,17 @@ const Hoje = () => {
 
       const profitMonth = (profitsMonthRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
       const aReceberMonth = (pendingMonthRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+      const txs = transactionsRes.data || [];
+      const cashIn = txs.filter((t: any) => t.type === "payment" || t.type === "capital_injection")
+        .reduce((s: number, t: any) => s + Number(t.amount || 0), 0);
+      const cashOut = txs.filter((t: any) => ["loan_disbursement", "capital_withdrawal", "expense"].includes(t.type))
+        .reduce((s: number, t: any) => s + Number(t.amount || 0), 0) +
+        (expensesRes.data || []).reduce((s: number, e: any) => s + Number(e.amount || 0), 0);
+      const promises = (promisesRes.data || []).map((p: any) => ({
+        id: p.id, date: p.details?.promise_date, client: p.details?.client_name || "Cliente",
+        msg: p.details?.message,
+      }));
+      const brokenPromises = promises.filter((p: any) => p.date && new Date(p.date) < startOfToday()).length;
 
       return {
         dueToday: dueTodayRes.data || [],
@@ -148,18 +165,16 @@ const Hoje = () => {
         todos: todosRes.data || [],
         notifications: notifRes.data || [],
         profitToday: (profitsTodayRes.data || []).reduce((s: number, p: any) => s + Number(p.amount), 0),
-        promises: (promisesRes.data || []).map((p: any) => ({
-          id: p.id,
-          date: p.details?.promise_date,
-          client: p.details?.client_name || "Cliente",
-          msg: p.details?.message
-        })),
+        promises,
+        brokenPromises,
         topDebtors,
         agenda,
         birthdays,
         paidRecent: paidRecentRes.data || [],
         profitMonth,
         aReceberMonth,
+        availableCash: cashIn - cashOut,
+        reconciliation: reconciliationRes.error ? null : reconciliationRes.data,
       };
     },
     enabled: !!user,
@@ -355,6 +370,41 @@ const Hoje = () => {
           })}
         </div>
       </header>
+
+      {/* Assistente do dia: resumo determinístico, sem depender de IA. */}
+      <section aria-label="Prioridades do dia" className="rounded-2xl border border-border/50 bg-card/60 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-primary">Assistente do dia</p>
+            <h2 className="mt-1 text-sm font-bold text-foreground">Próximas ações recomendadas</h2>
+          </div>
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">
+              Caixa <strong className="text-foreground">R$ {fmtBRL(Number(data?.availableCash || 0))}</strong>
+            </span>
+            {data?.reconciliation && (
+              <span className={`rounded-full border px-2.5 py-1 font-semibold ${data.reconciliation.ok ? "border-success/25 text-success" : "border-destructive/30 text-destructive"}`}>
+                <ShieldCheck size={11} className="mr-1 inline" />
+                {data.reconciliation.ok ? "Contas conciliadas" : `${data.reconciliation.anomaly_count} divergência(s)`}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Cobrar atrasadas", value: totals.overdueCount, detail: `R$ ${fmtBRL(totals.overdue)}`, to: "/cobrancas" },
+            { label: "Receber hoje", value: totals.dueTodayCount, detail: `R$ ${fmtBRL(totals.dueToday)}`, to: "/cobrancas" },
+            { label: "Promessas vencidas", value: data?.brokenPromises || 0, detail: "retomar contato", to: "/hoje#promessas" },
+            { label: "Tarefas abertas", value: data?.todos?.length || 0, detail: "organizar operação", to: "/tarefas" },
+          ].map((priority) => (
+            <button key={priority.label} onClick={() => navigate(priority.to)}
+              className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-border/40 bg-background/30 px-3 py-2.5 text-left hover:bg-accent/30">
+              <span className="min-w-0"><span className="block truncate text-xs font-semibold text-foreground">{priority.label}</span><span className="text-[10px] text-muted-foreground">{priority.detail}</span></span>
+              <span className="text-lg font-black tabular-nums text-primary">{priority.value}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* ═══ Atalhos ═══ Linha compacta abaixo do hero */}
       <nav aria-label="Ações rápidas" className="grid grid-cols-2 gap-2 sm:gap-3">

@@ -65,7 +65,15 @@ const humanDueLabel = (items: any[]): { text: string; tone: "danger" | "warn" | 
 
 type StatusFilter = "all" | "pending" | "overdue" | "paid";
 type PeriodFilter = "all" | "today" | "tomorrow" | "7d" | "30d" | "future";
-type SortKey = "due_asc" | "due_desc" | "amount_desc" | "amount_asc" | "overdue_days";
+type SortKey = "priority" | "due_asc" | "due_desc" | "amount_desc" | "amount_asc" | "overdue_days";
+
+const collectionPriority = (installment: any) => {
+  const due = parseLocalDate(installment.due_date);
+  const days = due ? Math.max(0, Math.floor((Date.now() - due.getTime()) / 86400000)) : 0;
+  const amount = Number(installment.amount || 0);
+  const score = Number(installment.clients?.credit_score ?? 100);
+  return (isEmAtraso(installment) ? 10_000 : 0) + days * 100 + Math.min(amount, 10_000) + Math.max(0, 100 - score) * 10;
+};
 
 const useDebounced = <T,>(value: T, ms = 180) => {
   const [v, setV] = useState(value);
@@ -82,7 +90,7 @@ const Cobrancas = () => {
   const qc = useQueryClient();
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [period, setPeriod] = useState<PeriodFilter>("all");
-  const [sort, setSort] = useState<SortKey>("amount_desc");
+  const [sort, setSort] = useState<SortKey>("priority");
   const [search, setSearch] = useState("");
   const dSearch = useDebounced(search, 180);
   const [confirmPayId, setConfirmPayId] = useState<string | null>(null);
@@ -139,7 +147,7 @@ const Cobrancas = () => {
     queryFn: async () => {
       const data = await fetchAll((f, t) => supabase
         .from("contract_installments")
-        .select("*, clients:client_id(name, phone, whatsapp, email), contracts(capital, frequency, interest_rate, num_installments, total_amount, total_interest, loan_mode, daily_interest_percent, max_interest_cap_percent)")
+        .select("*, clients:client_id(name, phone, whatsapp, email, credit_score), contracts(capital, frequency, interest_rate, num_installments, total_amount, total_interest, loan_mode, daily_interest_percent, max_interest_cap_percent)")
         .eq("user_id", user!.id)
         .order("due_date", { ascending: true })
         .range(f, t));
@@ -555,7 +563,8 @@ const Cobrancas = () => {
 
     const ts = (s: string) => (parseLocalDate(s)?.getTime() ?? 0);
     const overdueDays = (i: any) => Math.max(0, Math.floor((Date.now() - ts(i.due_date)) / 86400000));
-    if (sort === "due_asc") arr = [...arr].sort((a, b) => ts(a.due_date) - ts(b.due_date));
+    if (sort === "priority") arr = [...arr].sort((a, b) => collectionPriority(b) - collectionPriority(a));
+    else if (sort === "due_asc") arr = [...arr].sort((a, b) => ts(a.due_date) - ts(b.due_date));
     else if (sort === "due_desc") arr = [...arr].sort((a, b) => ts(b.due_date) - ts(a.due_date));
     else if (sort === "amount_desc") arr = [...arr].sort((a, b) => Number(b.amount) - Number(a.amount));
     else if (sort === "amount_asc") arr = [...arr].sort((a, b) => Number(a.amount) - Number(b.amount));
@@ -624,6 +633,7 @@ const Cobrancas = () => {
 
     const groups = Array.from(map.values());
     const key = (g: any) => {
+      if (sort === "priority") return -Math.max(...g.items.map(collectionPriority));
       if (sort === "amount_desc") return -g.total;
       if (sort === "amount_asc") return g.total;
       if (sort === "overdue_days") {
@@ -639,6 +649,7 @@ const Cobrancas = () => {
     groups.sort((a, b) => key(a) - key(b));
     groups.forEach((g: any) => {
       g.items.sort((a: any, b: any) => {
+        if (sort === "priority") return collectionPriority(b) - collectionPriority(a);
         if (sort === "amount_desc") return Number(b.amount) - Number(a.amount);
         if (sort === "amount_asc") return Number(a.amount) - Number(b.amount);
         if (sort === "overdue_days") {
@@ -688,8 +699,8 @@ const Cobrancas = () => {
     return { count: items.length, total: items.reduce((s: number, i: any) => s + Number(i.amount), 0) };
   }, [installments]);
 
-  const activeFilters = (period !== "all" ? 1 : 0) + (sort !== "amount_desc" ? 1 : 0) + (focoDia ? 1 : 0) + (bucket !== "all" ? 1 : 0);
-  const clearFilters = () => { setPeriod("all"); setSort("amount_desc"); setFocoDia(false); setBucket("all"); };
+  const activeFilters = (period !== "all" ? 1 : 0) + (sort !== "priority" ? 1 : 0) + (focoDia ? 1 : 0) + (bucket !== "all" ? 1 : 0);
+  const clearFilters = () => { setPeriod("all"); setSort("priority"); setFocoDia(false); setBucket("all"); };
   const applyFocus = useCallback((k: "hoje" | "amanha" | "atrasadas" | "7d" | "todas" | "pagas") => {
     setFocoDia(false); setBucket("all");
     if (k === "hoje") { setPeriod("today"); setFilter("all"); }
@@ -963,7 +974,7 @@ const Cobrancas = () => {
           { key: "todas", label: "Todas", count: stats.pending + stats.overdue, tone: "muted", match: filter === "all" && period === "all" && !focoDia },
           { key: "pagas", label: "Pagas", count: stats.paid, tone: "success", match: filter === "paid" },
         ] as const;
-        const sortLabel = sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
+        const sortLabel = sort === "priority" ? "Prioridade inteligente" : sort === "overdue_days" ? "Mais atrasadas" : sort === "due_asc" ? "Vencimento" : "Maior valor";
         return (
           <div className="collection-toolbar relative rounded-2xl border p-3 sm:p-3.5 animate-fade-in">
             <div className="collection-command-row grid gap-2 lg:grid-cols-[minmax(18rem,1fr)_auto]">
@@ -998,6 +1009,7 @@ const Cobrancas = () => {
                     title={`Ordenar por: ${sortLabel}`}
                     aria-label="Ordenar por"
                   >
+                    <option value="priority">Prioridade inteligente</option>
                     <option value="overdue_days">Mais atrasadas</option>
                     <option value="due_asc">Vencimento próximo</option>
                     <option value="amount_desc">Maior valor</option>

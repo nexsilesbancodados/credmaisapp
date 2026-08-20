@@ -101,6 +101,7 @@ const NovoCliente = () => {
   
   const [saving, setSaving] = useState(false);
   const [showContract, setShowContract] = useState(false);
+  const [riskAccepted, setRiskAccepted] = useState(false);
   const [createdContractId, setCreatedContractId] = useState<string | null>(null);
   const [expressMode, setExpressMode] = useState<boolean>(() => {
     try { return localStorage.getItem("novo_cliente_express") === "1"; } catch { return false; }
@@ -219,6 +220,17 @@ const NovoCliente = () => {
     },
     enabled: !!existingClientId && !!user,
     staleTime: 60_000,
+  });
+
+  const { data: existingRisk = [] } = useQuery({
+    queryKey: ["existing-client-credit-risk", existingClientId],
+    queryFn: async () => {
+      const { data } = await supabase.from("contract_installments").select("id,amount,paid_amount,due_date,status")
+        .eq("client_id", existingClientId!).neq("status", "paid").neq("status", "cancelled")
+        .lt("due_date", new Date().toISOString());
+      return data || [];
+    },
+    enabled: !!existingClientId && !!user,
   });
 
   // Prefill client fields from existing client (read-only display in step 1, but step is skipped)
@@ -574,6 +586,10 @@ const NovoCliente = () => {
     if (hasLoanErrors) {
       const firstErr = loanErrors.capital || loanErrors.taxa || loanErrors.parcela || loanErrors.n || loanErrors.geral;
       toast({ title: firstErr || "Corrija os campos do empréstimo", variant: "destructive" });
+      return;
+    }
+    if (existingRisk.length > 0 && !riskAccepted) {
+      toast({ title: "Confirme o risco antes de liberar", description: "Este cliente possui parcelas vencidas.", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -1798,6 +1814,18 @@ const NovoCliente = () => {
               <p className="text-xs text-muted-foreground mb-1">Lucro Estimado</p>
               <p className="text-xl font-bold text-success">R$ {fmt(calc.totalInterest)}</p>
             </div>
+
+            {existingRisk.length > 0 && (
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+                <input type="checkbox" checked={riskAccepted} onChange={(e) => setRiskAccepted(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+                <span>
+                  <span className="block text-sm font-bold text-destructive">Cliente com {existingRisk.length} parcela(s) vencida(s)</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Total vencido: R$ {fmt(existingRisk.reduce((sum: number, item: any) => sum + Math.max(0, Number(item.amount || 0) - Number(item.paid_amount || 0)), 0))}. Confirmo que revisei o risco e autorizo o novo contrato.
+                  </span>
+                </span>
+              </label>
+            )}
           </div>
         </div>
       )}
