@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Search, X, CheckCircle2, Loader2, Receipt, AlertCircle, Clock, SplitSquareHorizontal, CheckSquare, Square, Banknote } from "lucide-react";
 import { formatBR, parseLocalDate } from "@/lib/dateUtils";
 import { interestOnlyAmount } from "@/lib/interestOnly";
+import { computeLateFeeBreakdown } from "@/lib/lateFee";
 
 interface Props { open: boolean; onClose: () => void; }
 
@@ -46,12 +47,12 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     }
   }, [open]);
 
-  const { data: installments, isLoading } = useQuery({
+  const { data: installments, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ["quick-pay-installments", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase.from("contract_installments")
-        .select("id, amount, paid_amount, due_date, installment_number, client_id, contract_id, clients:client_id(name, cpf_cnpj), contracts:contract_id(capital, total_amount, total_interest, num_installments, loan_mode)")
+      const { data, error } = await supabase.from("contract_installments")
+        .select("id, amount, paid_amount, late_fee, due_date, installment_number, client_id, contract_id, clients:client_id(name, cpf_cnpj), contracts:contract_id(capital, total_amount, total_interest, num_installments, loan_mode, interest_rate, daily_interest_percent, max_interest_cap_percent)")
         // `.eq("status","pending")` escondia as parcelas atrasadas: quando vencem,
         // o check-overdue muda o status para "overdue". Ou seja, o atalho de
         // pagamento rápido não mostrava justamente quem estava devendo — hoje são
@@ -59,6 +60,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
         .eq("user_id", user.id).not("status", "in", '("paid","cancelled")')
         .order("due_date", { ascending: true })
         .limit(200);
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user && open,
@@ -104,24 +106,29 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     () => (installments || []).filter((i: any) => selected.has(i.id)),
     [installments, selected]
   );
+  const remainingDue = (inst: any) => {
+    const total = computeLateFeeBreakdown(inst).withFees;
+    return Math.max(0, Math.round((total - Number(inst.paid_amount || 0)) * 100) / 100);
+  };
   const selectedTotal = useMemo(
-    () => selectedInstallments.reduce((s: number, i: any) => s + Number(i.amount || 0), 0),
+    () => selectedInstallments.reduce((s: number, i: any) => s + remainingDue(i), 0),
     [selectedInstallments]
   );
 
-  const handlePay = async (id: string, amount: number) => {
-    setSaving(id);
+  const handlePay = async (inst: any) => {
+    setSaving(inst.id);
+    const amount = Number(inst.paid_amount || 0) + remainingDue(inst);
     // RPC atômico: baixa + lucro + caixa + conclusão do contrato numa transação.
     // Antes era `.update()` direto e o pagamento não chegava a Lucros nem ao caixa.
     const { error } = await supabase.rpc("pay_installment", {
-      _installment_id: id,
+      _installment_id: inst.id,
       _paid_total: amount,
       _mark_paid: true,
       _method: method,
     });
     setSaving(null);
     if (error) { toast.error("Erro ao registrar pagamento"); return; }
-    setSelected((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    setSelected((prev) => { const n = new Set(prev); n.delete(inst.id); return n; });
     toast.success(`Pagamento registrado · ${METHODS.find(m => m.value === method)?.label}`, {
       action: {
         label: "Desfazer",
@@ -129,7 +136,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
           // Estorno pelo RPC: além de reabrir a parcela, remove o lucro e o
           // caixa lançados por ela. Voltar o status na mão deixaria o dinheiro
           // registrado no razão sem parcela paga correspondente.
-          const { error: undoErr } = await supabase.rpc("reverse_installment_payment", { _installment_id: id });
+          const { error: undoErr } = await supabase.rpc("reverse_installment_payment", { _installment_id: inst.id });
           if (undoErr) { toast.error("Não foi possível desfazer"); return; }
           qc.invalidateQueries({ queryKey: ["quick-pay-installments"] });
           qc.invalidateQueries({ queryKey: ["hoje"] });
@@ -153,7 +160,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
     const updates = await Promise.all(items.map((i: any) =>
       supabase.rpc("pay_installment", {
         _installment_id: i.id,
-        _paid_total: Number(i.amount),
+        _paid_total: Number(i.paid_amount || 0) + remainingDue(i),
         _mark_paid: true,
         _method: method,
       })
@@ -187,10 +194,10 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
   const handlePartial = async (inst: any) => {
     const paidNow = Number(String(partialValue).replace(",", "."));
     const alreadyPaid = Number(inst.paid_amount || 0);
-    const remaining = Math.max(0, Number(inst.amount) - alreadyPaid);
+    const remaining = remainingDue(inst);
     if (!paidNow || paidNow <= 0) { toast.error("Informe um valor válido"); return; }
     if (paidNow >= remaining) {
-      await handlePay(inst.id, alreadyPaid + remaining);
+      await handlePay(inst);
       setPartialFor(null); setPartialValue("");
       return;
     }
@@ -229,7 +236,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
         if (selected.size > 0) handleBulkPay();
         else {
           const inst = filtered[activeIdx];
-          handlePay(inst.id, Number(inst.amount));
+          handlePay(inst);
         }
       }
     };
@@ -319,7 +326,14 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
             {isLoading && (
               <div className="py-12 text-center"><Loader2 size={20} className="mx-auto animate-spin text-muted-foreground" /></div>
             )}
-            {!isLoading && filtered.length === 0 && (
+            {!isLoading && loadError && (
+              <div className="px-5 py-10 text-center" role="alert">
+                <AlertCircle size={28} className="mx-auto text-destructive/70 mb-2" />
+                <p className="text-sm font-semibold text-foreground">Não foi possível carregar as parcelas</p>
+                <button onClick={() => { void refetch(); }} className="mt-3 min-h-10 px-4 rounded-xl border border-border text-xs font-bold hover:bg-accent">Tentar novamente</button>
+              </div>
+            )}
+            {!isLoading && !loadError && filtered.length === 0 && (
               <div className="py-12 text-center">
                 <CheckCircle2 size={28} className="mx-auto text-success/50 mb-2" />
                 <p className="text-sm text-foreground font-semibold">Nada pendente</p>
@@ -333,12 +347,14 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
               const isToday = new Date(due.getFullYear(), due.getMonth(), due.getDate()).getTime() === t0.getTime();
               const isActive = idx === activeIdx;
               const isSelected = selected.has(inst.id);
+              const fee = computeLateFeeBreakdown(inst);
+              const dueNow = remainingDue(inst);
               return (
                 <div key={inst.id}>
                 <div
                   ref={(el) => (itemRefs.current[idx] = el)}
                   onMouseEnter={() => setActiveIdx(idx)}
-                  className={`px-4 py-3 flex items-center gap-3 border-b border-border/20 transition-colors ${
+                  className={`quick-payment-row px-4 py-3 flex items-center gap-3 border-b border-border/20 transition-colors ${
                     isSelected ? "bg-primary/10" : isActive ? "bg-accent/30 ring-1 ring-primary/20" : "hover:bg-accent/20"
                   }`}
                 >
@@ -356,7 +372,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
                   }`}>
                     {isOverdue ? <AlertCircle size={14} /> : <Clock size={14} />}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="quick-payment-info flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{inst.clients?.name || "Cliente"}</p>
                     <p className="text-[11px] text-muted-foreground">
                       Parcela {inst.installment_number} · {formatBR(inst.due_date)}
@@ -367,21 +383,22 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
                       )}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-foreground shrink-0">
-                    R$ {fmtBRL(Number(inst.amount))}
-                  </p>
+                  <div className="quick-payment-amount text-right shrink-0">
+                    <p className={`text-sm font-bold ${fee.total > 0 ? "text-destructive" : "text-foreground"}`}>R$ {fmtBRL(dueNow)}</p>
+                    {fee.total > 0 && <p className="text-[9px] text-muted-foreground">inclui R$ {fmtBRL(fee.total)} juros</p>}
+                  </div>
                   <button
                     onClick={() => { setPartialFor(partialFor === inst.id ? null : inst.id); setPartialValue(""); }}
                     title="Pagamento parcial"
-                    className="px-2 py-1.5 rounded-lg bg-muted text-foreground text-[11px] font-bold hover:bg-accent transition-colors flex items-center gap-1 shrink-0"
+                    className="quick-payment-partial px-2 py-1.5 rounded-lg bg-muted text-foreground text-[11px] font-bold hover:bg-accent transition-colors flex items-center justify-center gap-1 shrink-0"
                   >
                     <SplitSquareHorizontal size={11} />
                     Parcial
                   </button>
                   <button
-                    onClick={() => handlePay(inst.id, Number(inst.amount))}
+                    onClick={() => handlePay(inst)}
                     disabled={saving === inst.id}
-                    className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1 shrink-0"
+                    className="quick-payment-pay px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1 shrink-0"
                   >
                     {saving === inst.id ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
                     Pagar
@@ -393,7 +410,7 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
                     <div className="relative flex-1 max-w-[160px]">
                       <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">R$</span>
                       <input
-                        type="number" step="0.01" min="0" max={Number(inst.amount)} autoFocus
+                        type="number" step="0.01" min="0" max={dueNow} autoFocus
                         value={partialValue}
                         onChange={(e) => setPartialValue(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handlePartial(inst); } }}
@@ -401,9 +418,9 @@ const QuickPaymentModal = ({ open, onClose }: Props) => {
                         className="w-full h-8 pl-8 pr-2 rounded-md bg-background border border-border text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                       />
                     </div>
-                    <span className="text-[10px] text-muted-foreground">de R$ {fmtBRL(Number(inst.amount))}</span>
+                    <span className="text-[10px] text-muted-foreground">de R$ {fmtBRL(dueNow)}</span>
                     {(() => {
-                      const io = interestOnlyAmount(inst, inst.contracts);
+                      const io = interestOnlyAmount(inst, inst.contracts, fee.juros);
                       if (!io) return null;
                       return (
                         <button

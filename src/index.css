@@ -1848,6 +1848,12 @@ div[style*="Edit with Lovable"],
 .collection-account-card > .h-1 { height: 2px; opacity: .72; }
 
 @media (max-width: 639px) {
+  .quick-payment-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: .5rem; padding-inline: .75rem; }
+  .quick-payment-info { grid-column: 3; }
+  .quick-payment-amount { grid-column: 4; max-width: 7rem; }
+  .quick-payment-amount > p:first-child { font-size: .75rem; }
+  .quick-payment-partial { grid-column: 3; min-height: 38px; }
+  .quick-payment-pay { grid-column: 4; min-height: 38px; }
   .collections-page { margin-inline: -.125rem; }
   .collections-hero { border-radius: 1.25rem; }
   .collections-hero-actions > * { width: 100%; }

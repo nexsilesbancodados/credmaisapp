@@ -96,7 +96,7 @@ const DashboardLayout = () => {
       )}
 
       <div className={`app-workspace transition-[margin] duration-300 ${isMobile ? "ml-0" : collapsed ? "ml-[84px]" : "ml-[280px]"}`}>
-        <TopBar onSearchClick={() => setSearchOpen(true)} />
+        <TopBar onSearchClick={() => setSearchOpen(true)} onQuickPayment={() => setPayOpen(true)} />
 
         <GlobalAnnouncement />
         <InstallAppBanner />

@@ -14,9 +14,10 @@ import { fetchAll } from "@/lib/fetchAll";
 
 interface TopBarProps {
   onSearchClick?: () => void;
+  onQuickPayment?: () => void;
 }
 
-const TopBar = ({ onSearchClick }: TopBarProps) => {
+const TopBar = ({ onSearchClick, onQuickPayment }: TopBarProps) => {
   const { user, profile, signOut, isPlatformAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
     };
   }, [quickOpen]);
 
-  const { data: financials } = useQuery({
+  const { data: financials, isLoading: financialsLoading, isError: financialsError } = useQuery({
     queryKey: ["topbar-financials", user?.id],
     queryFn: async () => {
       const nowIso = new Date().toISOString();
@@ -47,7 +48,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         fetchAll((f, t) => supabase.from("profits").select("amount").eq("user_id", user!.id).eq("status", "available").range(f, t)),
         // O HEAD count recebe 403 em algumas combinações de PostgREST + RLS.
         fetchAll((f, t) => supabase.from("contract_installments").select("id")
-          .eq("user_id", user!.id).eq("status", "pending").lt("due_date", nowIso).range(f, t)),
+          .eq("user_id", user!.id).neq("status", "paid").neq("status", "cancelled").lt("due_date", nowIso).range(f, t)),
       ]);
       const activeContracts = contracts.filter((c: any) => c.status === "active" || c.status === "overdue");
       const carteira = activeContracts.reduce((s: number, c: any) => s + Number(c.capital), 0);
@@ -70,6 +71,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
   };
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const financialValue = (value?: number) => financialsLoading || financialsError ? "—" : `R$ ${fmt(value ?? 0)}`;
 
   return (
     <header
@@ -103,7 +105,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
         >
           <Search size={15} className="text-muted-foreground/60 group-hover:text-primary transition-colors" />
           <span className="hidden lg:inline truncate text-[13px] flex-1 text-left">Buscar clientes, contratos...</span>
-          <kbd className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-md bg-background/60 font-mono text-muted-foreground/60 border border-border/40">⌘K</kbd>
+          <kbd className="hidden lg:inline text-[10px] px-1.5 py-0.5 rounded-md bg-background/60 font-mono text-muted-foreground/60 border border-border/40">⌘K</kbd>
         </button>
       )}
 
@@ -122,7 +124,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <span className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center ring-1 ring-primary/20 group-hover:scale-110 transition-transform">
               <Wallet size={12} className="text-primary" />
             </span>
-            <span className="whitespace-nowrap text-[12.5px] font-bold tracking-tight text-foreground">R$ {fmt(financials?.carteira ?? 0)}</span>
+            <span className="whitespace-nowrap text-[12.5px] font-bold tracking-tight text-foreground">{financialValue(financials?.carteira)}</span>
           </button>
           <div className="w-px h-4 bg-border/50" />
           <button
@@ -133,7 +135,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <span className="w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center ring-1 ring-emerald-500/25 group-hover:scale-110 transition-transform">
               <TrendingUp size={12} className="text-emerald-400" />
             </span>
-            <span className="whitespace-nowrap text-[12.5px] font-bold tracking-tight text-emerald-400">R$ {fmt(financials?.lucro ?? 0)}</span>
+            <span className="whitespace-nowrap text-[12.5px] font-bold tracking-tight text-emerald-400">{financialValue(financials?.lucro)}</span>
           </button>
           {(financials?.overdue ?? 0) > 0 && (
             <>
@@ -171,16 +173,20 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <div className="absolute top-full right-0 mt-2 w-64 rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden z-50 animate-scale-in origin-top-right">
               <p className="px-3 pt-2.5 pb-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Ações rápidas</p>
               {[
-                { Icon: UserPlus, label: "Novo cliente", desc: "Cadastrar + contrato", path: "/clientes/novo", color: "text-violet-400 bg-violet-500/10 ring-violet-500/20" },
-                { Icon: Receipt, label: "Registrar pagamento", desc: "Abrir cobranças", path: "/cobrancas", color: "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20" },
-                { Icon: TrendingUp, label: "Lançar lucro", desc: "Entrada manual", path: "/lucros", color: "text-sky-400 bg-sky-500/10 ring-sky-500/20" },
-                { Icon: Wallet, label: "Lançar gasto", desc: "Despesa manual", path: "/gastos", color: "text-amber-400 bg-amber-500/10 ring-amber-500/20" },
-                { Icon: ListTodo, label: "Nova tarefa", desc: "Lembretes & to-dos", path: "/ferramentas/tarefas", color: "text-rose-400 bg-rose-500/10 ring-rose-500/20" },
-                { Icon: Calculator, label: "Simular empréstimo", desc: "Calcular juros", path: "/ferramentas/simulador", color: "text-indigo-400 bg-indigo-500/10 ring-indigo-500/20" },
+                { Icon: UserPlus, label: "Novo cliente", desc: "Cadastrar + contrato", path: "/clientes/novo", action: "navigate", color: "text-violet-400 bg-violet-500/10 ring-violet-500/20" },
+                { Icon: Receipt, label: "Registrar pagamento", desc: "Buscar e dar baixa agora", path: "", action: "payment", color: "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20" },
+                { Icon: TrendingUp, label: "Lançar lucro", desc: "Entrada manual", path: "/lucros", action: "navigate", color: "text-sky-400 bg-sky-500/10 ring-sky-500/20" },
+                { Icon: Wallet, label: "Lançar gasto", desc: "Despesa manual", path: "/gastos", action: "navigate", color: "text-amber-400 bg-amber-500/10 ring-amber-500/20" },
+                { Icon: ListTodo, label: "Nova tarefa", desc: "Lembretes & to-dos", path: "/ferramentas/tarefas", action: "navigate", color: "text-rose-400 bg-rose-500/10 ring-rose-500/20" },
+                { Icon: Calculator, label: "Simular empréstimo", desc: "Calcular juros", path: "/ferramentas/simulador", action: "navigate", color: "text-indigo-400 bg-indigo-500/10 ring-indigo-500/20" },
               ].map(item => (
                 <button
                   key={item.path}
-                  onClick={() => { setQuickOpen(false); navigate(item.path); }}
+                  onClick={() => {
+                    setQuickOpen(false);
+                    if (item.action === "payment") onQuickPayment?.();
+                    else navigate(item.path);
+                  }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/50 transition-colors text-left group"
                 >
                   <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-1 group-hover:scale-110 transition-transform ${item.color}`}>
@@ -245,7 +251,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <span className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
               <Wallet size={11} className="text-primary" />
             </span>
-            <span className="text-[11.5px] font-bold text-primary tabular-nums">R$ {fmt(financials?.carteira ?? 0)}</span>
+            <span className="text-[11.5px] font-bold text-primary tabular-nums">{financialValue(financials?.carteira)}</span>
           </button>
           <button
             onClick={() => navigate("/lucros")}
@@ -254,7 +260,7 @@ const TopBar = ({ onSearchClick }: TopBarProps) => {
             <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
               <TrendingUp size={11} className="text-emerald-400" />
             </span>
-            <span className="text-[11.5px] font-bold text-emerald-400 tabular-nums">R$ {fmt(financials?.lucro ?? 0)}</span>
+            <span className="text-[11.5px] font-bold text-emerald-400 tabular-nums">{financialValue(financials?.lucro)}</span>
           </button>
           {(financials?.overdue ?? 0) > 0 && (
             <button
